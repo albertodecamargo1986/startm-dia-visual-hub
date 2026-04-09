@@ -404,6 +404,7 @@ export type Database = {
           company_name: string | null
           cpf_cnpj: string | null
           created_at: string | null
+          default_address: Json | null
           email: string
           full_name: string
           id: string
@@ -416,6 +417,7 @@ export type Database = {
           company_name?: string | null
           cpf_cnpj?: string | null
           created_at?: string | null
+          default_address?: Json | null
           email?: string
           full_name?: string
           id?: string
@@ -428,6 +430,7 @@ export type Database = {
           company_name?: string | null
           cpf_cnpj?: string | null
           created_at?: string | null
+          default_address?: Json | null
           email?: string
           full_name?: string
           id?: string
