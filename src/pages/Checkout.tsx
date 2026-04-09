@@ -12,6 +12,7 @@ import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { User, Upload, CreditCard, CheckCircle, Ruler, MessageCircle, X, FileText } from 'lucide-react';
+import { formatBRL } from '@/lib/format';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const STEPS = [
@@ -381,12 +382,12 @@ const Checkout = () => {
                     {items.map(i => (
                       <div key={i.id} className="flex justify-between text-sm">
                         <span className="text-muted-foreground">{i.productName} ×{i.quantity}</span>
-                        <span>R$ {(i.unitPrice * i.quantity).toFixed(2).replace('.', ',')}</span>
+                        <span>{formatBRL(i.unitPrice * i.quantity)}</span>
                       </div>
                     ))}
                     <div className="border-t border-border pt-2 flex justify-between font-bold text-lg">
                       <span>Total</span>
-                      <span className="text-primary">R$ {total.toFixed(2).replace('.', ',')}</span>
+                       <span className="text-primary">{formatBRL(total)}</span>
                     </div>
                   </div>
 
@@ -413,12 +414,12 @@ const Checkout = () => {
                     <p className="text-xs text-muted-foreground">{i.customWidth}cm × {i.customHeight}cm</p>
                   )}
                 </div>
-                <span className="text-sm font-medium">R$ {(i.unitPrice * i.quantity).toFixed(2).replace('.', ',')}</span>
+                <span className="text-sm font-medium">{formatBRL(i.unitPrice * i.quantity)}</span>
               </div>
             ))}
             <div className="border-t border-border pt-3 flex justify-between font-bold text-lg">
               <span>Total</span>
-              <span className="text-primary">R$ {total.toFixed(2).replace('.', ',')}</span>
+              <span className="text-primary">{formatBRL(total)}</span>
             </div>
           </div>
         </Card>

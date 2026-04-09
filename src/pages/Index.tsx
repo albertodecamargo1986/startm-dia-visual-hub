@@ -12,6 +12,7 @@ import Autoplay from 'embla-carousel-autoplay';
 import { useCallback, useEffect, useState } from 'react';
 import { useSettings } from '@/contexts/SettingsContext';
 import type { Banner, Category, Product } from '@/types';
+import { formatBRL } from '@/lib/format';
 
 const iconMap: Record<string, React.ElementType> = { Sticker, Flag, SignpostBig, Tag, Building2, Car, Pen };
 
@@ -250,7 +251,7 @@ const FeaturedProducts = () => {
                       <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{p.short_description}</p>
                       {Number(p.base_price) > 0 && (
                         <p className="mt-2 text-primary font-bold">
-                          R$ {Number(p.base_price).toFixed(2).replace('.', ',')}
+                          {formatBRL(Number(p.base_price))}
                           <span className="text-xs text-muted-foreground font-normal ml-1">/ {p.price_unit}</span>
                         </p>
                       )}
