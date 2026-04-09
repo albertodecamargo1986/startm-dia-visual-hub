@@ -507,6 +507,18 @@ const Index = () => (
       <meta property="og:type" content="website" />
       <meta property="og:url" content="https://startmidialimeira.com.br" />
       <link rel="canonical" href="https://startmidialimeira.com.br" />
+      <script type="application/ld+json">{JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "LocalBusiness",
+        "name": "StartMídia Comunicação Visual",
+        "description": "Gráfica e comunicação visual em Limeira/SP",
+        "url": "https://startmidialimeira.com.br",
+        "telephone": "+55 19 98364-9875",
+        "address": { "@type": "PostalAddress", "addressLocality": "Limeira", "addressRegion": "SP", "addressCountry": "BR" },
+        "geo": { "@type": "GeoCoordinates", "latitude": -22.564, "longitude": -47.4017 },
+        "openingHours": "Mo-Fr 08:00-18:00, Sa 08:00-12:00",
+        "priceRange": "$$"
+      })}</script>
     </Helmet>
     <HeroBanner />
     <CategoriesSection />

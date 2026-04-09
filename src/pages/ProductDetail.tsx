@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { GuiaMedidas } from '@/components/GuiaMedidas';
 import { useCart } from '@/contexts/CartContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import { toast } from 'sonner';
@@ -204,39 +204,15 @@ const ProductDetail = () => {
             </div>
 
             {/* Measurement Guide */}
-            <Dialog>
-              <DialogTrigger asChild>
+            <GuiaMedidas
+              productName={product.name}
+              productUnit={product.price_unit ?? 'un'}
+              trigger={
                 <Button variant="ghost" size="sm" className="text-muted-foreground">
                   <Ruler className="mr-2 h-4 w-4" /> 📐 Guia de Medidas
                 </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-lg">
-                <DialogHeader><DialogTitle>Guia de Medidas</DialogTitle></DialogHeader>
-                <div className="space-y-4 text-sm">
-                  <div>
-                    <h4 className="font-semibold mb-1">Como medir</h4>
-                    <p className="text-muted-foreground">Meça a largura e a altura desejada em centímetros. Para superfícies irregulares, considere a medida máxima em cada direção.</p>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold mb-1">Tamanhos padrão comuns</h4>
-                    <div className="grid grid-cols-2 gap-2 text-muted-foreground">
-                      <span>Banner: 80×120 cm</span>
-                      <span>Faixa: 300×80 cm</span>
-                      <span>Adesivo A3: 30×42 cm</span>
-                      <span>Placa: 50×70 cm</span>
-                    </div>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold mb-1">Resolução recomendada</h4>
-                    <p className="text-muted-foreground">Mínimo 150 DPI, ideal 300 DPI para impressão de qualidade.</p>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold mb-1">Formatos aceitos</h4>
-                    <p className="text-muted-foreground">PDF, AI, CDR, PSD, PNG (300dpi), JPG (alta resolução)</p>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
+              }
+            />
           </div>
         </div>
 
