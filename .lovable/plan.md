@@ -1,63 +1,71 @@
 
 
-# Checkout Completo com PagSeguro
+# Área do Cliente — Reescrita Completa
 
 ## Resumo
-Reescrever o checkout com 4 steps visuais (Dados → Arte → Pagamento → Confirmação), integração ViaCEP para autocomplete de endereço, upload de arte para itens que necessitam, e integração PagSeguro via duas Edge Functions. Reescrever página de sucesso com status em tempo real.
+Reescrever todas as 6 páginas da área do cliente com funcionalidades avançadas: layout com avatar e botão sair, dashboard com métricas detalhadas, pedidos com tabela completa, detalhe com timeline vertical e upload de arte, arquivos com download/re-upload, e perfil com avatar upload e reset de senha.
 
-## Arquivos a criar/modificar
+## Arquivos a modificar
 
-### 1. `src/pages/Checkout.tsx` — Reescrever completamente
-- **Stepper visual** no topo: 4 steps com ícones e linha de progresso
-- **Step 1 — Dados**: pré-preenche nome, email, telefone, CPF/CNPJ do profile. CEP com fetch automático para `viacep.com.br/ws/{cep}/json/` que preenche rua, bairro, cidade, estado. Campo número, complemento manuais.
-- **Step 2 — Envio de Arte**: lista itens com `needsArtwork=true`. Para cada: área de drag-and-drop upload (aceita PDF/AI/CDR/PNG/JPG, max 50MB), barra de progresso, preview do arquivo, botão "Guia de Medidas" (Dialog), opção "Solicitar arte da StartMídia" (link WhatsApp). Upload vai para bucket `artwork-files` path `{userId}/{orderId}/{filename}`. Registra em `customer_files`. Skip automático se nenhum item precisa de arte.
-- **Step 3 — Pagamento**: resumo do pedido, botão "Pagar com PagSeguro" que chama edge function `create-pagseguro-payment` e redireciona para URL do PagSeguro.
-- **Step 4**: não renderiza (usuário já foi redirecionado)
-- Criar pedido no banco ao avançar do Step 1 para Step 2 (para ter `orderId` para uploads)
-- Sidebar com resumo do pedido fixa em todas as steps
+### 1. `src/pages/client/ClientLayout.tsx` — Reescrever
+- Avatar circular (iniciais ou foto) + nome do cliente no topo da sidebar
+- Links: Dashboard, Meus Pedidos, Meus Arquivos, Meu Perfil
+- Botão "Sair" com ícone LogOut na parte inferior da sidebar
+- Mobile: tabs horizontais em vez de sidebar (usando flex row com scroll)
+- Chamar `logout()` do AuthContext no botão sair
 
-### 2. `src/pages/CheckoutSuccess.tsx` — Reescrever
-- Recebe `?order=orderId` da URL
-- Busca pedido e status em tempo real (subscribe realtime no `orders`)
-- Animação de check com framer-motion
-- Mostra número do pedido, resumo, status de pagamento atualizado
-- Próximos passos (enviar arte, aguardar produção)
-- Botão "Acompanhar Pedido" → `/cliente/pedidos/{id}`
+### 2. `src/pages/client/ClientDashboard.tsx` — Reescrever
+- 4 cards de resumo: Total de pedidos, Pedidos em produção (status `in_production`), Arquivos pendentes (status `pending`), Último pedido (mini card com número e status)
+- Grid `grid-cols-2 lg:grid-cols-4`
+- Seção "Últimos Pedidos" com os 3 pedidos mais recentes em lista com status badge colorido e link para detalhe
 
-### 3. `supabase/functions/create-pagseguro-payment/index.ts` — Criar
-- Recebe `{ orderId }` no body
-- Valida JWT do usuário
-- Busca pedido com items e profile via service role
-- Monta XML do PagSeguro (checkout v2)
-- Envia para API PagSeguro (sandbox ou produção via env `PAGSEGURO_SANDBOX`)
-- Extrai código de checkout da resposta
-- Salva `payment_id` no pedido
-- Retorna `{ redirectUrl }` para o frontend
-- CORS headers incluídos
+### 3. `src/pages/client/ClientOrders.tsx` — Reescrever
+- Tabela responsiva (Table do shadcn) com colunas: Número, Data, Total, Status (Badge colorido), Ação (botão "Ver Detalhes")
+- Mobile: cards em vez de tabela (media query)
+- Status badges usando `ORDER_STATUS_LABELS` e `ORDER_STATUS_COLORS` existentes
 
-### 4. `supabase/functions/pagseguro-webhook/index.ts` — Criar
-- Recebe POST do PagSeguro com `notificationCode`
-- Consulta detalhes da transação na API PagSeguro
-- Mapeia status PagSeguro (3/4=pago, 6/7=cancelado) para status interno
-- Atualiza `orders.payment_status` e `orders.status`
-- Insere evento no `order_timeline`
-- Retorna 200 OK
-- Sem verificação JWT (é webhook externo)
+### 4. `src/pages/client/ClientOrderDetail.tsx` — Reescrever completamente
+- Breadcrumb: Meus Pedidos > Pedido SM-YYYY-XXXX
+- Header: número do pedido + badge de status grande
+- **Timeline vertical**: linha vertical com círculos coloridos, ícone por etapa, data/hora, mensagem
+- **Itens do pedido**: foto (thumbnail do product_snapshot), nome, quantidade, dimensões (se custom), preço
+- **Seção de arte por item**:
+  - `artwork_status = 'pending'`: badge amarelo "Aguardando Aprovação"
+  - `artwork_status = 'approved'`: badge verde "Arte Aprovada"
+  - `artwork_status = 'rejected'`: badge vermelho + `admin_comment` do `customer_files` + botão novo upload
+  - `artwork_status = 'not_required'` ou item sem `needs_artwork`: badge cinza
+  - Se sem arte enviada e item precisa: área de drag-and-drop upload
+- **Upload de arte**: upload para `artwork-files/{userId}/{orderId}/`, insere em `customer_files`, atualiza `order_items.artwork_url` e `artwork_status`
+- Resumo financeiro: subtotal, frete, total
+- Dados de entrega (do `shipping_address` JSON)
+- Invalidar queries após upload
 
-### 5. Secrets necessários (via add_secret)
-- `PAGSEGURO_EMAIL` — email da conta PagSeguro
-- `PAGSEGURO_TOKEN` — token da conta PagSeguro
-- `PAGSEGURO_SANDBOX` — "true" ou "false"
-- `SITE_URL` — URL do site para redirect
+### 5. `src/pages/client/ClientFiles.tsx` — Reescrever
+- Lista com: nome, tamanho formatado (KB/MB), data de upload, pedido vinculado (link para `/cliente/pedidos/:id` via `order_item_id` → buscar `order_id`), status badge com labels PT-BR (Pendente/Aprovado/Rejeitado/Em revisão)
+- Comentário do admin visível se rejeitado (`admin_comment`)
+- Botão download (gera URL assinada do bucket `artwork-files`)
+- Botão "Enviar novamente" se rejeitado
 
-### 6. Realtime — Migration
-- `ALTER PUBLICATION supabase_realtime ADD TABLE public.orders;` para status em tempo real na página de sucesso
+### 6. `src/pages/client/ClientProfile.tsx` — Reescrever
+- **Avatar upload**: área circular clicável, upload para bucket `customer-files/{userId}/avatar`, salva URL em `profiles.avatar_url`
+- Campos: nome, email (readonly), telefone, CPF/CNPJ, empresa
+- **Endereço padrão**: CEP com autocomplete ViaCEP, rua, número, complemento, bairro, cidade, estado (salvar como JSON em profile ou campos separados — usar campos no form e salvar via `updateProfile`)
+- Seção "Segurança": botão "Alterar Senha" que chama `supabase.auth.resetPasswordForEmail(profile.email)` e mostra toast
+- Toast de confirmação ao salvar
 
 ## Detalhes técnicos
-- ViaCEP: `fetch('https://viacep.com.br/ws/${cep.replace(/\D/g,'')}/json/')` no onBlur do campo CEP
-- Upload: `supabase.storage.from('artwork-files').upload(path, file, { onUploadProgress })` com barra via Progress do shadcn
-- Stepper: componente inline com divs circulares numeradas + linha entre elas, step ativo = `bg-primary`
-- Edge functions usam `corsHeaders` para chamadas do frontend
-- Pedido criado no Step 1, atualizado nos steps seguintes
-- `order_items` inclui `notes` do item do carrinho
+- Avatar: `Avatar` + `AvatarImage` + `AvatarFallback` do shadcn com iniciais
+- Timeline: CSS com `border-l-2` e círculos absolutamente posicionados
+- Upload drag-and-drop: `onDragOver`/`onDrop` handlers nativos + input file hidden
+- Download: `supabase.storage.from('artwork-files').createSignedUrl(path, 3600)` para bucket privado
+- Endereço padrão: como a tabela `profiles` não tem campos de endereço, salvar em `site_settings` ou usar `shipping_address` como JSON — melhor adicionar coluna `default_address jsonb` na tabela `profiles` via migration
+- Reset senha: `supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/reset-password' })`
+
+## Migration necessária
+- Adicionar coluna `default_address jsonb default '{}'` à tabela `profiles` para endereço padrão
+
+## Sem mudanças em
+- `src/App.tsx` — rotas já existem
+- `src/types/index.ts` — tipos já mapeados
+- `src/contexts/AuthContext.tsx` — já tem `updateProfile` e `logout`
 
