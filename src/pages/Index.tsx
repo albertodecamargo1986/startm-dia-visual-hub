@@ -3,7 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
-import { ArrowRight, ChevronLeft, ChevronRight, Sticker, Flag, SignpostBig, Tag, Building2, Car, Pen, Trophy, Zap, DollarSign, Palette, Package, Handshake } from 'lucide-react';
+import { ArrowRight, ChevronLeft, ChevronRight, Sticker, Flag, SignpostBig, Tag, Building2, Car, Pen, Trophy, Zap, DollarSign, Palette, Package, Handshake, Star, Quote } from 'lucide-react';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import useEmblaCarousel from 'embla-carousel-react';
@@ -381,6 +382,7 @@ const Index = () => (
     <FeaturedProducts />
     <DifferentialsSection />
     <PortfolioPreviewSection />
+    <TestimonialsSection />
   </>
 );
 
