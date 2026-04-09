@@ -8,6 +8,7 @@ import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '@/types';
 import type { Profile, Order, OrderStatus } from '@/types';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { formatBRL, formatDate } from '@/lib/format';
 
 const AdminClients = () => {
   const [selectedClient, setSelectedClient] = useState<Profile | null>(null);
@@ -67,8 +68,8 @@ const AdminClients = () => {
                 <TableCell className="text-sm">{c.email}</TableCell>
                 <TableCell className="text-sm">{c.phone || '—'}</TableCell>
                 <TableCell>{s?.count ?? 0}</TableCell>
-                <TableCell className="text-primary font-semibold">R$ {(s?.total ?? 0).toFixed(2).replace('.', ',')}</TableCell>
-                <TableCell className="text-sm text-muted-foreground">{new Date(c.created_at!).toLocaleDateString('pt-BR')}</TableCell>
+                <TableCell className="text-primary font-semibold">{formatBRL(s?.total ?? 0)}</TableCell>
+                <TableCell className="text-sm text-muted-foreground">{formatDate(c.created_at!)}</TableCell>
               </TableRow>
             );
           })}
@@ -92,10 +93,10 @@ const AdminClients = () => {
                   <Link key={o.id} to={`/admin/pedidos/${o.id}`} onClick={() => setSelectedClient(null)} className="flex items-center justify-between p-2 rounded hover:bg-muted/30">
                     <div>
                       <span className="text-sm font-medium">{o.order_number}</span>
-                      <span className="text-xs text-muted-foreground ml-2">{new Date(o.created_at!).toLocaleDateString('pt-BR')}</span>
+                      <span className="text-xs text-muted-foreground ml-2">{formatDate(o.created_at!)}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-primary font-semibold">R$ {Number(o.total).toFixed(2).replace('.', ',')}</span>
+                      <span className="text-sm text-primary font-semibold">{formatBRL(Number(o.total))}</span>
                       <Badge className={ORDER_STATUS_COLORS[o.status as OrderStatus] + ' text-xs'}>{ORDER_STATUS_LABELS[o.status as OrderStatus]}</Badge>
                     </div>
                   </Link>

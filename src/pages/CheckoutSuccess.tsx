@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { CheckCircle, Package, Clock, CreditCard } from 'lucide-react';
+import { formatBRL } from '@/lib/format';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { motion } from 'framer-motion';
@@ -85,14 +86,14 @@ const CheckoutSuccess = () => {
               {items.map(item => (
                 <div key={item.id} className="flex justify-between text-sm">
                   <span className="text-muted-foreground">{item.product_name} ×{item.quantity}</span>
-                  <span>R$ {Number(item.total_price).toFixed(2).replace('.', ',')}</span>
+                  <span>{formatBRL(Number(item.total_price))}</span>
                 </div>
               ))}
             </div>
 
             <div className="border-t border-border pt-3 flex justify-between font-bold text-lg">
               <span>Total</span>
-              <span className="text-primary">R$ {Number(order.total).toFixed(2).replace('.', ',')}</span>
+              <span className="text-primary">{formatBRL(Number(order.total))}</span>
             </div>
           </Card>
 

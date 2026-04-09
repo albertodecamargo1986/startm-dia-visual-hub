@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { FileText, Download, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { formatDate } from '@/lib/format';
 import type { CustomerFile } from '@/types';
 
 const statusLabels: Record<string, string> = {
@@ -93,7 +94,7 @@ const ClientFiles = () => {
                   <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                     <span>{formatSize(f.file_size ?? 0)}</span>
                     <span>·</span>
-                    <span>{new Date(f.uploaded_at!).toLocaleDateString('pt-BR')}</span>
+                    <span>{formatDate(f.uploaded_at!)}</span>
                     {orderId && (
                       <>
                         <span>·</span>

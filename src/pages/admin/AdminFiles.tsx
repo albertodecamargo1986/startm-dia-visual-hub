@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Download, Check, X, Eye } from 'lucide-react';
 import type { CustomerFile } from '@/types';
+import { formatDate } from '@/lib/format';
 
 const statusColors: Record<string, string> = {
   pending: 'bg-yellow-500/20 text-yellow-400',
@@ -117,7 +118,7 @@ const AdminFiles = () => {
                   </div>
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">{formatSize(f.file_size ?? 0)}</TableCell>
-                <TableCell className="text-sm text-muted-foreground">{new Date(f.uploaded_at!).toLocaleDateString('pt-BR')}</TableCell>
+                <TableCell className="text-sm text-muted-foreground">{formatDate(f.uploaded_at!)}</TableCell>
                 <TableCell><Badge className={statusColors[f.status ?? 'pending']}>{statusLabels[f.status ?? 'pending']}</Badge></TableCell>
                 <TableCell>
                   <div className="flex gap-1">

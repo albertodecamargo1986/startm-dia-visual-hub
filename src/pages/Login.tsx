@@ -74,9 +74,9 @@ const Login = () => {
         emailRedirectTo: window.location.origin,
       },
     });
-    if (error) toast.error(error.message);
-    else toast.success('Cadastro realizado! Verifique seu email para ativar a conta.');
+    if (error) { toast.error(error.message); setLoading(false); return; }
     setLoading(false);
+    navigate('/verificar-email', { state: { email: signupForm.email } });
   };
 
   const handleForgotPassword = async () => {

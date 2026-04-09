@@ -13,6 +13,7 @@ import type { Order, OrderStatus } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Download, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
+import { formatBRL, formatDate } from '@/lib/format';
 
 const PAGE_SIZE = 20;
 const statuses: OrderStatus[] = ['pending_payment', 'awaiting_artwork', 'in_production', 'ready', 'shipped', 'delivered', 'cancelled', 'refunded'];
@@ -70,7 +71,7 @@ const AdminOrders = () => {
     if (!orders.length) return;
     const header = 'Pedido,Cliente,Email,Data,Total,Status Pagamento,Status\n';
     const rows = orders.map(o =>
-      `${o.order_number},"${o.profiles?.full_name || ''}","${o.profiles?.email || ''}",${new Date(o.created_at!).toLocaleDateString('pt-BR')},${Number(o.total).toFixed(2)},${o.payment_status},${o.status}`
+      `${o.order_number},"${o.profiles?.full_name || ''}","${o.profiles?.email || ''}",${formatDate(o.created_at!)},${Number(o.total).toFixed(2)},${o.payment_status},${o.status}`
     ).join('\n');
     const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
     const a = document.createElement('a');
@@ -125,8 +126,8 @@ const AdminOrders = () => {
                       <div className="text-sm">{o.profiles?.full_name}</div>
                       <div className="text-xs text-muted-foreground">{o.profiles?.email}</div>
                     </TableCell>
-                    <TableCell className="text-sm">{new Date(o.created_at!).toLocaleDateString('pt-BR')}</TableCell>
-                    <TableCell className="font-semibold text-primary">R$ {Number(o.total).toFixed(2).replace('.', ',')}</TableCell>
+                    <TableCell className="text-sm">{formatDate(o.created_at!)}</TableCell>
+                    <TableCell className="font-semibold text-primary">{formatBRL(Number(o.total))}</TableCell>
                     <TableCell><Badge variant="outline" className="text-xs">{o.payment_status}</Badge></TableCell>
                     <TableCell>
                       <Select defaultValue={o.status} onValueChange={val => quickStatus.mutate({ id: o.id, status: val })}>
@@ -154,11 +155,11 @@ const AdminOrders = () => {
                     <div>
                       <p className="font-semibold text-sm">{o.order_number}</p>
                       <p className="text-xs text-muted-foreground">{o.profiles?.full_name}</p>
-                      <p className="text-xs text-muted-foreground">{new Date(o.created_at!).toLocaleDateString('pt-BR')}</p>
+                      <p className="text-xs text-muted-foreground">{formatDate(o.created_at!)}</p>
                     </div>
                     <div className="text-right">
                       <Badge className={ORDER_STATUS_COLORS[o.status as OrderStatus] + ' text-xs'}>{ORDER_STATUS_LABELS[o.status as OrderStatus]}</Badge>
-                      <p className="text-sm font-bold text-primary mt-1">R$ {Number(o.total).toFixed(2).replace('.', ',')}</p>
+                      <p className="text-sm font-bold text-primary mt-1">{formatBRL(Number(o.total))}</p>
                     </div>
                   </div>
                 </Card>

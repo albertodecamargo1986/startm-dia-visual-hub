@@ -14,6 +14,7 @@ import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useSettings } from '@/contexts/SettingsContext';
+import { formatBRL } from '@/lib/format';
 import type { Product, Category } from '@/types';
 
 type ProductWithCategory = Product & { categories: { name: string; slug: string } | null };
@@ -119,8 +120,8 @@ const Shop = () => {
         <h3 className="font-semibold text-foreground mb-3">Faixa de Preço</h3>
         <Slider min={0} max={maxPrice} step={1} value={priceRange} onValueChange={setPriceRange} className="mb-2" />
         <div className="flex justify-between text-xs text-muted-foreground">
-          <span>R$ {priceRange[0].toFixed(0)}</span>
-          <span>R$ {priceRange[1].toFixed(0)}</span>
+          <span>R$ {priceRange[0]}</span>
+          <span>R$ {priceRange[1]}</span>
         </div>
       </div>
 
@@ -216,7 +217,7 @@ const Shop = () => {
                         <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{p.short_description}</p>
                         {Number(p.base_price) > 0 && (
                           <p className="mt-2 text-primary font-bold text-sm">
-                            a partir de R$ {Number(p.base_price).toFixed(2).replace('.', ',')}
+                            a partir de {formatBRL(Number(p.base_price))}
                             <span className="text-xs text-muted-foreground font-normal"> / {p.price_unit}</span>
                           </p>
                         )}

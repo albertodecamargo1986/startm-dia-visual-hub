@@ -15,6 +15,7 @@ import { GuiaMedidas } from '@/components/GuiaMedidas';
 import { useCart } from '@/contexts/CartContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import { toast } from 'sonner';
+import { formatBRL } from '@/lib/format';
 import type { Product } from '@/types';
 
 type ProductWithCat = Product & { categories: { name: string; slug: string } | null };
@@ -141,7 +142,7 @@ const ProductDetail = () => {
 
             {basePrice > 0 && (
               <p className="text-3xl font-bold text-primary mb-2">
-                a partir de R$ {basePrice.toFixed(2).replace('.', ',')}
+                a partir de {formatBRL(basePrice)}
                 <span className="text-base text-muted-foreground font-normal"> / {product.price_unit}</span>
               </p>
             )}
@@ -167,7 +168,7 @@ const ProductDetail = () => {
                 </div>
                 {area > 0 && (
                   <p className="text-sm font-medium">
-                    Área: {area.toFixed(2)} m² — Subtotal: <span className="text-primary font-bold">R$ {calculatedPrice.toFixed(2).replace('.', ',')}</span>
+                    Área: {area.toFixed(2)} m² — Subtotal: <span className="text-primary font-bold">{formatBRL(calculatedPrice)}</span>
                   </p>
                 )}
               </div>
@@ -186,7 +187,7 @@ const ProductDetail = () => {
 
             {calculatedPrice > 0 && (
               <p className="text-lg font-bold text-foreground mb-4">
-                Total: <span className="text-primary">R$ {calculatedPrice.toFixed(2).replace('.', ',')}</span>
+                Total: <span className="text-primary">{formatBRL(calculatedPrice)}</span>
               </p>
             )}
 
@@ -264,7 +265,7 @@ const ProductDetail = () => {
                       <CardContent className="p-3">
                         <h3 className="font-semibold text-foreground text-sm line-clamp-1">{p.name}</h3>
                         {Number(p.base_price) > 0 && (
-                          <p className="mt-1 text-primary font-bold text-sm">R$ {Number(p.base_price).toFixed(2).replace('.', ',')}</p>
+                          <p className="mt-1 text-primary font-bold text-sm">{formatBRL(Number(p.base_price))}</p>
                         )}
                       </CardContent>
                     </Card>

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { formatBRL, formatDate } from '@/lib/format';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -90,13 +91,13 @@ const ClientDashboard = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-semibold text-sm">{o.order_number}</p>
-                      <p className="text-xs text-muted-foreground">{new Date(o.created_at!).toLocaleDateString('pt-BR')}</p>
+                      <p className="text-xs text-muted-foreground">{formatDate(o.created_at!)}</p>
                     </div>
                     <div className="text-right">
                       <Badge className={ORDER_STATUS_COLORS[o.status as OrderStatus]}>
                         {ORDER_STATUS_LABELS[o.status as OrderStatus]}
                       </Badge>
-                      <p className="text-sm font-bold text-primary mt-1">R$ {Number(o.total).toFixed(2).replace('.', ',')}</p>
+                      <p className="text-sm font-bold text-primary mt-1">{formatBRL(Number(o.total))}</p>
                     </div>
                   </div>
                 </Card>

@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { formatBRL, formatDateTime } from '@/lib/format';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -161,7 +162,7 @@ const ClientOrderDetail = () => {
               <div className={`absolute -left-6 top-1 h-3.5 w-3.5 rounded-full border-2 ${i === 0 ? 'bg-primary border-primary' : 'bg-card border-muted-foreground'}`} />
               <p className="text-sm font-medium">{ORDER_STATUS_LABELS[t.status as OrderStatus] || t.status}</p>
               {t.message && <p className="text-xs text-muted-foreground mt-0.5">{t.message}</p>}
-              <p className="text-xs text-muted-foreground">{new Date(t.created_at!).toLocaleString('pt-BR')}</p>
+              <p className="text-xs text-muted-foreground">{formatDateTime(t.created_at!)}</p>
             </div>
           ))}
         </div>
@@ -194,7 +195,7 @@ const ClientOrderDetail = () => {
                     </div>
                   </div>
                   <p className="text-primary font-bold text-sm whitespace-nowrap">
-                    R$ {Number(item.total_price).toFixed(2).replace('.', ',')}
+                    {formatBRL(Number(item.total_price))}
                   </p>
                 </div>
 
@@ -235,9 +236,9 @@ const ClientOrderDetail = () => {
         </div>
 
         <div className="border-t border-border pt-4 mt-4 space-y-1 text-sm">
-          <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>R$ {Number(order.subtotal).toFixed(2).replace('.', ',')}</span></div>
-          <div className="flex justify-between"><span className="text-muted-foreground">Frete</span><span>R$ {Number(order.shipping).toFixed(2).replace('.', ',')}</span></div>
-          <div className="flex justify-between font-bold text-base pt-1"><span>Total</span><span className="text-primary">R$ {Number(order.total).toFixed(2).replace('.', ',')}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>{formatBRL(Number(order.subtotal))}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Frete</span><span>{formatBRL(Number(order.shipping))}</span></div>
+          <div className="flex justify-between font-bold text-base pt-1"><span>Total</span><span className="text-primary">{formatBRL(Number(order.total))}</span></div>
         </div>
       </Card>
 
