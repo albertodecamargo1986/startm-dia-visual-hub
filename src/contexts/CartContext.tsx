@@ -6,6 +6,7 @@ interface CartContextType {
   addItem: (item: Omit<CartItem, 'id'>) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
+  updateItemNotes: (id: string, notes: string) => void;
   clearCart: () => void;
   total: number;
   subtotal: number;
@@ -14,7 +15,7 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType>({
   items: [], addItem: () => {}, removeItem: () => {}, updateQuantity: () => {},
-  clearCart: () => {}, total: 0, subtotal: 0, itemCount: 0,
+  updateItemNotes: () => {}, clearCart: () => {}, total: 0, subtotal: 0, itemCount: 0,
 });
 
 export const useCart = () => useContext(CartContext);
@@ -49,12 +50,16 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setItems(prev => prev.map(i => i.id === id ? { ...i, quantity } : i));
   };
 
+  const updateItemNotes = (id: string, notes: string) => {
+    setItems(prev => prev.map(i => i.id === id ? { ...i, notes } : i));
+  };
+
   const clearCart = () => setItems([]);
   const total = items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0);
   const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
 
   return (
-    <CartContext.Provider value={{ items, addItem, removeItem, updateQuantity, clearCart, total, subtotal: total, itemCount }}>
+    <CartContext.Provider value={{ items, addItem, removeItem, updateQuantity, updateItemNotes, clearCart, total, subtotal: total, itemCount }}>
       {children}
     </CartContext.Provider>
   );
