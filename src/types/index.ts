@@ -12,6 +12,7 @@ export type SiteSetting = Database['public']['Tables']['site_settings']['Row'];
 export type UserRole = Database['public']['Tables']['user_roles']['Row'];
 
 export interface CartItem {
+  id: string;
   productId: string;
   productName: string;
   thumbnail: string;
@@ -19,7 +20,16 @@ export interface CartItem {
   quantity: number;
   customWidth?: number;
   customHeight?: number;
+  notes?: string;
+  needsArtwork: boolean;
   priceUnit: string;
+}
+
+export interface RegisterData {
+  email: string;
+  password: string;
+  fullName: string;
+  phone?: string;
 }
 
 export type OrderStatus = 'pending_payment' | 'awaiting_artwork' | 'in_production' | 'ready' | 'shipped' | 'delivered' | 'cancelled' | 'refunded';
