@@ -1,5 +1,11 @@
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Package, ShoppingBag, Layers, Image, Users, FileText, Settings } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
+import { LayoutDashboard, Package, ShoppingBag, Layers, Image, Users, FileText, Settings, Menu, ExternalLink } from 'lucide-react';
+import { useState } from 'react';
 
 const adminLinks = [
   { to: '/admin', label: 'Dashboard', icon: LayoutDashboard },
@@ -12,22 +18,117 @@ const adminLinks = [
   { to: '/admin/configuracoes', label: 'Configurações', icon: Settings },
 ];
 
-const AdminLayout = () => {
-  const { pathname } = useLocation();
+const breadcrumbMap: Record<string, string> = {
+  admin: 'Admin',
+  pedidos: 'Pedidos',
+  produtos: 'Produtos',
+  categorias: 'Categorias',
+  banners: 'Banners',
+  clientes: 'Clientes',
+  arquivos: 'Arquivos',
+  configuracoes: 'Configurações',
+  novo: 'Novo',
+};
+
+const SidebarContent = ({ pathname }: { pathname: string }) => {
+  const { profile } = useAuth();
+  const initials = (profile?.full_name || 'A').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 
   return (
-    <div className="container py-8">
-      <h1 className="font-display text-4xl mb-6">Painel <span className="text-primary">Admin</span></h1>
-      <div className="flex flex-col md:flex-row gap-8">
-        <nav className="md:w-56 space-y-1">
-          {adminLinks.map(l => (
+    <div className="flex flex-col h-full">
+      <div className="p-4 border-b border-white/10">
+        <Link to="/admin" className="font-display text-xl text-primary">START<span className="text-white">MÍDIA</span></Link>
+        <p className="text-xs text-gray-400 mt-0.5">Painel Admin</p>
+      </div>
+
+      <div className="p-4 border-b border-white/10 flex items-center gap-3">
+        <Avatar className="h-9 w-9">
+          <AvatarImage src={profile?.avatar_url || ''} />
+          <AvatarFallback className="bg-primary text-primary-foreground text-xs">{initials}</AvatarFallback>
+        </Avatar>
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-white truncate">{profile?.full_name || 'Admin'}</p>
+          <p className="text-xs text-gray-400 truncate">{profile?.email}</p>
+        </div>
+      </div>
+
+      <nav className="flex-1 p-3 space-y-1">
+        {adminLinks.map(l => {
+          const active = pathname === l.to || (l.to !== '/admin' && pathname.startsWith(l.to));
+          return (
             <Link key={l.to} to={l.to}
-              className={`flex items-center gap-3 px-4 py-2 rounded-md text-sm transition-colors ${pathname === l.to ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}>
-              <l.icon className="h-4 w-4" />{l.label}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${active ? 'bg-primary text-white font-medium' : 'text-gray-300 hover:text-white hover:bg-white/10'}`}>
+              <l.icon className="h-4 w-4 flex-shrink-0" />{l.label}
             </Link>
-          ))}
-        </nav>
-        <div className="flex-1 min-w-0"><Outlet /></div>
+          );
+        })}
+      </nav>
+
+      <div className="p-3 border-t border-white/10">
+        <a href="/" target="_blank" rel="noopener noreferrer"
+          className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-300 hover:text-white hover:bg-white/10 transition-colors">
+          <ExternalLink className="h-4 w-4" />Ver Site
+        </a>
+      </div>
+    </div>
+  );
+};
+
+const AdminLayout = () => {
+  const { pathname } = useLocation();
+  const [open, setOpen] = useState(false);
+
+  const segments = pathname.split('/').filter(Boolean);
+  const crumbs = segments.map((seg, i) => ({
+    label: breadcrumbMap[seg] || seg,
+    path: '/' + segments.slice(0, i + 1).join('/'),
+    isLast: i === segments.length - 1,
+  }));
+
+  return (
+    <div className="flex min-h-[calc(100vh-80px)]">
+      {/* Desktop sidebar */}
+      <aside className="hidden lg:flex w-60 bg-gray-900 rounded-lg flex-shrink-0 flex-col">
+        <SidebarContent pathname={pathname} />
+      </aside>
+
+      {/* Mobile hamburger */}
+      <div className="lg:hidden fixed top-20 left-4 z-40">
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetTrigger asChild>
+            <Button variant="outline" size="icon" className="bg-gray-900 border-gray-700 text-white">
+              <Menu className="h-5 w-5" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-60 p-0 bg-gray-900 border-gray-700">
+            <div onClick={() => setOpen(false)}>
+              <SidebarContent pathname={pathname} />
+            </div>
+          </SheetContent>
+        </Sheet>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 min-w-0 pl-0 lg:pl-6">
+        {crumbs.length > 1 && (
+          <Breadcrumb className="mb-4">
+            <BreadcrumbList>
+              {crumbs.map((c, i) => (
+                <BreadcrumbItem key={c.path}>
+                  {c.isLast ? (
+                    <BreadcrumbPage>{c.label}</BreadcrumbPage>
+                  ) : (
+                    <>
+                      <BreadcrumbLink asChild><Link to={c.path}>{c.label}</Link></BreadcrumbLink>
+                      <BreadcrumbSeparator />
+                    </>
+                  )}
+                </BreadcrumbItem>
+              ))}
+            </BreadcrumbList>
+          </Breadcrumb>
+        )}
+        <Outlet />
       </div>
     </div>
   );
