@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { formatBRL, formatDate } from '@/lib/format';
 import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -36,11 +37,11 @@ const ClientOrders = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-semibold text-sm">{o.order_number}</p>
-                    <p className="text-xs text-muted-foreground">{new Date(o.created_at!).toLocaleDateString('pt-BR')}</p>
+                    <p className="text-xs text-muted-foreground">{formatDate(o.created_at!)}</p>
                   </div>
                   <div className="text-right">
                     <Badge className={ORDER_STATUS_COLORS[o.status as OrderStatus]}>{ORDER_STATUS_LABELS[o.status as OrderStatus]}</Badge>
-                    <p className="text-sm font-bold text-primary mt-1">R$ {Number(o.total).toFixed(2).replace('.', ',')}</p>
+                    <p className="text-sm font-bold text-primary mt-1">{formatBRL(Number(o.total))}</p>
                   </div>
                 </div>
               </Card>
@@ -63,8 +64,8 @@ const ClientOrders = () => {
               {orders.map(o => (
                 <TableRow key={o.id}>
                   <TableCell className="font-semibold">{o.order_number}</TableCell>
-                  <TableCell className="text-muted-foreground">{new Date(o.created_at!).toLocaleDateString('pt-BR')}</TableCell>
-                  <TableCell className="text-primary font-bold">R$ {Number(o.total).toFixed(2).replace('.', ',')}</TableCell>
+                  <TableCell className="text-muted-foreground">{formatDate(o.created_at!)}</TableCell>
+                  <TableCell className="text-primary font-bold">{formatBRL(Number(o.total))}</TableCell>
                   <TableCell><Badge className={ORDER_STATUS_COLORS[o.status as OrderStatus]}>{ORDER_STATUS_LABELS[o.status as OrderStatus]}</Badge></TableCell>
                   <TableCell className="text-right">
                     <Button asChild variant="ghost" size="sm"><Link to={`/cliente/pedidos/${o.id}`}><Eye className="h-4 w-4 mr-1" />Detalhes</Link></Button>
