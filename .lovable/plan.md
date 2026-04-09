@@ -1,20 +1,21 @@
 
 
-# Seção 6 — Depoimentos (Carrossel)
+# Seção 7 — CTA Final
 
 ## Resumo
-Adicionar `TestimonialsSection` ao `src/pages/Index.tsx` após `PortfolioPreviewSection`. Carrossel Embla com cards de depoimento contendo foto circular, nome, empresa, texto e estrelas.
+Adicionar `CTASection` ao `src/pages/Index.tsx` após `TestimonialsSection`. Banner full-width com fundo primary, texto chamativo e dois botões.
 
 ## Alterações
 
 ### `src/pages/Index.tsx`
-- Adicionar array estático de ~5 depoimentos com: nome, empresa, texto, estrelas (1-5), iniciais para avatar fallback
-- Criar componente `TestimonialsSection`:
-  - Título: "O que nossos **clientes** dizem" (span text-primary)
-  - Carrossel Embla horizontal com cards de depoimento
-  - Cada card: Avatar circular (iniciais com AvatarFallback), estrelas amarelas (Star icon filled), texto em itálico, nome em bold, empresa em muted
-  - Setas de navegação e dots indicadores
-  - Animação framer-motion whileInView
-- Inserir `<TestimonialsSection />` após `<PortfolioPreviewSection />` no Index
-- Importar `Star` de lucide-react e `Avatar`/`AvatarFallback` de shadcn
+- Criar componente `CTASection`:
+  - Fundo `bg-primary` full-width, `py-20`
+  - Título em branco: "Pronto para dar vida à sua ideia?" (font-display, text-3xl md:text-5xl)
+  - Subtítulo: "Solicite seu orçamento agora mesmo. Atendimento rápido e personalizado."
+  - Dois botões lado a lado:
+    - **WhatsApp**: fundo branco, texto primary, ícone mensagem → abre wa.me com número das settings
+    - **Ver Produtos**: outline branco → `/produtos`
+  - Animação framer-motion `whileInView` fade-in
+- Inserir `<CTASection />` após `<TestimonialsSection />` no Index
+- Usar `useSettings` para pegar número WhatsApp dinamicamente
 
