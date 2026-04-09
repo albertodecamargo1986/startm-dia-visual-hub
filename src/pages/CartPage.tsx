@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
+import { formatBRL } from '@/lib/format';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -47,7 +48,7 @@ const CartPage = () => {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-foreground text-sm">{item.productName}</h3>
-                  <p className="text-xs text-muted-foreground">R$ {item.unitPrice.toFixed(2).replace('.', ',')} / {item.priceUnit}</p>
+                  <p className="text-xs text-muted-foreground">{formatBRL(item.unitPrice)} / {item.priceUnit}</p>
                   {item.customWidth && item.customHeight && (
                     <p className="text-xs text-muted-foreground">{item.customWidth}cm × {item.customHeight}cm</p>
                   )}
@@ -62,7 +63,7 @@ const CartPage = () => {
                     <Plus className="h-3 w-3" />
                   </Button>
                 </div>
-                <p className="font-bold text-foreground w-24 text-right whitespace-nowrap">R$ {(item.unitPrice * item.quantity).toFixed(2).replace('.', ',')}</p>
+                <p className="font-bold text-foreground w-24 text-right whitespace-nowrap">{formatBRL(item.unitPrice * item.quantity)}</p>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button>
@@ -97,7 +98,7 @@ const CartPage = () => {
           <div className="space-y-3 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Subtotal</span>
-              <span>R$ {total.toFixed(2).replace('.', ',')}</span>
+              <span>{formatBRL(total)}</span>
             </div>
             <div>
               <label className="text-muted-foreground text-xs block mb-1">Calcular frete</label>
@@ -109,7 +110,7 @@ const CartPage = () => {
             </div>
             <div className="border-t border-border pt-3 flex justify-between font-bold text-lg">
               <span>Total</span>
-              <span className="text-primary">R$ {total.toFixed(2).replace('.', ',')}</span>
+              <span className="text-primary">{formatBRL(total)}</span>
             </div>
           </div>
           <Button onClick={handleCheckout} className="w-full mt-6 font-display text-lg tracking-wider">
