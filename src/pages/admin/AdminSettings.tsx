@@ -3,9 +3,41 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
+import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { useState, useEffect } from 'react';
+import { Save } from 'lucide-react';
 import type { SiteSetting } from '@/types';
+
+const sections = [
+  {
+    title: 'Contato',
+    keys: [
+      { key: 'whatsapp_number', label: 'WhatsApp (número)', type: 'text' },
+      { key: 'whatsapp_message', label: 'Mensagem padrão WhatsApp', type: 'text' },
+      { key: 'email_contato', label: 'Email de contato', type: 'text' },
+      { key: 'endereco', label: 'Endereço', type: 'text' },
+      { key: 'telefone_alberto', label: 'Telefone Alberto', type: 'text' },
+      { key: 'telefone_felipe', label: 'Telefone Felipe', type: 'text' },
+    ],
+  },
+  {
+    title: 'Redes Sociais',
+    keys: [
+      { key: 'instagram_url', label: 'Instagram URL', type: 'text' },
+      { key: 'facebook_url', label: 'Facebook URL', type: 'text' },
+    ],
+  },
+  {
+    title: 'PagSeguro',
+    keys: [
+      { key: 'pagseguro_email', label: 'Email PagSeguro', type: 'text' },
+      { key: 'pagseguro_token', label: 'Token PagSeguro', type: 'password' },
+      { key: 'pagseguro_sandbox', label: 'Modo Sandbox', type: 'toggle' },
+    ],
+  },
+];
 
 const AdminSettings = () => {
   const queryClient = useQueryClient();
@@ -26,34 +58,54 @@ const AdminSettings = () => {
 
   const save = useMutation({
     mutationFn: async () => {
-      for (const s of settings ?? []) {
-        if (values[s.key] !== (s.value ?? '')) {
-          await supabase.from('site_settings').update({ value: values[s.key] }).eq('key', s.key);
+      const allKeys = sections.flatMap(s => s.keys.map(k => k.key));
+      for (const key of allKeys) {
+        const existing = settings?.find(s => s.key === key);
+        if (existing) {
+          if (values[key] !== (existing.value ?? '')) {
+            await supabase.from('site_settings').update({ value: values[key] }).eq('key', key);
+          }
+        } else if (values[key]) {
+          await supabase.from('site_settings').insert({ key, value: values[key] });
         }
       }
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin-settings'] }); queryClient.invalidateQueries({ queryKey: ['site-settings'] }); toast.success('Configurações salvas!'); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-settings'] });
+      queryClient.invalidateQueries({ queryKey: ['site-settings'] });
+      toast.success('Configurações salvas!');
+    },
   });
 
-  const labels: Record<string, string> = {
-    whatsapp_number: 'WhatsApp (número)', whatsapp_message: 'Mensagem padrão WhatsApp',
-    email_contato: 'Email de contato', endereco: 'Endereço',
-    telefone_alberto: 'Telefone Alberto', telefone_felipe: 'Telefone Felipe',
-    instagram_url: 'Instagram URL', facebook_url: 'Facebook URL',
-  };
-
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <h2 className="font-display text-2xl">Configurações</h2>
-      <Card className="p-6 bg-card border-border space-y-4">
-        {settings?.filter(s => !s.key.startsWith('pagseguro')).map(s => (
-          <div key={s.key}>
-            <label className="text-sm text-muted-foreground block mb-1">{labels[s.key] || s.key}</label>
-            <Input value={values[s.key] ?? ''} onChange={e => setValues(p => ({ ...p, [s.key]: e.target.value }))} />
-          </div>
-        ))}
-        <Button onClick={() => save.mutate()}>Salvar Configurações</Button>
-      </Card>
+
+      {sections.map(section => (
+        <Card key={section.title} className="p-6 bg-card border-border space-y-4">
+          <h3 className="font-display text-lg">{section.title}</h3>
+          <Separator />
+          {section.keys.map(k => (
+            <div key={k.key}>
+              <label className="text-sm text-muted-foreground block mb-1">{k.label}</label>
+              {k.type === 'toggle' ? (
+                <Switch
+                  checked={values[k.key] === 'true'}
+                  onCheckedChange={v => setValues(p => ({ ...p, [k.key]: v ? 'true' : 'false' }))}
+                />
+              ) : (
+                <Input
+                  type={k.type}
+                  value={values[k.key] ?? ''}
+                  onChange={e => setValues(p => ({ ...p, [k.key]: e.target.value }))}
+                />
+              )}
+            </div>
+          ))}
+        </Card>
+      ))}
+
+      <Button onClick={() => save.mutate()} className="w-full sm:w-auto"><Save className="h-4 w-4 mr-2" />Salvar Configurações</Button>
     </div>
   );
 };
