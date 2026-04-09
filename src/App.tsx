@@ -60,6 +60,7 @@ const App = () => (
                   <Route path="/portfolio" element={<Portfolio />} />
                   <Route path="/contato" element={<Contact />} />
                   <Route path="/login" element={<Login />} />
+                  <Route path="/privacidade" element={<Privacy />} />
 
                   <Route element={<RequireAuth />}>
                     <Route path="/checkout" element={<Checkout />} />
