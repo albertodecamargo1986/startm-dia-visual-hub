@@ -14,6 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { useState } from 'react';
 import { Check, X, Download, MessageCircle, Save } from 'lucide-react';
+import { formatBRL, formatDateTime } from '@/lib/format';
 
 const statuses: OrderStatus[] = ['pending_payment', 'awaiting_artwork', 'in_production', 'ready', 'shipped', 'delivered', 'cancelled', 'refunded'];
 
@@ -213,7 +214,7 @@ const AdminOrderDetail = () => {
                       {item.notes && <p className="text-xs text-muted-foreground italic">"{item.notes}"</p>}
                     </div>
                   </div>
-                  <span className="font-semibold text-primary">R$ {Number(item.total_price).toFixed(2).replace('.', ',')}</span>
+                  <span className="font-semibold text-primary">{formatBRL(Number(item.total_price))}</span>
                 </div>
 
                 {/* Artwork section */}
@@ -249,7 +250,7 @@ const AdminOrderDetail = () => {
           })}
           <div className="border-t border-border pt-2 flex justify-between font-bold">
             <span>Total</span>
-            <span className="text-primary">R$ {Number(order.total).toFixed(2).replace('.', ',')}</span>
+            <span className="text-primary">{formatBRL(Number(order.total))}</span>
           </div>
         </div>
       </Card>
@@ -264,7 +265,7 @@ const AdminOrderDetail = () => {
               <div>
                 <p className="text-sm font-medium">{ORDER_STATUS_LABELS[t.status as OrderStatus] || t.status}</p>
                 {t.message && <p className="text-xs text-muted-foreground">{t.message}</p>}
-                <p className="text-xs text-muted-foreground">{new Date(t.created_at!).toLocaleString('pt-BR')}</p>
+                <p className="text-xs text-muted-foreground">{formatDateTime(t.created_at!)}</p>
               </div>
             </div>
           ))}

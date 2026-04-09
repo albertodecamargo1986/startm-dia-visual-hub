@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '@/types';
 import type { Order, OrderStatus } from '@/types';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { formatBRL } from '@/lib/format';
 import { format, subDays, startOfDay, startOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -87,7 +88,7 @@ const AdminDashboard = () => {
 
   const stats = [
     { label: 'Pedidos Hoje', value: ordersToday ?? 0, icon: Package, color: 'text-primary' },
-    { label: 'Receita do Mês', value: `R$ ${(revenueMonth ?? 0).toFixed(2).replace('.', ',')}`, icon: DollarSign, color: 'text-green-400' },
+    { label: 'Receita do Mês', value: formatBRL(revenueMonth ?? 0), icon: DollarSign, color: 'text-green-400' },
     { label: 'Aguardando Arte', value: awaitingArt ?? 0, icon: Palette, color: 'text-blue-400' },
     { label: 'Em Produção', value: inProduction ?? 0, icon: Clock, color: 'text-orange-400' },
     { label: 'Total Clientes', value: clientCount ?? 0, icon: Users, color: 'text-accent' },

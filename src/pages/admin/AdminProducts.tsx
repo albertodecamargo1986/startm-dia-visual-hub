@@ -11,6 +11,7 @@ import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { Plus, Pencil, Copy, Sticker } from 'lucide-react';
 import type { Product, Category } from '@/types';
+import { formatBRL } from '@/lib/format';
 
 const AdminProducts = () => {
   const queryClient = useQueryClient();
@@ -101,7 +102,7 @@ const AdminProducts = () => {
                 </TableCell>
                 <TableCell className="font-medium">{p.name}</TableCell>
                 <TableCell className="text-sm text-muted-foreground">{p.categories?.name || '—'}</TableCell>
-                <TableCell className="text-sm text-primary font-semibold">R$ {Number(p.base_price).toFixed(2).replace('.', ',')}/{p.price_unit}</TableCell>
+                <TableCell className="text-sm text-primary font-semibold">{formatBRL(Number(p.base_price))}/{p.price_unit}</TableCell>
                 <TableCell><Switch checked={p.active ?? false} onCheckedChange={v => toggleField.mutate({ id: p.id, field: 'active', value: v })} /></TableCell>
                 <TableCell><Switch checked={p.featured ?? false} onCheckedChange={v => toggleField.mutate({ id: p.id, field: 'featured', value: v })} /></TableCell>
                 <TableCell>
