@@ -1,65 +1,76 @@
 
 
-# Paginas Institucionais e SEO
+# Upload de Imagens com Editor, Logo Dinâmica e Admin Seed
 
 ## Resumo
-Reescrever 5 paginas: Sobre, Portfolio (com tabela no banco), Contato (com tabela contact_requests), Politica de Privacidade (nova), e Login (com tabs, campos extras, Google OAuth, esqueci senha). Adicionar rota /privacidade.
+Adicionar um componente de upload de imagens com editor (corte e filtros) reutilizável em todo o site, permitir upload e troca da logo via painel admin, e criar o usuário admin inicial.
 
-## Migration - Novas tabelas
+## 1. Criar hook `useImageUpload` e componente `ImageEditor`
 
-### `portfolio_items`
-- id, title, category, image_url, description, active, created_at
+### `src/hooks/use-image-upload.ts`
+- Hook baseado no código fornecido, adaptado para o projeto (sem Next.js Image, usa `<img>` nativo)
+- Retorna previewUrl, fileName, fileInputRef, handlers
 
-### `contact_requests`
-- id, name, email, phone, product, message, file_url, created_at
+### `src/components/ui/image-editor.tsx`
+- Componente de editor de imagens com:
+  - **Crop**: usar biblioteca `react-image-crop` para recorte livre e com proporções fixas (1:1, 16:9, 4:3, livre)
+  - **Filtros CSS**: brightness, contrast, saturation, grayscale, sepia, blur — controlados por sliders
+  - **Preview em tempo real** dos filtros aplicados
+  - Botão "Usar Original" para pular edição
+  - Botão "Aplicar" que gera o Blob final (usa canvas para aplicar crop + filtros)
+- Abre como Dialog/modal quando o usuário seleciona uma imagem
 
-RLS: portfolio_items public read, admin write. contact_requests: admin read all, authenticated insert.
+### `src/components/ui/image-upload-with-editor.tsx`
+- Componente completo reutilizável que combina:
+  - Área de drag-and-drop + click para selecionar
+  - Preview da imagem selecionada
+  - Botão editar que abre o `ImageEditor`
+  - Botão remover
+  - Aceita props: `onImageReady(file: File)`, `currentUrl?`, `aspectRatio?`, `maxSizeMB?`
 
-## Arquivos a modificar
+## 2. Dependência a instalar
+- `react-image-crop` — biblioteca de crop de imagens
 
-### 1. `src/pages/About.tsx` → Reescrever como `Sobre`
-- Helmet SEO com titulo e meta description para Limeira/SP
-- Hero com area de foto da empresa (placeholder) + titulo animado
-- Secao "Nossa Historia": texto + 3 cards de numeros (Anos de experiencia, Clientes atendidos, Projetos realizados)
-- Secao "Nossa Equipe": 2 cards com foto placeholder, nome (Alberto Camargo / Felipe Santos), cargo, telefone do `useSettings`
-- Secao "Especialidades": grid detalhado de servicos com icones Lucide
-- CTA final: botao "Solicite um Orcamento" → /contato
+## 3. Integrar editor em todos os locais de upload
 
-### 2. `src/pages/Portfolio.tsx` → Reescrever
-- Helmet SEO
-- Busca portfolio_items do banco via useQuery
-- Filtros de categoria no topo (botoes/tabs)
-- Masonry grid com CSS columns
-- Hover overlay escuro com titulo e descricao
-- Click abre Dialog fullscreen (lightbox) com navegacao por setas (ArrowLeft/ArrowRight)
-- Fallback para dados estaticos se tabela vazia
+### Locais que precisam do editor:
+1. **AdminProductForm.tsx** (Tab Fotos) — substituir upload simples pelo `ImageUploadWithEditor`
+2. **AdminBanners.tsx** (Dialog de banner) — substituir upload de imagem do banner
+3. **ClientProfile.tsx** (Avatar) — substituir upload de avatar
+4. **AdminSettings.tsx** — adicionar seção "Identidade Visual" com upload da logo
+5. **Contact.tsx** — upload de arquivo de referência (opcional, manter simples pois não é imagem obrigatoriamente)
 
-### 3. `src/pages/Contact.tsx` → Reescrever como formulario de orcamento
-- Helmet SEO local
-- Formulario: nome, email, telefone, produto de interesse (Select com categorias do banco), descricao do projeto, upload opcional de arquivo (para bucket customer-files)
-- Ao enviar: insere em contact_requests + abre WhatsApp com resumo
-- Validacao com zod
-- Lado direito: iframe Google Maps embed, endereco/horario do useSettings, botao WhatsApp grande
+## 4. Logo dinâmica via admin
 
-### 4. `src/pages/Privacy.tsx` → Criar (nova)
-- Texto estatico LGPD completo em portugues
-- Helmet SEO
-- Rota /privacidade no App.tsx
+### Migration
+- Adicionar setting `site_logo_url` na tabela `site_settings` (via insert tool, não migration)
 
-### 5. `src/pages/Login.tsx` → Reescrever com tabs e campos extras
-- Tabs shadcn: "Entrar" / "Criar Conta"
-- Login: email, senha, link "Esqueci minha senha" (chama resetPasswordForEmail)
-- Cadastro: nome, email, telefone, senha, confirmar senha, CPF/CNPJ (opcional), empresa (opcional)
-- Botao Google OAuth usando lovable.auth.signInWithOAuth("google")
-- Redirect para /cliente ou location state anterior apos login
-- Usar Configure Social Auth tool para gerar modulo lovable
+### AdminSettings.tsx
+- Nova seção "Identidade Visual" no topo com:
+  - Upload de logo usando `ImageUploadWithEditor`
+  - Ao fazer upload: envia para bucket `banners` (público), salva URL em `site_settings.site_logo_url`
+  - Preview da logo atual
 
-### 6. `src/App.tsx` → Adicionar rota /privacidade
+### Header.tsx e AdminLayout.tsx
+- Usar `useSettings().getSetting('site_logo_url')` para renderizar `<img>` da logo
+- Fallback para texto "STARTMÍDIA" se não houver logo configurada
 
-## Detalhes tecnicos
-- Lightbox no portfolio: Dialog fullscreen com imagem grande, botoes prev/next, teclas seta
-- Upload no contato: supabase.storage.from('customer-files').upload()
-- Google Maps embed: iframe com endereco de Limeira/SP
-- Esqueci senha: supabase.auth.resetPasswordForEmail(email, { redirectTo: origin + '/reset-password' })
-- Nao precisa criar pagina /reset-password agora (pode ser feita depois)
+## 5. Criar usuário admin
+
+### Migration SQL
+- Inserir registro na tabela `user_roles` com role `admin` para o usuário com email `albertodecamargo@gmail.com` **após** ele se cadastrar
+- Como não podemos criar usuários diretamente via migration, a abordagem será:
+  - Criar uma database function `promote_to_admin(email text)` que busca o user_id pelo email na tabela profiles e insere em user_roles
+  - Ou: o usuário se cadastra normalmente pelo /login e depois executamos um INSERT via insert tool para promovê-lo a admin
+
+### Fluxo recomendado:
+1. O usuário se cadastra em /login com email `albertodecamargo@gmail.com` e senha `ae280510`
+2. Após cadastro, usar insert tool para adicionar role admin: `INSERT INTO user_roles (user_id, role) SELECT user_id, 'admin' FROM profiles WHERE email = 'albertodecamargo@gmail.com'`
+
+## Detalhes técnicos
+- `react-image-crop`: fornece componente `<ReactCrop>` com seleção visual de área de corte
+- Filtros via CSS `filter` property na preview e via Canvas `ctx.filter` na exportação final
+- Canvas workflow: carregar imagem → aplicar crop (drawImage com coordenadas) → aplicar filtros → toBlob() → File
+- O componente ImageUploadWithEditor aceita formatos: JPG, PNG, WebP, GIF, SVG
+- Tamanho máximo configurável por prop (default 5MB)
 
