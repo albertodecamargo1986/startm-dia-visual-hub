@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, User, LogOut, Search, ShieldCheck, Package, FileText, UserCircle } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSettings } from '@/contexts/SettingsContext';
 import { CartButton } from '@/components/CartButton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,6 +28,8 @@ export const Header = () => {
   const searchRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const { user, profile, isAdmin, logout } = useAuth();
+  const { getSetting } = useSettings();
+  const logoUrl = getSetting('site_logo_url');
 
   useEffect(() => {
     if (searchOpen) searchRef.current?.focus();
@@ -48,9 +51,15 @@ export const Header = () => {
     <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between gap-4">
         {/* Logo */}
-        <Link to="/" className="flex flex-col leading-none shrink-0">
-          <span className="font-display text-2xl tracking-wider text-primary">STARTMÍDIA</span>
-          <span className="text-[10px] tracking-[0.2em] text-muted-foreground uppercase">Comunicação Visual</span>
+        <Link to="/" className="flex items-center shrink-0">
+          {logoUrl ? (
+            <img src={logoUrl} alt="StartMídia" className="h-10 w-auto" />
+          ) : (
+            <div className="flex flex-col leading-none">
+              <span className="font-display text-2xl tracking-wider text-primary">STARTMÍDIA</span>
+              <span className="text-[10px] tracking-[0.2em] text-muted-foreground uppercase">Comunicação Visual</span>
+            </div>
+          )}
         </Link>
 
         {/* Nav desktop */}
