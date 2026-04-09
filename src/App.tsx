@@ -16,6 +16,8 @@ import About from "./pages/About";
 import Portfolio from "./pages/Portfolio";
 import Contact from "./pages/Contact";
 import Login from "./pages/Login";
+import EmailVerification from "./pages/EmailVerification";
+import EmailVerified from "./pages/EmailVerified";
 import Privacy from "./pages/Privacy";
 import Checkout from "./pages/Checkout";
 import CheckoutSuccess from "./pages/CheckoutSuccess";
@@ -60,6 +62,8 @@ const App = () => (
                   <Route path="/portfolio" element={<Portfolio />} />
                   <Route path="/contato" element={<Contact />} />
                   <Route path="/login" element={<Login />} />
+                  <Route path="/verificar-email" element={<EmailVerification />} />
+                  <Route path="/email-verificado" element={<EmailVerified />} />
                   <Route path="/privacidade" element={<Privacy />} />
 
                   <Route element={<RequireAuth />}>
