@@ -1,19 +1,23 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
-import { ArrowRight, Sticker, Flag, SignpostBig, Tag, Building2, Car, Pen } from 'lucide-react';
+import { ArrowRight, ChevronLeft, ChevronRight, Sticker, Flag, SignpostBig, Tag, Building2, Car, Pen, Trophy, Zap, DollarSign, Palette, Package, Handshake } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import useEmblaCarousel from 'embla-carousel-react';
+import Autoplay from 'embla-carousel-autoplay';
 import { useCallback, useEffect, useState } from 'react';
+import { useSettings } from '@/contexts/SettingsContext';
 import type { Banner, Category, Product } from '@/types';
 
 const iconMap: Record<string, React.ElementType> = { Sticker, Flag, SignpostBig, Tag, Building2, Car, Pen };
 
 const HeroBanner = () => {
-  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true }, [Autoplay({ delay: 5000, stopOnInteraction: false })]);
   const [selected, setSelected] = useState(0);
+  const { getSetting } = useSettings();
 
   const { data: banners } = useQuery({
     queryKey: ['banners'],
@@ -30,49 +34,100 @@ const HeroBanner = () => {
   useEffect(() => {
     if (!emblaApi) return;
     emblaApi.on('select', onSelect);
-    const interval = setInterval(() => emblaApi.scrollNext(), 5000);
-    return () => { clearInterval(interval); emblaApi.off('select', onSelect); };
+    return () => { emblaApi.off('select', onSelect); };
   }, [emblaApi, onSelect]);
 
-  if (!banners?.length) {
-    return (
-      <section className="relative flex items-center justify-center bg-secondary py-24 md:py-32">
-        <div className="container text-center">
-          <h1 className="font-display text-5xl md:text-7xl text-foreground mb-4">Sua mensagem com<br /><span className="text-primary">impacto visual</span></h1>
-          <p className="text-muted-foreground text-lg mb-8 max-w-2xl mx-auto">Adesivos, banners, placas, fachadas e muito mais. Soluções completas em comunicação visual para sua empresa.</p>
-          <Link to="/produtos"><Button size="lg" className="font-display text-lg tracking-wider">Ver Produtos <ArrowRight className="ml-2 h-5 w-5" /></Button></Link>
+  const whatsappNumber = getSetting('whatsapp_number', '5519983649875');
+  const whatsappUrl = `https://wa.me/${whatsappNumber.replace(/\D/g, '')}?text=${encodeURIComponent('Olá! Gostaria de fazer um orçamento.')}`;
+
+  const fallbackSlide = (
+    <div className="relative min-w-0 flex-[0_0_100%]">
+      <div className="relative flex items-center justify-center min-h-[600px] bg-gradient-to-br from-secondary to-background">
+        <div className="relative container text-center z-10 px-4">
+          <h1 className="font-display text-5xl md:text-7xl text-foreground mb-4">
+            Sua mensagem com<br /><span className="text-primary">impacto visual</span>
+          </h1>
+          <p className="text-muted-foreground text-lg md:text-xl mb-8 max-w-2xl mx-auto">
+            Adesivos, banners, placas, fachadas e muito mais. Soluções completas em comunicação visual para sua empresa em Limeira e região.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link to="/produtos">
+              <Button size="lg" className="font-display text-lg tracking-wider">
+                Ver Produtos <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </Link>
+            <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
+              <Button size="lg" variant="outline" className="font-display text-lg tracking-wider border-green-500 text-green-500 hover:bg-green-500/10">
+                WhatsApp
+              </Button>
+            </a>
+          </div>
         </div>
-      </section>
-    );
-  }
+      </div>
+    </div>
+  );
+
+  const slides = banners?.length ? banners.map(b => (
+    <div key={b.id} className="relative min-w-0 flex-[0_0_100%]">
+      <div
+        className="relative flex items-center justify-center min-h-[600px] bg-secondary"
+        style={b.image_url ? { backgroundImage: `url(${b.image_url})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}
+      >
+        <div className="absolute inset-0 bg-background/70" />
+        <div className="relative container text-center z-10 px-4">
+          {b.title && <h2 className="font-display text-4xl md:text-6xl lg:text-7xl text-foreground mb-4">{b.title}</h2>}
+          {b.subtitle && <p className="text-muted-foreground text-lg md:text-xl mb-8 max-w-2xl mx-auto">{b.subtitle}</p>}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            {b.link_url && b.button_text && (
+              <Link to={b.link_url}>
+                <Button size="lg" className="font-display text-lg tracking-wider">{b.button_text}</Button>
+              </Link>
+            )}
+            <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
+              <Button size="lg" variant="outline" className="font-display text-lg tracking-wider border-green-500 text-green-500 hover:bg-green-500/10">
+                WhatsApp
+              </Button>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  )) : [fallbackSlide];
 
   return (
     <section className="relative overflow-hidden">
       <div ref={emblaRef} className="overflow-hidden">
-        <div className="flex">
-          {banners.map(b => (
-            <div key={b.id} className="relative min-w-0 flex-[0_0_100%]">
-              <div className="relative flex items-center justify-center bg-secondary py-24 md:py-32"
-                style={{ backgroundImage: `url(${b.image_url})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
-                <div className="absolute inset-0 bg-background/70" />
-                <div className="relative container text-center z-10">
-                  {b.title && <h2 className="font-display text-4xl md:text-6xl text-foreground mb-4">{b.title}</h2>}
-                  {b.subtitle && <p className="text-muted-foreground text-lg mb-8 max-w-2xl mx-auto">{b.subtitle}</p>}
-                  {b.link_url && b.button_text && (
-                    <Link to={b.link_url}><Button size="lg" className="font-display text-lg tracking-wider">{b.button_text}</Button></Link>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+        <div className="flex">{slides}</div>
       </div>
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-        {banners.map((_, i) => (
-          <button key={i} onClick={() => emblaApi?.scrollTo(i)}
-            className={`h-2 w-2 rounded-full transition-colors ${i === selected ? 'bg-primary' : 'bg-muted-foreground/40'}`} />
-        ))}
-      </div>
+
+      {slides.length > 1 && (
+        <>
+          <button
+            onClick={() => emblaApi?.scrollPrev()}
+            className="absolute left-4 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full bg-background/60 backdrop-blur flex items-center justify-center text-foreground hover:bg-background/80 transition-colors"
+            aria-label="Slide anterior"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <button
+            onClick={() => emblaApi?.scrollNext()}
+            className="absolute right-4 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full bg-background/60 backdrop-blur flex items-center justify-center text-foreground hover:bg-background/80 transition-colors"
+            aria-label="Próximo slide"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </button>
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+            {slides.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => emblaApi?.scrollTo(i)}
+                className={`h-2.5 w-2.5 rounded-full transition-colors ${i === selected ? 'bg-primary' : 'bg-muted-foreground/40'}`}
+                aria-label={`Ir para slide ${i + 1}`}
+              />
+            ))}
+          </div>
+        </>
+      )}
     </section>
   );
 };
@@ -87,19 +142,29 @@ const CategoriesSection = () => {
   });
 
   return (
-    <section className="py-16">
+    <section className="py-20">
       <div className="container">
-        <h2 className="font-display text-4xl text-center mb-10">Nossas <span className="text-primary">Especialidades</span></h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+        <h2 className="font-display text-4xl md:text-5xl text-center mb-12">
+          Nossos <span className="text-primary">Produtos e Serviços</span>
+        </h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
           {categories?.map((c, i) => {
             const Icon = iconMap[c.icon ?? ''] ?? Sticker;
             return (
-              <motion.div key={c.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
+              <motion.div
+                key={c.id}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1, duration: 0.4 }}
+              >
                 <Link to={`/produtos/${c.slug}`}>
-                  <Card className="group hover:border-primary/50 transition-colors cursor-pointer bg-card border-border">
-                    <CardContent className="flex flex-col items-center justify-center p-4 gap-3">
-                      <Icon className="h-8 w-8 text-primary group-hover:scale-110 transition-transform" />
-                      <span className="text-xs font-medium text-center text-foreground">{c.name}</span>
+                  <Card className="group hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 transition-all cursor-pointer bg-card border-border">
+                    <CardContent className="flex flex-col items-center justify-center p-6 gap-4">
+                      <div className="h-14 w-14 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary group-hover:scale-110 transition-all">
+                        <Icon className="h-7 w-7 text-primary group-hover:text-primary-foreground transition-colors" />
+                      </div>
+                      <span className="text-sm font-semibold text-center text-foreground">{c.name}</span>
                     </CardContent>
                   </Card>
                 </Link>
@@ -113,76 +178,158 @@ const CategoriesSection = () => {
 };
 
 const FeaturedProducts = () => {
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, align: 'start', slidesToScroll: 1 });
+  const [canPrev, setCanPrev] = useState(false);
+  const [canNext, setCanNext] = useState(false);
+
   const { data: products } = useQuery({
     queryKey: ['featured-products'],
     queryFn: async () => {
-      const { data } = await supabase.from('products').select('*').eq('featured', true).eq('active', true).limit(8);
+      const { data } = await supabase.from('products').select('*').eq('featured', true).eq('active', true).limit(12);
       return (data ?? []) as Product[];
     },
   });
 
+  const onSelect = useCallback(() => {
+    if (!emblaApi) return;
+    setCanPrev(emblaApi.canScrollPrev());
+    setCanNext(emblaApi.canScrollNext());
+  }, [emblaApi]);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    emblaApi.on('select', onSelect);
+    emblaApi.on('reInit', onSelect);
+    onSelect();
+    return () => { emblaApi.off('select', onSelect); };
+  }, [emblaApi, onSelect]);
+
   if (!products?.length) return null;
 
   return (
-    <section className="py-16 bg-card/50">
+    <section className="py-20 bg-card/50">
       <div className="container">
-        <h2 className="font-display text-4xl text-center mb-10">Produtos em <span className="text-primary">Destaque</span></h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {products.map((p, i) => (
-            <motion.div key={p.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
-              <Link to={`/produto/${p.slug}`}>
-                <Card className="group overflow-hidden hover:border-primary/50 transition-colors bg-card border-border">
-                  <div className="aspect-square bg-muted flex items-center justify-center overflow-hidden">
-                    {p.thumbnail ? (
-                      <img src={p.thumbnail} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                    ) : (
-                      <Sticker className="h-12 w-12 text-muted-foreground" />
-                    )}
-                  </div>
-                  <CardContent className="p-4">
-                    <h3 className="font-semibold text-foreground text-sm">{p.name}</h3>
-                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{p.short_description}</p>
-                    {Number(p.base_price) > 0 && (
-                      <p className="mt-2 text-primary font-bold">R$ {Number(p.base_price).toFixed(2).replace('.', ',')} <span className="text-xs text-muted-foreground font-normal">/ {p.price_unit}</span></p>
-                    )}
-                  </CardContent>
-                </Card>
-              </Link>
-            </motion.div>
-          ))}
+        <div className="flex items-center justify-between mb-10">
+          <h2 className="font-display text-4xl md:text-5xl">
+            Produtos em <span className="text-primary">Destaque</span>
+          </h2>
+          <div className="hidden md:flex gap-2">
+            <button
+              onClick={() => emblaApi?.scrollPrev()}
+              disabled={!canPrev}
+              className="h-10 w-10 rounded-full border border-border flex items-center justify-center text-foreground hover:bg-accent disabled:opacity-30 transition-colors"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <button
+              onClick={() => emblaApi?.scrollNext()}
+              disabled={!canNext}
+              className="h-10 w-10 rounded-full border border-border flex items-center justify-center text-foreground hover:bg-accent disabled:opacity-30 transition-colors"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+          </div>
         </div>
-        <div className="text-center mt-8">
-          <Link to="/produtos"><Button variant="outline" className="font-display text-lg tracking-wider">Ver Todos os Produtos <ArrowRight className="ml-2 h-5 w-5" /></Button></Link>
+
+        <div ref={emblaRef} className="overflow-hidden">
+          <div className="flex -ml-4">
+            {products.map(p => (
+              <div key={p.id} className="min-w-0 flex-[0_0_80%] sm:flex-[0_0_45%] lg:flex-[0_0_25%] pl-4">
+                <Link to={`/produto/${p.slug}`}>
+                  <Card className="group overflow-hidden hover:border-primary/50 transition-colors bg-card border-border h-full">
+                    <div className="aspect-square bg-muted flex items-center justify-center overflow-hidden">
+                      {p.thumbnail ? (
+                        <img src={p.thumbnail} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" loading="lazy" />
+                      ) : (
+                        <Sticker className="h-12 w-12 text-muted-foreground" />
+                      )}
+                    </div>
+                    <CardContent className="p-4">
+                      <h3 className="font-semibold text-foreground text-sm line-clamp-2">{p.name}</h3>
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{p.short_description}</p>
+                      {Number(p.base_price) > 0 && (
+                        <p className="mt-2 text-primary font-bold">
+                          R$ {Number(p.base_price).toFixed(2).replace('.', ',')}
+                          <span className="text-xs text-muted-foreground font-normal ml-1">/ {p.price_unit}</span>
+                        </p>
+                      )}
+                      <Button size="sm" variant="outline" className="w-full mt-3 text-xs">
+                        Ver Produto <ArrowRight className="ml-1 h-3 w-3" />
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="text-center mt-10">
+          <Link to="/produtos">
+            <Button variant="outline" className="font-display text-lg tracking-wider">
+              Ver Todos os Produtos <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          </Link>
         </div>
       </div>
     </section>
   );
 };
 
+const differentials = [
+  { icon: Trophy, title: 'Qualidade Premium', desc: 'Impressão de alta resolução, materiais duráveis e acabamento impecável.' },
+  { icon: Zap, title: 'Entrega Rápida', desc: 'Prazo a partir de 1 dia útil dependendo do produto.' },
+  { icon: DollarSign, title: 'Melhor Preço', desc: 'Orçamento sem compromisso, preços competitivos da região.' },
+  { icon: Palette, title: 'Arte Inclusa', desc: 'Equipe de design para ajudar na criação da sua arte.' },
+  { icon: Package, title: 'Pedido Online', desc: 'Faça seu pedido 24h pelo site, de qualquer lugar.' },
+  { icon: Handshake, title: 'Atendimento Personalizado', desc: 'Suporte via WhatsApp durante todo o processo.' },
+];
+
+const DifferentialsSection = () => (
+  <section className="py-20">
+    <div className="container">
+      <h2 className="font-display text-4xl md:text-5xl text-center mb-12">
+        Por que escolher a <span className="text-primary">StartMídia</span>?
+      </h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {differentials.map((item, i) => (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: i * 0.1, duration: 0.4 }}
+          >
+            <Card className="p-6 bg-card border-border h-full hover:border-primary/30 transition-colors">
+              <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
+                <item.icon className="h-6 w-6 text-primary" />
+              </div>
+              <h3 className="font-display text-xl text-foreground mb-2">{item.title}</h3>
+              <p className="text-sm text-muted-foreground">{item.desc}</p>
+            </Card>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  </section>
+);
+
 const Index = () => (
   <>
+    <Helmet>
+      <title>StartMídia Comunicação Visual | Banners, Adesivos, Placas em Limeira/SP</title>
+      <meta name="description" content="Gráfica e comunicação visual em Limeira/SP. Banners, lonas, adesivos, placas de sinalização, etiquetas, rótulos, envelopamento e fachadas com altíssima qualidade. Orçamento rápido!" />
+      <meta name="keywords" content="gráfica Limeira, comunicação visual Limeira, banner Limeira, adesivo Limeira, placa sinalização Limeira, etiqueta rótulo Limeira, envelopamento veículo Limeira, fachada ACM Limeira" />
+      <meta property="og:title" content="StartMídia Comunicação Visual — Limeira/SP" />
+      <meta property="og:description" content="Sua mensagem com impacto visual. Banners, lonas, adesivos, placas, etiquetas e muito mais." />
+      <meta property="og:type" content="website" />
+      <meta property="og:url" content="https://startmidialimeira.com.br" />
+      <link rel="canonical" href="https://startmidialimeira.com.br" />
+    </Helmet>
     <HeroBanner />
     <CategoriesSection />
     <FeaturedProducts />
-    <section className="py-16">
-      <div className="container text-center">
-        <h2 className="font-display text-4xl mb-6">Por que escolher a <span className="text-primary">StartMídia</span>?</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-8">
-          {[
-            { title: 'Qualidade Premium', desc: 'Materiais de primeira linha e acabamento impecável em todos os produtos.' },
-            { title: 'Entrega Rápida', desc: 'Prazos competitivos sem comprometer a qualidade do material.' },
-            { title: 'Atendimento Personalizado', desc: 'Equipe especializada para ajudar em cada etapa do seu projeto.' },
-          ].map((item, i) => (
-            <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.2 }}>
-              <Card className="p-6 bg-card border-border">
-                <h3 className="font-display text-2xl text-accent mb-2">{item.title}</h3>
-                <p className="text-sm text-muted-foreground">{item.desc}</p>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </section>
+    <DifferentialsSection />
   </>
 );
 
