@@ -1,51 +1,67 @@
 
 
-# Verificação de Email em Tempo Real + Norma Brasileira
+# Logo Inteligente com Redimensionamento Automático
 
 ## Resumo
-Duas frentes: (1) criar fluxo pos-cadastro com pagina de espera que verifica email em tempo real, e (2) criar helper `formatBRL` e padronizar formatacao brasileira de moeda e datas em todo o site.
+Transformar o upload de logo no admin em um sistema inteligente que: (1) mostra ao admin os tamanhos necessários para cada local do site, (2) gera automaticamente todas as variações (header, footer, favicon, mobile) a partir de uma única imagem, e (3) oferece opções de fundo (transparente, branco, escuro) para harmonia visual.
 
-## Parte 1 — Fluxo de Verificacao de Email
+## Como funciona
 
-### `src/pages/EmailVerification.tsx` — Criar
-- Pagina com animacao de envelope/loading
-- Texto: "Enviamos um link de verificacao para {email}. Verifique sua caixa de entrada."
-- Botao "Reenviar email" com cooldown de 60s
-- Polling a cada 5s: `supabase.auth.getSession()` — se sessao existir e email confirmado, redireciona para pagina de obrigado
-- Tambem escuta `onAuthStateChange` para deteccao instantanea quando usuario clica no link em outra aba
-- Se nao tiver email no state, redireciona para `/login`
+Ao fazer upload da logo, o sistema:
+- Mostra um painel informativo com os tamanhos usados no site: Header (h-10 ≈ 40px altura), Footer, Mobile, Favicon
+- Gera automaticamente 4 versões via Canvas: `site_logo_url` (header, max 200x40px), `site_logo_footer` (footer, max 250x50px), `site_logo_mobile` (mobile menu, max 160x32px), `site_logo_favicon` (favicon, 32x32px quadrado)
+- Oferece opções: manter fundo transparente (PNG) ou adicionar fundo branco/escuro
+- Salva todas as variações no storage e nas settings de uma vez
 
-### `src/pages/EmailVerified.tsx` — Criar
-- Pagina de "Obrigado! Sua conta foi verificada."
-- Icone CheckCircle2 verde animado
-- Texto: "Bem-vindo a StartMidia! Sua conta foi ativada com sucesso."
-- Botao "Acessar Minha Conta" → `/cliente`
-- Auto-redirect apos 5s
+## Alterações
 
-### `src/pages/Login.tsx` — Modificar
-- Apos `signUp` com sucesso, fazer `navigate('/verificar-email', { state: { email: signupForm.email } })` em vez de apenas toast
+### 1. `src/pages/admin/AdminSettings.tsx`
+- Substituir o campo simples de logo por um novo componente `LogoUploadManager`
+- Adicionar keys `site_logo_footer`, `site_logo_mobile`, `site_logo_favicon` na seção Identidade Visual
+- Mostrar preview de todas as variações geradas
 
-### `src/App.tsx` — Adicionar rotas
-- `/verificar-email` → `EmailVerification`
-- `/email-verificado` → `EmailVerified`
-- Ambas como rotas publicas dentro do `PublicLayout`
+### 2. `src/components/admin/LogoUploadManager.tsx` — Criar
+- Componente dedicado para upload de logo com:
+  - Card informativo: "Tamanhos gerados automaticamente" com tabela mostrando cada variação (local, dimensão, formato)
+  - Upload via `ImageUploadWithEditor` (já existente, com editor de corte/filtros)
+  - Após upload, gera via Canvas as 4 variações automaticamente
+  - Select de opção de fundo: Transparente (PNG), Fundo Branco, Fundo Escuro
+  - Preview lado a lado das variações geradas (simulando header claro, footer escuro)
+  - Botão "Gerar e Salvar Todas as Versões"
+- Função `generateVariations(file: File)`:
+  - Carrega imagem no Canvas
+  - Para cada tamanho, redimensiona mantendo proporção (contain)
+  - Favicon: crop central quadrado
+  - Exporta PNG (transparência) ou JPG (com fundo)
+  - Upload de cada variação no storage `banners/logo-header-xxx.png`, etc.
+  - Retorna URLs para salvar nas settings
 
-## Parte 2 — Norma Brasileira (BRL + Datas)
+### 3. `src/components/layout/Header.tsx`
+- Usar `site_logo_mobile` no menu mobile (SheetContent) quando disponível, fallback para `site_logo_url`
 
-### `src/lib/format.ts` — Criar
-- `formatBRL(value: number): string` → `new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)` → "R$ 25,00"
-- `formatDate(date: string | Date): string` → `new Intl.DateTimeFormat('pt-BR').format(...)` → "09/04/2026"
-- `formatDateTime(date: string | Date): string` → data + hora → "09/04/2026 14:30"
+### 4. `src/components/layout/Footer.tsx`
+- Usar `site_logo_footer` quando disponível, fallback para `site_logo_url`, fallback para texto
 
-### Substituir em ~15 arquivos
-Trocar todos os padroes `R$ ${value.toFixed(2).replace('.', ',')}` por `formatBRL(value)` e `new Date(x).toLocaleDateString('pt-BR')` por `formatDate(x)` nos seguintes arquivos:
-- `CartPage.tsx`, `Checkout.tsx`, `CheckoutSuccess.tsx`, `Shop.tsx`, `ProductDetail.tsx`
-- `ClientOrders.tsx`, `ClientOrderDetail.tsx`, `ClientFiles.tsx`, `ClientDashboard.tsx`
-- `AdminOrders.tsx`, `AdminOrderDetail.tsx`, `AdminDashboard.tsx`, `AdminClients.tsx`, `AdminFiles.tsx`, `AdminProducts.tsx`
+### 5. `index.html`
+- Link de favicon dinâmico (ou manter estático — o admin pode baixar o favicon gerado)
 
-## Detalhes tecnicos
-- Polling via `setInterval` com cleanup no `useEffect`
-- `supabase.auth.resend({ type: 'signup', email })` para reenvio
-- `Intl.NumberFormat('pt-BR')` e norma ABNT para valores monetarios
-- Nenhuma migration necessaria
+## Tabela de variações exibida ao admin
+
+```text
+┌──────────────┬────────────┬──────────┬─────────────────────┐
+│ Local        │ Dimensão   │ Formato  │ Observação          │
+├──────────────┼────────────┼──────────┼─────────────────────┤
+│ Header       │ 200 x 40px │ PNG      │ Fundo transparente  │
+│ Footer       │ 250 x 50px │ PNG      │ Visível em fundo    │
+│ Menu Mobile  │ 160 x 32px │ PNG      │ Versão compacta     │
+│ Favicon      │  32 x 32px │ PNG      │ Recorte quadrado    │
+└──────────────┴────────────┴──────────┴─────────────────────┘
+```
+
+## Detalhes técnicos
+- Canvas resize: criar `<canvas>` com dimensão alvo, `ctx.drawImage()` com cálculo de aspect ratio (contain)
+- PNG com transparência: `canvas.toBlob(cb, 'image/png')`
+- Fundo: se opção branco/escuro, `ctx.fillRect()` antes do `drawImage`
+- Favicon quadrado: pegar o menor lado da imagem, crop central, resize para 32x32
+- Todas as variações geradas client-side antes do upload (sem edge function)
 
