@@ -42,9 +42,7 @@ const About = () => {
           <div>
             <h1 className="font-display text-5xl mb-4">Sobre a <span className="text-primary">StartMídia</span></h1>
             <p className="text-muted-foreground text-lg leading-relaxed">
-              A StartMídia é uma empresa de comunicação visual localizada em Limeira/SP, especializada em soluções gráficas
-              que transformam a identidade visual dos nossos clientes em resultados impactantes. Com mais de 10 anos de
-              experiência no mercado, atendemos empresas de todos os portes com qualidade e agilidade.
+              {getSetting('about_intro') || 'A StartMídia é uma empresa de comunicação visual localizada em Limeira/SP, especializada em soluções gráficas que transformam a identidade visual dos nossos clientes em resultados impactantes. Com mais de 10 anos de experiência no mercado, atendemos empresas de todos os portes com qualidade e agilidade.'}
             </p>
           </div>
           <div className="aspect-video bg-muted rounded-xl flex items-center justify-center">
@@ -56,8 +54,7 @@ const About = () => {
         <section>
           <h2 className="font-display text-3xl mb-8 text-center">Nossa <span className="text-primary">História</span></h2>
           <p className="text-muted-foreground text-center max-w-3xl mx-auto mb-10">
-            Fundada com o objetivo de oferecer soluções em comunicação visual com excelência, a StartMídia cresceu
-            atuando lado a lado com seus clientes, entregando projetos que comunicam e vendem.
+            {getSetting('about_history') || 'Fundada com o objetivo de oferecer soluções em comunicação visual com excelência, a StartMídia cresceu atuando lado a lado com seus clientes, entregando projetos que comunicam e vendem.'}
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             {stats.map((s, i) => (
