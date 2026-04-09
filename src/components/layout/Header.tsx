@@ -30,6 +30,7 @@ export const Header = () => {
   const { user, profile, isAdmin, logout } = useAuth();
   const { getSetting } = useSettings();
   const logoUrl = getSetting('site_logo_url');
+  const logoMobile = getSetting('site_logo_mobile');
 
   useEffect(() => {
     if (searchOpen) searchRef.current?.focus();
@@ -147,7 +148,11 @@ export const Header = () => {
             <SheetContent side="left" className="w-72 p-0">
               <SheetHeader className="p-6 pb-4 border-b border-border">
                 <SheetTitle className="text-left">
-                  <span className="font-display text-xl text-primary">STARTMÍDIA</span>
+                  {(logoMobile || logoUrl) ? (
+                    <img src={logoMobile || logoUrl} alt="StartMídia" className="h-8 w-auto" />
+                  ) : (
+                    <span className="font-display text-xl text-primary">STARTMÍDIA</span>
+                  )}
                 </SheetTitle>
               </SheetHeader>
 
