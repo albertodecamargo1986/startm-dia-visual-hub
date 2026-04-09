@@ -6,8 +6,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { ImagePlus, Download, CheckCircle2 } from 'lucide-react';
+import { ImagePlus, CheckCircle2 } from 'lucide-react';
 
 interface Variation {
   key: string;
@@ -74,6 +75,7 @@ function resizeImage(
 }
 
 export const LogoUploadManager = ({ currentUrls, onSaved }: LogoUploadManagerProps) => {
+  const queryClient = useQueryClient();
   const [sourceFile, setSourceFile] = useState<File | null>(null);
   const [bgOption, setBgOption] = useState<BgOption>('transparent');
   const [previews, setPreviews] = useState<Record<string, string>>({});
@@ -128,16 +130,27 @@ export const LogoUploadManager = ({ currentUrls, onSaved }: LogoUploadManagerPro
         if (error) throw error;
         const { data: { publicUrl } } = supabase.storage.from('banners').getPublicUrl(path);
         urls[key] = publicUrl;
+
+        // Upsert directly into site_settings
+        const { data: existing } = await supabase.from('site_settings').select('id').eq('key', key).maybeSingle();
+        if (existing) {
+          await supabase.from('site_settings').update({ value: publicUrl }).eq('key', key);
+        } else {
+          await supabase.from('site_settings').insert({ key, value: publicUrl });
+        }
+
         setProgress(((i + 1) / keys.length) * 100);
       }
       onSaved(urls);
+      queryClient.invalidateQueries({ queryKey: ['site-settings'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-settings'] });
       toast.success('Todas as variações da logo foram salvas!');
     } catch {
       toast.error('Erro ao salvar variações');
     } finally {
       setSaving(false);
     }
-  }, [blobs, onSaved]);
+  }, [blobs, onSaved, queryClient]);
 
   return (
     <div className="space-y-4">
