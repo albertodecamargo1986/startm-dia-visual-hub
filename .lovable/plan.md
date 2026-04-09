@@ -1,76 +1,61 @@
 
 
-# Upload de Imagens com Editor, Logo Dinâmica e Admin Seed
+# Componentes de UX e Helpers
 
 ## Resumo
-Adicionar um componente de upload de imagens com editor (corte e filtros) reutilizável em todo o site, permitir upload e troca da logo via painel admin, e criar o usuário admin inicial.
+Criar 5 componentes auxiliares reutilizáveis: GuiaMedidas (dialog de guia), StatusBadge (badge de status), FileUploadZone (drag-and-drop com progresso), OrderTimeline (timeline vertical), e SEO (wrapper helmet com schema.org).
 
-## 1. Criar hook `useImageUpload` e componente `ImageEditor`
+## Arquivos a criar
 
-### `src/hooks/use-image-upload.ts`
-- Hook baseado no código fornecido, adaptado para o projeto (sem Next.js Image, usa `<img>` nativo)
-- Retorna previewUrl, fileName, fileInputRef, handlers
+### 1. `src/components/GuiaMedidas.tsx`
+- Dialog reutilizável com trigger customizável via props
+- Props: `productName`, `productUnit`, `trigger` (ReactNode)
+- Conteúdo completo com seções: Formatos Aceitos, Resolução Mínima, Como Medir, Tamanhos Padrão (tabela dinâmica), Cores, Dica
+- Usa `Dialog`, `DialogContent`, `DialogHeader` do shadcn
+- Ícones Lucide para checkmarks e x marks
 
-### `src/components/ui/image-editor.tsx`
-- Componente de editor de imagens com:
-  - **Crop**: usar biblioteca `react-image-crop` para recorte livre e com proporções fixas (1:1, 16:9, 4:3, livre)
-  - **Filtros CSS**: brightness, contrast, saturation, grayscale, sepia, blur — controlados por sliders
-  - **Preview em tempo real** dos filtros aplicados
-  - Botão "Usar Original" para pular edição
-  - Botão "Aplicar" que gera o Blob final (usa canvas para aplicar crop + filtros)
-- Abre como Dialog/modal quando o usuário seleciona uma imagem
+### 2. `src/components/StatusBadge.tsx`
+- Props: `status: string`, `type: 'order' | 'payment' | 'artwork'`
+- Mapas de cores e labels por tipo:
+  - `order`: usa `ORDER_STATUS_LABELS` e `ORDER_STATUS_COLORS` existentes
+  - `payment`: pending/paid/refunded
+  - `artwork`: pending/approved/rejected/revision
+- Usa componente `Badge` do shadcn
 
-### `src/components/ui/image-upload-with-editor.tsx`
-- Componente completo reutilizável que combina:
-  - Área de drag-and-drop + click para selecionar
-  - Preview da imagem selecionada
-  - Botão editar que abre o `ImageEditor`
-  - Botão remover
-  - Aceita props: `onImageReady(file: File)`, `currentUrl?`, `aspectRatio?`, `maxSizeMB?`
+### 3. `src/components/FileUploadZone.tsx`
+- Props: `onFileSelect`, `acceptedTypes`, `maxSizeMB`, `multiple`, `showGuide?`, `productName?`
+- Drag-and-drop com visual feedback (isDragging state)
+- Preview de imagens inline, lista para outros formatos
+- Barra de progresso via `Progress` do shadcn
+- Exibe formatos aceitos e limite de tamanho
+- Botão "📐 Guia de Medidas" integrado (abre `GuiaMedidas`) se `showGuide=true`
 
-## 2. Dependência a instalar
-- `react-image-crop` — biblioteca de crop de imagens
+### 4. `src/components/OrderTimeline.tsx`
+- Props: `events: OrderTimeline[]` (do tipo existente em `src/types`)
+- Timeline vertical com linha conectora, ícones coloridos por status:
+  - pending_payment → CreditCard (amarelo)
+  - awaiting_artwork → Upload (azul)
+  - in_production → Cog (laranja, `animate-spin`)
+  - ready → Package (verde)
+  - shipped → Truck (verde)
+  - delivered → CheckCircle2 (verde escuro)
+  - cancelled → XCircle (vermelho)
+- Data formatada em PT-BR, mensagem do evento
 
-## 3. Integrar editor em todos os locais de upload
+### 5. `src/components/SEO.tsx`
+- Props: `title`, `description`, `image?`, `canonical?`, `keywords?`
+- Wrapper `react-helmet-async` com meta tags (og:title, og:description, og:image, twitter)
+- Schema.org `LocalBusiness` JSON-LD com dados fixos da StartMídia (endereço Limeira/SP, telefone, horário)
+- `HelmetProvider` já deve estar no App.tsx — verificar e adicionar se necessário
 
-### Locais que precisam do editor:
-1. **AdminProductForm.tsx** (Tab Fotos) — substituir upload simples pelo `ImageUploadWithEditor`
-2. **AdminBanners.tsx** (Dialog de banner) — substituir upload de imagem do banner
-3. **ClientProfile.tsx** (Avatar) — substituir upload de avatar
-4. **AdminSettings.tsx** — adicionar seção "Identidade Visual" com upload da logo
-5. **Contact.tsx** — upload de arquivo de referência (opcional, manter simples pois não é imagem obrigatoriamente)
+## Arquivo a modificar
 
-## 4. Logo dinâmica via admin
-
-### Migration
-- Adicionar setting `site_logo_url` na tabela `site_settings` (via insert tool, não migration)
-
-### AdminSettings.tsx
-- Nova seção "Identidade Visual" no topo com:
-  - Upload de logo usando `ImageUploadWithEditor`
-  - Ao fazer upload: envia para bucket `banners` (público), salva URL em `site_settings.site_logo_url`
-  - Preview da logo atual
-
-### Header.tsx e AdminLayout.tsx
-- Usar `useSettings().getSetting('site_logo_url')` para renderizar `<img>` da logo
-- Fallback para texto "STARTMÍDIA" se não houver logo configurada
-
-## 5. Criar usuário admin
-
-### Migration SQL
-- Inserir registro na tabela `user_roles` com role `admin` para o usuário com email `albertodecamargo@gmail.com` **após** ele se cadastrar
-- Como não podemos criar usuários diretamente via migration, a abordagem será:
-  - Criar uma database function `promote_to_admin(email text)` que busca o user_id pelo email na tabela profiles e insere em user_roles
-  - Ou: o usuário se cadastra normalmente pelo /login e depois executamos um INSERT via insert tool para promovê-lo a admin
-
-### Fluxo recomendado:
-1. O usuário se cadastra em /login com email `albertodecamargo@gmail.com` e senha `ae280510`
-2. Após cadastro, usar insert tool para adicionar role admin: `INSERT INTO user_roles (user_id, role) SELECT user_id, 'admin' FROM profiles WHERE email = 'albertodecamargo@gmail.com'`
+### 6. `src/App.tsx`
+- Wrap com `HelmetProvider` do `react-helmet-async` (se ainda não estiver)
 
 ## Detalhes técnicos
-- `react-image-crop`: fornece componente `<ReactCrop>` com seleção visual de área de corte
-- Filtros via CSS `filter` property na preview e via Canvas `ctx.filter` na exportação final
-- Canvas workflow: carregar imagem → aplicar crop (drawImage com coordenadas) → aplicar filtros → toBlob() → File
-- O componente ImageUploadWithEditor aceita formatos: JPG, PNG, WebP, GIF, SVG
-- Tamanho máximo configurável por prop (default 5MB)
+- Todos os componentes usam imports existentes (shadcn, lucide-react, tipos de `@/types`)
+- `FileUploadZone` é independente do `ImageUploadWithEditor` — focado em arquivos de arte (PDF, AI, CDR, imagens)
+- `SEO` sempre injeta o JSON-LD do LocalBusiness, com dados de contato vindos de props ou hardcoded
+- `OrderTimeline` espera array ordenado por `created_at` desc
 
