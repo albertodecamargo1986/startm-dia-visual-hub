@@ -32,8 +32,8 @@ const AdminProducts = () => {
   });
 
   const toggleField = useMutation({
-    mutationFn: async ({ id, field, value }: { id: string; field: string; value: boolean }) => {
-      await supabase.from('products').update({ [field]: value }).eq('id', id);
+    mutationFn: async ({ id, field, value }: { id: string; field: 'active' | 'featured'; value: boolean }) => {
+      await supabase.from('products').update({ [field]: value } as any).eq('id', id);
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin-products'] }); toast.success('Atualizado!'); },
   });
