@@ -5,19 +5,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { ImageUploadWithEditor } from '@/components/ui/image-upload-with-editor';
+import { LogoUploadManager } from '@/components/admin/LogoUploadManager';
 import { toast } from 'sonner';
 import { useState, useEffect, useCallback } from 'react';
 import { Save } from 'lucide-react';
 import type { SiteSetting } from '@/types';
 
+const LOGO_KEYS = ['site_logo_url', 'site_logo_footer', 'site_logo_mobile', 'site_logo_favicon'];
+
 const sections = [
-  {
-    title: 'Identidade Visual',
-    keys: [
-      { key: 'site_logo_url', label: 'Logo do Site', type: 'image' },
-    ],
-  },
   {
     title: 'Contato',
     keys: [
@@ -63,19 +59,13 @@ const AdminSettings = () => {
     }
   }, [settings]);
 
-  const handleLogoReady = useCallback(async (file: File) => {
-    const ext = file.name.split('.').pop() || 'png';
-    const path = `logo-${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from('banners').upload(path, file);
-    if (error) { toast.error('Erro no upload da logo'); return; }
-    const { data: { publicUrl } } = supabase.storage.from('banners').getPublicUrl(path);
-    setValues(p => ({ ...p, site_logo_url: publicUrl }));
-    toast.success('Logo enviada! Clique Salvar para aplicar.');
+  const handleLogoSaved = useCallback((urls: Record<string, string>) => {
+    setValues(p => ({ ...p, ...urls }));
   }, []);
 
   const save = useMutation({
     mutationFn: async () => {
-      const allKeys = sections.flatMap(s => s.keys.map(k => k.key));
+      const allKeys = [...sections.flatMap(s => s.keys.map(k => k.key)), ...LOGO_KEYS];
       for (const key of allKeys) {
         const existing = settings?.find(s => s.key === key);
         if (existing) {
@@ -94,9 +84,19 @@ const AdminSettings = () => {
     },
   });
 
+  const logoUrls: Record<string, string> = {};
+  LOGO_KEYS.forEach(k => { if (values[k]) logoUrls[k] = values[k]; });
+
   return (
     <div className="space-y-6">
       <h2 className="font-display text-2xl">Configurações</h2>
+
+      {/* Logo Section */}
+      <Card className="p-6 bg-card border-border space-y-4">
+        <h3 className="font-display text-lg">Identidade Visual — Logo</h3>
+        <Separator />
+        <LogoUploadManager currentUrls={logoUrls} onSaved={handleLogoSaved} />
+      </Card>
 
       {sections.map(section => (
         <Card key={section.title} className="p-6 bg-card border-border space-y-4">
@@ -109,14 +109,6 @@ const AdminSettings = () => {
                 <Switch
                   checked={values[k.key] === 'true'}
                   onCheckedChange={v => setValues(p => ({ ...p, [k.key]: v ? 'true' : 'false' }))}
-                />
-              ) : k.type === 'image' ? (
-                <ImageUploadWithEditor
-                  onImageReady={handleLogoReady}
-                  currentUrl={values[k.key] || undefined}
-                  maxSizeMB={2}
-                  placeholder="Clique para enviar a logo"
-                  className="h-32 max-w-xs"
                 />
               ) : (
                 <Input

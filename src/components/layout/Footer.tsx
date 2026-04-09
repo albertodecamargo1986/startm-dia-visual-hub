@@ -25,7 +25,11 @@ export const Footer = () => {
         {/* Empresa */}
         <div>
           <Link to="/" className="inline-block mb-4">
-            <span className="font-display text-2xl text-primary">STARTMÍDIA</span>
+            {(getSetting('site_logo_footer') || getSetting('site_logo_url')) ? (
+              <img src={getSetting('site_logo_footer') || getSetting('site_logo_url')} alt="StartMídia" className="h-12 w-auto" />
+            ) : (
+              <span className="font-display text-2xl text-primary">STARTMÍDIA</span>
+            )}
           </Link>
           <p className="text-sm text-muted-foreground mb-4">
             Sua mensagem com impacto visual. Comunicação visual profissional em Limeira/SP.
