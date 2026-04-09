@@ -1,71 +1,87 @@
 
 
-# Área do Cliente — Reescrita Completa
+# Painel Administrativo — Reescrita Completa
 
 ## Resumo
-Reescrever todas as 6 páginas da área do cliente com funcionalidades avançadas: layout com avatar e botão sair, dashboard com métricas detalhadas, pedidos com tabela completa, detalhe com timeline vertical e upload de arte, arquivos com download/re-upload, e perfil com avatar upload e reset de senha.
+Reescrever todas as páginas do painel admin com funcionalidades avançadas: layout com sidebar escura, dashboard com KPIs e gráfico Recharts, gestão de pedidos com filtros/paginação/export CSV, detalhe de pedido com aprovação de arte, produto com tabs e upload de fotos, banners com reorder, categorias com edição inline, clientes com detalhes, arquivos com approve/reject, e configurações completas.
+
+## Dependência a instalar
+- `recharts` — gráfico de barras no dashboard
 
 ## Arquivos a modificar
 
-### 1. `src/pages/client/ClientLayout.tsx` — Reescrever
-- Avatar circular (iniciais ou foto) + nome do cliente no topo da sidebar
-- Links: Dashboard, Meus Pedidos, Meus Arquivos, Meu Perfil
-- Botão "Sair" com ícone LogOut na parte inferior da sidebar
-- Mobile: tabs horizontais em vez de sidebar (usando flex row com scroll)
-- Chamar `logout()` do AuthContext no botão sair
+### 1. `src/pages/admin/AdminLayout.tsx` — Reescrever
+- Sidebar escura (`bg-gray-900`) com logo "StartMídia Admin", avatar do admin, menu com ícones Lucide
+- Botão "Ver Site" abre `/` em nova aba
+- Mobile: Sheet com menu hamburger
+- Breadcrumb dinâmico no topo do conteúdo baseado na rota atual
 
-### 2. `src/pages/client/ClientDashboard.tsx` — Reescrever
-- 4 cards de resumo: Total de pedidos, Pedidos em produção (status `in_production`), Arquivos pendentes (status `pending`), Último pedido (mini card com número e status)
-- Grid `grid-cols-2 lg:grid-cols-4`
-- Seção "Últimos Pedidos" com os 3 pedidos mais recentes em lista com status badge colorido e link para detalhe
+### 2. `src/pages/admin/AdminDashboard.tsx` — Reescrever
+- 5 cards KPI: Pedidos hoje, Receita do mês, Aguardando arte, Em produção, Total clientes
+- Gráfico de barras Recharts: pedidos por dia nos últimos 7 dias (query agrupada por `created_at::date`)
+- Lista "Pedidos que precisam de atenção": arte rejeitada, aguardando arte >24h, pagos não iniciados
 
-### 3. `src/pages/client/ClientOrders.tsx` — Reescrever
-- Tabela responsiva (Table do shadcn) com colunas: Número, Data, Total, Status (Badge colorido), Ação (botão "Ver Detalhes")
-- Mobile: cards em vez de tabela (media query)
-- Status badges usando `ORDER_STATUS_LABELS` e `ORDER_STATUS_COLORS` existentes
+### 3. `src/pages/admin/AdminOrders.tsx` — Reescrever
+- Tabela completa (Table shadcn) com colunas: #Pedido, Cliente, Data, Total, Status Pgto, Status Produção, Ações
+- Filtros: Select de status, DatePicker (ou inputs date) para range, Input busca
+- Paginação (20/página) com botões Anterior/Próximo e contagem
+- Botão "Exportar CSV" (gera e baixa CSV client-side)
+- Select de mudança rápida de status na linha
 
-### 4. `src/pages/client/ClientOrderDetail.tsx` — Reescrever completamente
-- Breadcrumb: Meus Pedidos > Pedido SM-YYYY-XXXX
-- Header: número do pedido + badge de status grande
-- **Timeline vertical**: linha vertical com círculos coloridos, ícone por etapa, data/hora, mensagem
-- **Itens do pedido**: foto (thumbnail do product_snapshot), nome, quantidade, dimensões (se custom), preço
-- **Seção de arte por item**:
-  - `artwork_status = 'pending'`: badge amarelo "Aguardando Aprovação"
-  - `artwork_status = 'approved'`: badge verde "Arte Aprovada"
-  - `artwork_status = 'rejected'`: badge vermelho + `admin_comment` do `customer_files` + botão novo upload
-  - `artwork_status = 'not_required'` ou item sem `needs_artwork`: badge cinza
-  - Se sem arte enviada e item precisa: área de drag-and-drop upload
-- **Upload de arte**: upload para `artwork-files/{userId}/{orderId}/`, insere em `customer_files`, atualiza `order_items.artwork_url` e `artwork_status`
-- Resumo financeiro: subtotal, frete, total
-- Dados de entrega (do `shipping_address` JSON)
-- Invalidar queries após upload
+### 4. `src/pages/admin/AdminOrderDetail.tsx` — Aprimorar
+- Seção de arte por item: preview de imagem, botão download (URL assinada), botões Aprovar/Rejeitar arte
+- Rejeitar abre Dialog com textarea para motivo → atualiza `customer_files.admin_comment` e `customer_files.status`
+- Aprovar atualiza `order_items.artwork_status` e `customer_files.status`
+- Campo "Notas Internas" (`admin_notes`) editável e salvo
+- Campo "Data prevista de entrega" (`estimated_delivery`) editável
+- Botão "WhatsApp" abre wa.me com número do cliente
+- Mensagens automáticas por status no timeline
 
-### 5. `src/pages/client/ClientFiles.tsx` — Reescrever
-- Lista com: nome, tamanho formatado (KB/MB), data de upload, pedido vinculado (link para `/cliente/pedidos/:id` via `order_item_id` → buscar `order_id`), status badge com labels PT-BR (Pendente/Aprovado/Rejeitado/Em revisão)
-- Comentário do admin visível se rejeitado (`admin_comment`)
-- Botão download (gera URL assinada do bucket `artwork-files`)
-- Botão "Enviar novamente" se rejeitado
+### 5. `src/pages/admin/AdminProducts.tsx` — Reescrever
+- Tabela com thumbnail, nome, categoria, preço, toggle ativo, toggle destaque
+- Filtros: categoria (Select), status, busca
+- Botões: Editar, Duplicar (insere cópia), Arquivar (toggle active)
+- Botão "+ Novo Produto"
 
-### 6. `src/pages/client/ClientProfile.tsx` — Reescrever
-- **Avatar upload**: área circular clicável, upload para bucket `customer-files/{userId}/avatar`, salva URL em `profiles.avatar_url`
-- Campos: nome, email (readonly), telefone, CPF/CNPJ, empresa
-- **Endereço padrão**: CEP com autocomplete ViaCEP, rua, número, complemento, bairro, cidade, estado (salvar como JSON em profile ou campos separados — usar campos no form e salvar via `updateProfile`)
-- Seção "Segurança": botão "Alterar Senha" que chama `supabase.auth.resetPasswordForEmail(profile.email)` e mostra toast
-- Toast de confirmação ao salvar
+### 6. `src/pages/admin/AdminProductForm.tsx` — Reescrever com Tabs
+- **Tab "Informações Básicas"**: nome, slug (auto-gerado), categoria, descrição curta (160 chars com contador), preço, unidade, qtd mínima, prazo, switches (ativo, destaque, arte, tamanho)
+- **Tab "Fotos"**: upload múltiplo para `product-images`, grade de previews, botão remover, estrela para thumbnail. Dialog "Ajuda" com guia de tamanhos
+- **Tab "SEO"**: meta title (contador 60), meta description (contador 160), preview Google simulado, tags com chips
+- **Tab "Descrição Completa"**: textarea markdown, seção "Como enviar arte", seção "Especificações"
+
+### 7. `src/pages/admin/AdminBanners.tsx` — Reescrever
+- Lista com preview, título, toggle ativo, botões editar/remover
+- Dialog de criação/edição com upload de imagem, campos título/subtítulo/link/CTA, guia de tamanho (1920x600px)
+- Toggle ativo/inativo
+
+### 8. `src/pages/admin/AdminCategories.tsx` — Reescrever
+- Lista com toggle ativo, setas para reordenar (up/down), edição inline de nome
+- Dialog de criação: nome, slug, ícone (Select com opções de ícones Lucide), descrição
+
+### 9. `src/pages/admin/AdminClients.tsx` — Reescrever
+- Tabela: nome, email, telefone, total pedidos (count), total gasto (sum), data cadastro
+- Click abre Dialog/expandir com lista de pedidos e arquivos do cliente
+
+### 10. `src/pages/admin/AdminFiles.tsx` — Reescrever
+- Tabela: cliente, pedido, arquivo, data, status, tamanho
+- Filtros por status
+- Botão Download (URL assinada)
+- Botões Aprovar/Rejeitar (com Dialog para comentário)
+- Preview inline para imagens (thumbnail clicável)
+
+### 11. `src/pages/admin/AdminSettings.tsx` — Reescrever
+- Seções agrupadas: Contato, Redes Sociais, PagSeguro
+- Campos de PagSeguro com type="password"
+- Toggle Sandbox/Produção
+- Botão salvar
 
 ## Detalhes técnicos
-- Avatar: `Avatar` + `AvatarImage` + `AvatarFallback` do shadcn com iniciais
-- Timeline: CSS com `border-l-2` e círculos absolutamente posicionados
-- Upload drag-and-drop: `onDragOver`/`onDrop` handlers nativos + input file hidden
-- Download: `supabase.storage.from('artwork-files').createSignedUrl(path, 3600)` para bucket privado
-- Endereço padrão: como a tabela `profiles` não tem campos de endereço, salvar em `site_settings` ou usar `shipping_address` como JSON — melhor adicionar coluna `default_address jsonb` na tabela `profiles` via migration
-- Reset senha: `supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/reset-password' })`
-
-## Migration necessária
-- Adicionar coluna `default_address jsonb default '{}'` à tabela `profiles` para endereço padrão
-
-## Sem mudanças em
-- `src/App.tsx` — rotas já existem
-- `src/types/index.ts` — tipos já mapeados
-- `src/contexts/AuthContext.tsx` — já tem `updateProfile` e `logout`
+- Recharts: `BarChart`, `Bar`, `XAxis`, `YAxis`, `Tooltip`, `ResponsiveContainer`
+- CSV export: construir string CSV client-side e usar `Blob` + `URL.createObjectURL` + anchor click
+- Upload de fotos de produto: `supabase.storage.from('product-images').upload(path, file)` + `getPublicUrl`
+- Aprovar arte: update `customer_files.status = 'approved'` + `order_items.artwork_status = 'approved'`
+- Rejeitar arte: update `customer_files.status = 'rejected'`, `customer_files.admin_comment = motivo`, `order_items.artwork_status = 'rejected'`
+- Paginação: `.range(from, to)` no Supabase query
+- Mensagens automáticas de status: mapa de status → mensagem PT-BR inserido no `order_timeline`
+- Breadcrumb: componente que parseia `pathname` e gera links
 
