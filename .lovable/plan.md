@@ -1,61 +1,24 @@
 
 
-# Componentes de UX e Helpers
+# Ajustes Finais e Sitemap
 
 ## Resumo
-Criar 5 componentes auxiliares reutilizáveis: GuiaMedidas (dialog de guia), StatusBadge (badge de status), FileUploadZone (drag-and-drop com progresso), OrderTimeline (timeline vertical), e SEO (wrapper helmet com schema.org).
+Criar sitemap.xml, atualizar robots.txt, e inserir 3 produtos de exemplo.
 
-## Arquivos a criar
+## Alterações
 
-### 1. `src/components/GuiaMedidas.tsx`
-- Dialog reutilizável com trigger customizável via props
-- Props: `productName`, `productUnit`, `trigger` (ReactNode)
-- Conteúdo completo com seções: Formatos Aceitos, Resolução Mínima, Como Medir, Tamanhos Padrão (tabela dinâmica), Cores, Dica
-- Usa `Dialog`, `DialogContent`, `DialogHeader` do shadcn
-- Ícones Lucide para checkmarks e x marks
+### 1. `public/sitemap.xml` — Criar
+- XML com as 5 URLs principais (home, produtos, sobre, portfolio, contato) com prioridades e frequências conforme especificado
 
-### 2. `src/components/StatusBadge.tsx`
-- Props: `status: string`, `type: 'order' | 'payment' | 'artwork'`
-- Mapas de cores e labels por tipo:
-  - `order`: usa `ORDER_STATUS_LABELS` e `ORDER_STATUS_COLORS` existentes
-  - `payment`: pending/paid/refunded
-  - `artwork`: pending/approved/rejected/revision
-- Usa componente `Badge` do shadcn
+### 2. `public/robots.txt` — Reescrever
+- Allow geral, Disallow /admin/, /cliente/, /checkout/
+- Referência ao sitemap
 
-### 3. `src/components/FileUploadZone.tsx`
-- Props: `onFileSelect`, `acceptedTypes`, `maxSizeMB`, `multiple`, `showGuide?`, `productName?`
-- Drag-and-drop com visual feedback (isDragging state)
-- Preview de imagens inline, lista para outros formatos
-- Barra de progresso via `Progress` do shadcn
-- Exibe formatos aceitos e limite de tamanho
-- Botão "📐 Guia de Medidas" integrado (abre `GuiaMedidas`) se `showGuide=true`
+### 3. Seed de produtos
+- Inserir 3 produtos via insert tool: Banner Lona (banners-lonas), Adesivo Recortado (adesivos), Placa PVC (placas)
+- Categorias já existem no banco com os slugs corretos
 
-### 4. `src/components/OrderTimeline.tsx`
-- Props: `events: OrderTimeline[]` (do tipo existente em `src/types`)
-- Timeline vertical com linha conectora, ícones coloridos por status:
-  - pending_payment → CreditCard (amarelo)
-  - awaiting_artwork → Upload (azul)
-  - in_production → Cog (laranja, `animate-spin`)
-  - ready → Package (verde)
-  - shipped → Truck (verde)
-  - delivered → CheckCircle2 (verde escuro)
-  - cancelled → XCircle (vermelho)
-- Data formatada em PT-BR, mensagem do evento
-
-### 5. `src/components/SEO.tsx`
-- Props: `title`, `description`, `image?`, `canonical?`, `keywords?`
-- Wrapper `react-helmet-async` com meta tags (og:title, og:description, og:image, twitter)
-- Schema.org `LocalBusiness` JSON-LD com dados fixos da StartMídia (endereço Limeira/SP, telefone, horário)
-- `HelmetProvider` já deve estar no App.tsx — verificar e adicionar se necessário
-
-## Arquivo a modificar
-
-### 6. `src/App.tsx`
-- Wrap com `HelmetProvider` do `react-helmet-async` (se ainda não estiver)
-
-## Detalhes técnicos
-- Todos os componentes usam imports existentes (shadcn, lucide-react, tipos de `@/types`)
-- `FileUploadZone` é independente do `ImageUploadWithEditor` — focado em arquivos de arte (PDF, AI, CDR, imagens)
-- `SEO` sempre injeta o JSON-LD do LocalBusiness, com dados de contato vindos de props ou hardcoded
-- `OrderTimeline` espera array ordenado por `created_at` desc
+### 4. Variáveis de Edge Functions
+- As secrets PAGSEGURO_EMAIL, PAGSEGURO_TOKEN, PAGSEGURO_SANDBOX e SITE_URL ainda não estão configuradas
+- Usar add_secret para solicitar ao usuário os valores do PagSeguro
 
