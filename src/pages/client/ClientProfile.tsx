@@ -1,12 +1,14 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Camera, KeyRound } from 'lucide-react';
+import { ImageUploadWithEditor } from '@/components/ui/image-upload-with-editor';
+import { KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
+import { useEffect } from 'react';
 
 interface AddressData {
   cep: string;
@@ -22,9 +24,7 @@ const emptyAddress: AddressData = { cep: '', street: '', number: '', complement:
 
 const ClientProfile = () => {
   const { profile, updateProfile } = useAuth();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
-  const [avatarLoading, setAvatarLoading] = useState(false);
 
   const [form, setForm] = useState({
     full_name: profile?.full_name ?? '',
@@ -68,28 +68,21 @@ const ClientProfile = () => {
     } catch { /* ignore */ }
   };
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !profile) return;
-    setAvatarLoading(true);
-    const ext = file.name.split('.').pop();
+  const handleAvatarReady = useCallback(async (file: File) => {
+    if (!profile) return;
+    const ext = file.name.split('.').pop() || 'jpg';
     const path = `${profile.user_id}/avatar.${ext}`;
-
     await supabase.storage.from('customer-files').upload(path, file, { upsert: true, cacheControl: '3600' });
     const { data: { publicUrl } } = supabase.storage.from('customer-files').getPublicUrl(path);
-
     await updateProfile({ avatar_url: publicUrl });
-    setAvatarLoading(false);
-  };
+    toast.success('Avatar atualizado!');
+  }, [profile, updateProfile]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!profile) return;
     setLoading(true);
 
-    const updateData: Record<string, unknown> = { ...form };
-
-    // Save address as JSON — cast needed since column was just added
     const { error } = await supabase.from('profiles').update({
       ...form,
       default_address: address as any,
@@ -115,19 +108,20 @@ const ClientProfile = () => {
 
       {/* Avatar */}
       <div className="flex items-center gap-4">
-        <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-          <Avatar className="h-20 w-20">
-            {profile?.avatar_url && <AvatarImage src={profile.avatar_url} />}
-            <AvatarFallback className="bg-primary text-primary-foreground text-xl font-bold">{initials}</AvatarFallback>
-          </Avatar>
-          <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-            <Camera className="h-6 w-6 text-white" />
-          </div>
-          <input ref={fileInputRef} type="file" className="hidden" accept="image/*" onChange={handleAvatarUpload} />
-        </div>
-        <div>
-          <p className="font-display text-lg">{profile?.full_name}</p>
-          <p className="text-sm text-muted-foreground">{avatarLoading ? 'Enviando...' : 'Clique na foto para alterar'}</p>
+        <Avatar className="h-20 w-20">
+          {profile?.avatar_url && <AvatarImage src={profile.avatar_url} />}
+          <AvatarFallback className="bg-primary text-primary-foreground text-xl font-bold">{initials}</AvatarFallback>
+        </Avatar>
+        <div className="flex-1 max-w-xs">
+          <p className="font-display text-lg mb-2">{profile?.full_name}</p>
+          <ImageUploadWithEditor
+            onImageReady={handleAvatarReady}
+            currentUrl={profile?.avatar_url || undefined}
+            aspectRatio={1}
+            maxSizeMB={2}
+            placeholder="Alterar foto de perfil"
+            className="h-20"
+          />
         </div>
       </div>
 

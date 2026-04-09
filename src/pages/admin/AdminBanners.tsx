@@ -5,9 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { ImageUploadWithEditor } from '@/components/ui/image-upload-with-editor';
 import { toast } from 'sonner';
-import { useState, useRef } from 'react';
-import { Plus, Trash2, Pencil, Upload } from 'lucide-react';
+import { useState, useCallback } from 'react';
+import { Plus, Trash2, Pencil } from 'lucide-react';
 import type { Banner } from '@/types';
 
 const emptyForm = { title: '', subtitle: '', image_url: '', link_url: '', button_text: '', active: true };
@@ -17,25 +18,22 @@ const AdminBanners = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
-  const [uploading, setUploading] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
 
   const { data: banners } = useQuery({
     queryKey: ['admin-banners'],
     queryFn: async () => { const { data } = await supabase.from('banners').select('*').order('banner_order'); return (data ?? []) as Banner[]; },
   });
 
-  const handleUpload = async (file: File) => {
+  const handleImageReady = useCallback(async (file: File) => {
     if (file.size > 3 * 1024 * 1024) { toast.error('Máximo 3MB'); return; }
-    setUploading(true);
-    const ext = file.name.split('.').pop();
+    const ext = file.name.split('.').pop() || 'jpg';
     const path = `banner-${Date.now()}.${ext}`;
     const { error } = await supabase.storage.from('banners').upload(path, file);
-    if (error) { toast.error('Erro no upload'); setUploading(false); return; }
+    if (error) { toast.error('Erro no upload'); return; }
     const { data: { publicUrl } } = supabase.storage.from('banners').getPublicUrl(path);
     setForm(p => ({ ...p, image_url: publicUrl }));
-    setUploading(false);
-  };
+    toast.success('Imagem do banner enviada!');
+  }, []);
 
   const saveBanner = useMutation({
     mutationFn: async () => {
@@ -99,11 +97,14 @@ const AdminBanners = () => {
           <DialogHeader><DialogTitle>{editId ? 'Editar Banner' : 'Novo Banner'}</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div className="text-xs text-muted-foreground bg-muted/30 rounded p-2">📐 Tamanho recomendado: 1920×600px · Proporção 16:5 · Máx 3MB · JPG/PNG/WebP</div>
-            {form.image_url && <img src={form.image_url} alt="" className="w-full h-32 object-cover rounded" />}
-            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && handleUpload(e.target.files[0])} />
-            <Button type="button" variant="outline" className="w-full" onClick={() => fileRef.current?.click()} disabled={uploading}>
-              <Upload className="h-4 w-4 mr-2" />{uploading ? 'Enviando...' : 'Enviar Imagem'}
-            </Button>
+            <ImageUploadWithEditor
+              onImageReady={handleImageReady}
+              currentUrl={form.image_url || undefined}
+              aspectRatio={16 / 5}
+              maxSizeMB={3}
+              placeholder="Clique para enviar imagem do banner"
+              className="h-40"
+            />
             <Input placeholder="Título" value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} />
             <Input placeholder="Subtítulo" value={form.subtitle} onChange={e => setForm(p => ({ ...p, subtitle: e.target.value }))} />
             <Input placeholder="URL do Link (opcional)" value={form.link_url} onChange={e => setForm(p => ({ ...p, link_url: e.target.value }))} />

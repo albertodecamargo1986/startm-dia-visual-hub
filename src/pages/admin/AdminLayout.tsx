@@ -1,5 +1,6 @@
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSettings } from '@/contexts/SettingsContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -32,12 +33,20 @@ const breadcrumbMap: Record<string, string> = {
 
 const SidebarContent = ({ pathname }: { pathname: string }) => {
   const { profile } = useAuth();
+  const { getSetting } = useSettings();
+  const logoUrl = getSetting('site_logo_url');
   const initials = (profile?.full_name || 'A').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 
   return (
     <div className="flex flex-col h-full">
       <div className="p-4 border-b border-white/10">
-        <Link to="/admin" className="font-display text-xl text-primary">START<span className="text-white">MÍDIA</span></Link>
+        <Link to="/admin">
+          {logoUrl ? (
+            <img src={logoUrl} alt="StartMídia" className="h-8 w-auto" />
+          ) : (
+            <span className="font-display text-xl text-primary">START<span className="text-white">MÍDIA</span></span>
+          )}
+        </Link>
         <p className="text-xs text-gray-400 mt-0.5">Painel Admin</p>
       </div>
 

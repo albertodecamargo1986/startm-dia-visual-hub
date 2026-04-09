@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,8 +11,9 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ImageUploadWithEditor } from '@/components/ui/image-upload-with-editor';
 import { toast } from 'sonner';
-import { Upload, X, Star, HelpCircle } from 'lucide-react';
+import { X, Star, HelpCircle } from 'lucide-react';
 import type { Category } from '@/types';
 
 const AdminProductForm = () => {
@@ -22,7 +23,6 @@ const AdminProductForm = () => {
   const [loading, setLoading] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [tagInput, setTagInput] = useState('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState({
     name: '', slug: '', short_description: '', description: '', base_price: '0', price_unit: 'unidade',
@@ -57,26 +57,20 @@ const AdminProductForm = () => {
     });
   }, [product]);
 
-  const handleImageUpload = async (files: FileList) => {
-    const uploaded: string[] = [];
-    for (const file of Array.from(files)) {
-      if (file.size > 5 * 1024 * 1024) { toast.error(`${file.name} excede 5MB`); continue; }
-      const ext = file.name.split('.').pop();
-      const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-      const { error } = await supabase.storage.from('product-images').upload(path, file);
-      if (error) { toast.error(`Erro: ${file.name}`); continue; }
-      const { data: { publicUrl } } = supabase.storage.from('product-images').getPublicUrl(path);
-      uploaded.push(publicUrl);
-    }
-    if (uploaded.length) {
-      setForm(p => ({
-        ...p,
-        images: [...p.images, ...uploaded],
-        thumbnail: p.thumbnail || uploaded[0],
-      }));
-      toast.success(`${uploaded.length} imagem(ns) enviada(s)!`);
-    }
-  };
+  const handleImageReady = useCallback(async (file: File) => {
+    if (file.size > 5 * 1024 * 1024) { toast.error('Arquivo excede 5MB'); return; }
+    const ext = file.name.split('.').pop() || 'jpg';
+    const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const { error } = await supabase.storage.from('product-images').upload(path, file);
+    if (error) { toast.error('Erro no upload'); return; }
+    const { data: { publicUrl } } = supabase.storage.from('product-images').getPublicUrl(path);
+    setForm(p => ({
+      ...p,
+      images: [...p.images, publicUrl],
+      thumbnail: p.thumbnail || publicUrl,
+    }));
+    toast.success('Imagem enviada!');
+  }, []);
 
   const removeImage = (url: string) => {
     setForm(p => ({
@@ -194,8 +188,13 @@ const AdminProductForm = () => {
                 <h3 className="font-display text-lg">Fotos do Produto</h3>
                 <Button type="button" variant="outline" size="sm" onClick={() => setHelpOpen(true)}><HelpCircle className="h-4 w-4 mr-1" />Ajuda</Button>
               </div>
-              <input ref={fileInputRef} type="file" multiple accept="image/*" className="hidden" onChange={e => e.target.files && handleImageUpload(e.target.files)} />
-              <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}><Upload className="h-4 w-4 mr-2" />Enviar Imagens</Button>
+              <ImageUploadWithEditor
+                onImageReady={handleImageReady}
+                aspectRatio={1}
+                maxSizeMB={5}
+                placeholder="Clique ou arraste para adicionar fotos do produto"
+                className="h-40"
+              />
               {form.images.length > 0 && (
                 <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
                   {form.images.map(url => (
@@ -226,7 +225,6 @@ const AdminProductForm = () => {
                 <label className="text-sm text-muted-foreground block mb-1">Meta Description <span className="text-xs">({form.meta_description.length}/160)</span></label>
                 <Textarea value={form.meta_description} onChange={e => setForm(p => ({ ...p, meta_description: e.target.value.slice(0, 160) }))} maxLength={160} rows={3} />
               </div>
-              {/* Google Preview */}
               <div className="border border-border rounded-lg p-4 bg-white/5">
                 <p className="text-xs text-muted-foreground mb-1">Preview no Google</p>
                 <p className="text-blue-400 text-sm font-medium">{form.meta_title || form.name || 'Título do produto'}</p>
@@ -269,7 +267,6 @@ const AdminProductForm = () => {
         </div>
       </form>
 
-      {/* Help Dialog */}
       <Dialog open={helpOpen} onOpenChange={setHelpOpen}>
         <DialogContent>
           <DialogHeader><DialogTitle>📐 Guia de Imagens</DialogTitle></DialogHeader>
@@ -279,6 +276,7 @@ const AdminProductForm = () => {
             <p>• Tamanho máximo por arquivo: <strong>5MB</strong></p>
             <p>• Formatos aceitos: <strong>JPG, PNG, WebP</strong></p>
             <p>• Use a estrela ⭐ para definir a imagem principal (thumbnail)</p>
+            <p>• Ao enviar, você pode <strong>recortar e aplicar filtros</strong> na imagem</p>
           </div>
         </DialogContent>
       </Dialog>
