@@ -44,6 +44,7 @@ const ProductDetail = () => {
       unitPrice: Number(product.base_price),
       quantity,
       priceUnit: product.price_unit ?? 'unidade',
+      needsArtwork: product.needs_artwork ?? false,
       ...(customWidth && { customWidth: parseFloat(customWidth) }),
       ...(customHeight && { customHeight: parseFloat(customHeight) }),
     });
