@@ -1,57 +1,63 @@
 
 
-# Loja: Listagem e Detalhe de Produto
+# Checkout Completo com PagSeguro
 
 ## Resumo
-Reescrever 3 páginas: listagem de produtos com filtros avançados, detalhe de produto completo com galeria/configurador/tabs, e carrinho aprimorado com observações e CEP.
+Reescrever o checkout com 4 steps visuais (Dados → Arte → Pagamento → Confirmação), integração ViaCEP para autocomplete de endereço, upload de arte para itens que necessitam, e integração PagSeguro via duas Edge Functions. Reescrever página de sucesso com status em tempo real.
 
-## Arquivos a modificar
+## Arquivos a criar/modificar
 
-### 1. `src/pages/Shop.tsx` — Reescrever completamente
-- **SEO**: Helmet com titulo dinamico por categoria
-- **Sidebar desktop** (hidden mobile): categorias com contagem de produtos (query separada), slider de preço (Slider shadcn), toggle "Apenas destaque" (Switch)
-- **Mobile**: Sheet/Drawer com os mesmos filtros, botão "Filtros" visível
-- **Grid responsivo**: `grid-cols-2 md:grid-cols-3 lg:grid-cols-4`
-- **Ordenação**: Select com opções (relevante, menor preço, maior preço, mais novo)
-- **Busca**: Input com debounce 300ms (useState + useEffect com setTimeout)
-- **Cards**: foto, badge categoria, nome, "a partir de R$ X,XX", botões "Ver Produto" e "WhatsApp" (aparecem no hover com group-hover)
-- **Hover**: `group-hover:scale-[1.02] group-hover:shadow-lg transition-all`
-- **Filtros aplicados na query**: preço range, featured, categoria, busca por nome
+### 1. `src/pages/Checkout.tsx` — Reescrever completamente
+- **Stepper visual** no topo: 4 steps com ícones e linha de progresso
+- **Step 1 — Dados**: pré-preenche nome, email, telefone, CPF/CNPJ do profile. CEP com fetch automático para `viacep.com.br/ws/{cep}/json/` que preenche rua, bairro, cidade, estado. Campo número, complemento manuais.
+- **Step 2 — Envio de Arte**: lista itens com `needsArtwork=true`. Para cada: área de drag-and-drop upload (aceita PDF/AI/CDR/PNG/JPG, max 50MB), barra de progresso, preview do arquivo, botão "Guia de Medidas" (Dialog), opção "Solicitar arte da StartMídia" (link WhatsApp). Upload vai para bucket `artwork-files` path `{userId}/{orderId}/{filename}`. Registra em `customer_files`. Skip automático se nenhum item precisa de arte.
+- **Step 3 — Pagamento**: resumo do pedido, botão "Pagar com PagSeguro" que chama edge function `create-pagseguro-payment` e redireciona para URL do PagSeguro.
+- **Step 4**: não renderiza (usuário já foi redirecionado)
+- Criar pedido no banco ao avançar do Step 1 para Step 2 (para ter `orderId` para uploads)
+- Sidebar com resumo do pedido fixa em todas as steps
 
-### 2. `src/pages/ProductDetail.tsx` — Reescrever completamente
-- **SEO**: Helmet com `{product.meta_title || product.name} | StartMídia Limeira/SP`
-- **Galeria**: carrossel principal + thumbnails clicáveis + zoom CSS no hover (`hover:scale-150 origin-center overflow-hidden`)
-- **Breadcrumb**: Home > Categoria > Produto
-- **Preço**: "a partir de R$ X,XX / m²" formatado
-- **Configurador de tamanho** (se `has_custom_size`): inputs largura/altura em cm, cálculo de área em m² e subtotal dinâmico
-- **Badge "Precisa de arte"** se `needs_artwork`
-- **Quantidade**: input numérico com `min=min_quantity`
-- **Textarea "Observações"**
-- **Botão principal**: "Adicionar ao Carrinho" (vermelho, grande)
-- **Botão secundário**: "Orçamento pelo WhatsApp"
-- **Botão "Guia de Medidas"**: abre Dialog com explicação, tabela de tamanhos, dicas de resolução, formatos aceitos
-- **Tabs abaixo**: Descrição | Especificações | Como enviar arte (usando Tabs shadcn)
-- **Produtos relacionados**: query mesma categoria, excluindo produto atual, carrossel horizontal
+### 2. `src/pages/CheckoutSuccess.tsx` — Reescrever
+- Recebe `?order=orderId` da URL
+- Busca pedido e status em tempo real (subscribe realtime no `orders`)
+- Animação de check com framer-motion
+- Mostra número do pedido, resumo, status de pagamento atualizado
+- Próximos passos (enviar arte, aguardar produção)
+- Botão "Acompanhar Pedido" → `/cliente/pedidos/{id}`
 
-### 3. `src/pages/CartPage.tsx` — Aprimorar
-- **Items**: foto, nome, dimensões, preço unitário, controles +/-, botão remover com confirmação (AlertDialog), textarea "Observações do item"
-- **Resumo lateral**: subtotal, campo CEP com botão calcular (placeholder por enquanto), total
-- **Botão "Finalizar Compra"**: redireciona `/login` se não autenticado, senão `/checkout`
-- **Botão "Continuar Comprando"** → `/produtos`
-- Usar `item.id` (não `productId`) para updateQuantity/removeItem (corrigir bug atual)
+### 3. `supabase/functions/create-pagseguro-payment/index.ts` — Criar
+- Recebe `{ orderId }` no body
+- Valida JWT do usuário
+- Busca pedido com items e profile via service role
+- Monta XML do PagSeguro (checkout v2)
+- Envia para API PagSeguro (sandbox ou produção via env `PAGSEGURO_SANDBOX`)
+- Extrai código de checkout da resposta
+- Salva `payment_id` no pedido
+- Retorna `{ redirectUrl }` para o frontend
+- CORS headers incluídos
 
-### 4. `src/contexts/CartContext.tsx` — Adicionar campo `notes`
-- Adicionar `notes` ao `addItem` e `updateQuantity`
-- Criar `updateItemNotes(id, notes)` method
+### 4. `supabase/functions/pagseguro-webhook/index.ts` — Criar
+- Recebe POST do PagSeguro com `notificationCode`
+- Consulta detalhes da transação na API PagSeguro
+- Mapeia status PagSeguro (3/4=pago, 6/7=cancelado) para status interno
+- Atualiza `orders.payment_status` e `orders.status`
+- Insere evento no `order_timeline`
+- Retorna 200 OK
+- Sem verificação JWT (é webhook externo)
 
-### 5. `src/App.tsx` — Sem mudanças (rotas já existem)
+### 5. Secrets necessários (via add_secret)
+- `PAGSEGURO_EMAIL` — email da conta PagSeguro
+- `PAGSEGURO_TOKEN` — token da conta PagSeguro
+- `PAGSEGURO_SANDBOX` — "true" ou "false"
+- `SITE_URL` — URL do site para redirect
+
+### 6. Realtime — Migration
+- `ALTER PUBLICATION supabase_realtime ADD TABLE public.orders;` para status em tempo real na página de sucesso
 
 ## Detalhes técnicos
-- Debounce de busca: `useEffect` com `setTimeout` de 300ms e cleanup
-- Contagem por categoria: query `products` agrupada ou contagem client-side
-- Slider de preço: componente `Slider` do shadcn com min/max
-- Zoom na galeria: `overflow-hidden` no container + `hover:scale-150` na imagem
-- Produtos relacionados: query `products` com `category_id` igual e `id` diferente, limit 8
-- CEP placeholder: input + botão, mostra "Em breve" por enquanto
-- Confirmação de remoção: `AlertDialog` do shadcn
+- ViaCEP: `fetch('https://viacep.com.br/ws/${cep.replace(/\D/g,'')}/json/')` no onBlur do campo CEP
+- Upload: `supabase.storage.from('artwork-files').upload(path, file, { onUploadProgress })` com barra via Progress do shadcn
+- Stepper: componente inline com divs circulares numeradas + linha entre elas, step ativo = `bg-primary`
+- Edge functions usam `corsHeaders` para chamadas do frontend
+- Pedido criado no Step 1, atualizado nos steps seguintes
+- `order_items` inclui `notes` do item do carrinho
 
