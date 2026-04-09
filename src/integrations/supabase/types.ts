@@ -86,6 +86,39 @@ export type Database = {
         }
         Relationships: []
       }
+      contact_requests: {
+        Row: {
+          created_at: string | null
+          email: string
+          file_url: string | null
+          id: string
+          message: string | null
+          name: string
+          phone: string | null
+          product: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          file_url?: string | null
+          id?: string
+          message?: string | null
+          name: string
+          phone?: string | null
+          product?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          file_url?: string | null
+          id?: string
+          message?: string | null
+          name?: string
+          phone?: string | null
+          product?: string | null
+        }
+        Relationships: []
+      }
       customer_files: {
         Row: {
           admin_comment: string | null
@@ -311,6 +344,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      portfolio_items: {
+        Row: {
+          active: boolean | null
+          category: string
+          created_at: string | null
+          description: string | null
+          id: string
+          image_url: string
+          item_order: number | null
+          title: string
+        }
+        Insert: {
+          active?: boolean | null
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string
+          item_order?: number | null
+          title: string
+        }
+        Update: {
+          active?: boolean | null
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string
+          item_order?: number | null
+          title?: string
+        }
+        Relationships: []
       }
       products: {
         Row: {
