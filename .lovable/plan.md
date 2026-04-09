@@ -1,41 +1,51 @@
 
-# Checklist Final — Análise e Correções Necessárias
 
-## Status dos Itens
+# Verificação de Email em Tempo Real + Norma Brasileira
 
-| # | Item | Status | Observação |
-|---|------|--------|------------|
-| 1 | Cadastro/login com profile automático | ✅ OK | Trigger `handle_new_user` cria profile + role `customer` |
-| 2 | Carrinho persiste localStorage | ✅ OK | `CartContext` lê/salva em `startmidia_cart` |
-| 3 | Checkout cria pedido e redireciona PagSeguro | ✅ OK | Edge function `create-pagseguro-payment` implementada |
-| 4 | Webhook PagSeguro atualiza status | ✅ OK | Edge function `pagseguro-webhook` mapeia status e atualiza timeline |
-| 5 | Cliente upload de arte | ✅ OK | `ClientOrderDetail` tem upload com progresso |
-| 6 | Admin baixar arquivo do cliente | ✅ OK | `AdminOrderDetail.handleDownload` cria signed URL |
-| 7 | Admin aprovar/rejeitar arte | ✅ OK | Mutations `approveArt` e `rejectArt` com dialog de motivo |
-| 8 | Mudança status registra timeline | ✅ OK | `updateStatus` insere em `order_timeline` com mensagem |
-| 9 | Carrossel banners na home | ✅ OK | Embla com autoplay, dados do banco |
-| 10 | SEO: title/description únicos | ✅ OK | Helmet em todas as 8 páginas públicas |
-| 11 | Schema.org LocalBusiness na home | ⚠️ FALTA | Componente `SEO.tsx` existe mas NÃO é importado na Index |
-| 12 | WhatsApp float todas as páginas | ✅ OK | `PublicLayout` inclui `WhatsAppFloat` |
-| 13 | Guia de medidas em qualquer produto | ⚠️ PARCIAL | ProductDetail tem dialog inline, mas não usa o componente `GuiaMedidas` reusável |
-| 14 | /admin protegida por role | ✅ OK | `RequireAdmin` verifica `isAdmin` |
-| 15 | /cliente protegida por auth | ✅ OK | `RequireAuth` verifica `user` |
+## Resumo
+Duas frentes: (1) criar fluxo pos-cadastro com pagina de espera que verifica email em tempo real, e (2) criar helper `formatBRL` e padronizar formatacao brasileira de moeda e datas em todo o site.
 
-## Correções a Implementar
+## Parte 1 — Fluxo de Verificacao de Email
 
-### 1. Promover usuário admin
-- Inserir role `admin` para `albertodecamargo@gmail.com` (user_id: `a426ed04-ffd1-4c09-bb9b-ff7dfd682d36`) na tabela `user_roles`
+### `src/pages/EmailVerification.tsx` — Criar
+- Pagina com animacao de envelope/loading
+- Texto: "Enviamos um link de verificacao para {email}. Verifique sua caixa de entrada."
+- Botao "Reenviar email" com cooldown de 60s
+- Polling a cada 5s: `supabase.auth.getSession()` — se sessao existir e email confirmado, redireciona para pagina de obrigado
+- Tambem escuta `onAuthStateChange` para deteccao instantanea quando usuario clica no link em outra aba
+- Se nao tiver email no state, redireciona para `/login`
 
-### 2. Adicionar Schema.org na Home
-- Importar e usar o componente `SEO` na `Index.tsx` ou adicionar JSON-LD inline no Helmet existente
+### `src/pages/EmailVerified.tsx` — Criar
+- Pagina de "Obrigado! Sua conta foi verificada."
+- Icone CheckCircle2 verde animado
+- Texto: "Bem-vindo a StartMidia! Sua conta foi ativada com sucesso."
+- Botao "Acessar Minha Conta" → `/cliente`
+- Auto-redirect apos 5s
 
-### 3. Usar componente GuiaMedidas no ProductDetail
-- Substituir o dialog inline pelo componente `GuiaMedidas` reutilizável que tem conteúdo mais completo (formatos aceitos, resolução, cores CMYK, etc.)
+### `src/pages/Login.tsx` — Modificar
+- Apos `signUp` com sucesso, fazer `navigate('/verificar-email', { state: { email: signupForm.email } })` em vez de apenas toast
 
-### 4. Secrets PagSeguro (pendente do usuário)
-- As secrets `PAGSEGURO_EMAIL`, `PAGSEGURO_TOKEN`, `PAGSEGURO_SANDBOX`, `SITE_URL` ainda precisam ser configuradas para o checkout funcionar de fato
+### `src/App.tsx` — Adicionar rotas
+- `/verificar-email` → `EmailVerification`
+- `/email-verificado` → `EmailVerified`
+- Ambas como rotas publicas dentro do `PublicLayout`
 
-## Resumo de alterações
-- 1 insert no banco (user_roles)
-- `src/pages/Index.tsx` — adicionar JSON-LD do LocalBusiness no Helmet
-- `src/pages/ProductDetail.tsx` — importar e usar `GuiaMedidas` no lugar do dialog inline
+## Parte 2 — Norma Brasileira (BRL + Datas)
+
+### `src/lib/format.ts` — Criar
+- `formatBRL(value: number): string` → `new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)` → "R$ 25,00"
+- `formatDate(date: string | Date): string` → `new Intl.DateTimeFormat('pt-BR').format(...)` → "09/04/2026"
+- `formatDateTime(date: string | Date): string` → data + hora → "09/04/2026 14:30"
+
+### Substituir em ~15 arquivos
+Trocar todos os padroes `R$ ${value.toFixed(2).replace('.', ',')}` por `formatBRL(value)` e `new Date(x).toLocaleDateString('pt-BR')` por `formatDate(x)` nos seguintes arquivos:
+- `CartPage.tsx`, `Checkout.tsx`, `CheckoutSuccess.tsx`, `Shop.tsx`, `ProductDetail.tsx`
+- `ClientOrders.tsx`, `ClientOrderDetail.tsx`, `ClientFiles.tsx`, `ClientDashboard.tsx`
+- `AdminOrders.tsx`, `AdminOrderDetail.tsx`, `AdminDashboard.tsx`, `AdminClients.tsx`, `AdminFiles.tsx`, `AdminProducts.tsx`
+
+## Detalhes tecnicos
+- Polling via `setInterval` com cleanup no `useEffect`
+- `supabase.auth.resend({ type: 'signup', email })` para reenvio
+- `Intl.NumberFormat('pt-BR')` e norma ABNT para valores monetarios
+- Nenhuma migration necessaria
+
