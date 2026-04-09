@@ -47,10 +47,10 @@ const HeroBanner = () => {
       <div className="relative flex items-center justify-center min-h-[600px] bg-gradient-to-br from-secondary to-background">
         <div className="relative container text-center z-10 px-4">
           <h1 className="font-display text-5xl md:text-7xl text-foreground mb-4">
-            Sua mensagem com<br /><span className="text-primary">impacto visual</span>
+            {getSetting('home_hero_title') || <>Sua mensagem com<br /><span className="text-primary">impacto visual</span></>}
           </h1>
           <p className="text-muted-foreground text-lg md:text-xl mb-8 max-w-2xl mx-auto">
-            Adesivos, banners, placas, fachadas e muito mais. Soluções completas em comunicação visual para sua empresa em Limeira e região.
+            {getSetting('home_hero_subtitle') || 'Adesivos, banners, placas, fachadas e muito mais. Soluções completas em comunicação visual para sua empresa em Limeira e região.'}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link to="/produtos">

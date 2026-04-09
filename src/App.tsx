@@ -38,6 +38,8 @@ import AdminBanners from "./pages/admin/AdminBanners";
 import AdminClients from "./pages/admin/AdminClients";
 import AdminFiles from "./pages/admin/AdminFiles";
 import AdminSettings from "./pages/admin/AdminSettings";
+import AdminPortfolio from "./pages/admin/AdminPortfolio";
+import AdminPageEditor from "./pages/admin/AdminPageEditor";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -89,7 +91,9 @@ const App = () => (
                       <Route path="/admin/categorias" element={<AdminCategories />} />
                       <Route path="/admin/banners" element={<AdminBanners />} />
                       <Route path="/admin/clientes" element={<AdminClients />} />
+                      <Route path="/admin/portfolio" element={<AdminPortfolio />} />
                       <Route path="/admin/arquivos" element={<AdminFiles />} />
+                      <Route path="/admin/paginas" element={<AdminPageEditor />} />
                       <Route path="/admin/configuracoes" element={<AdminSettings />} />
                     </Route>
                   </Route>

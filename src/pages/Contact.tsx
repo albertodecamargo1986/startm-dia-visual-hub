@@ -86,7 +86,7 @@ const Contact = () => {
 
       <div className="container py-12">
         <h1 className="font-display text-5xl mb-4">Fale <span className="text-primary">Conosco</span></h1>
-        <p className="text-muted-foreground text-lg mb-10">Solicite um orçamento ou tire suas dúvidas.</p>
+        <p className="text-muted-foreground text-lg mb-10">{getSetting('contact_intro') || 'Solicite um orçamento ou tire suas dúvidas.'}</p>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Form */}
@@ -167,8 +167,9 @@ const Contact = () => {
               <h2 className="font-display text-2xl mb-2">
                 <Clock className="inline h-5 w-5 mr-2 text-primary" />Horário de Atendimento
               </h2>
-              <p className="text-sm text-muted-foreground">Segunda a Sexta: 8h às 18h</p>
-              <p className="text-sm text-muted-foreground">Sábado: 8h às 12h</p>
+              {(getSetting('contact_hours') || 'Segunda a Sexta: 8h às 18h\nSábado: 8h às 12h').split('\n').map((line, i) => (
+                <p key={i} className="text-sm text-muted-foreground">{line}</p>
+              ))}
             </Card>
 
             {/* Google Maps embed */}
