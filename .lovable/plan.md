@@ -1,44 +1,54 @@
 
 
-# Hardening do Webhook PagSeguro — ✅ Concluído
+# Sitemap Dinâmico e Canonical por Rota
 
-## Implementado
-- Tabela `payment_webhook_events` com UNIQUE constraint para idempotência
-- Validação de origem via API PagSeguro
-- Proteção contra rebaixamento de status (hierarquia pending < paid < refunded)
-- Logs estruturados em JSON
+## Plano
 
----
+### 1. Edge Function `generate-sitemap`
 
-# Automação de Notificações de Pedido — ✅ Concluído
+Criar `supabase/functions/generate-sitemap/index.ts` que:
+- Consulta `products` (ativos) e `categories` (ativas) no banco
+- Gera XML do sitemap com todas as rotas públicas:
+  - `/` (priority 1.0)
+  - `/produtos` (0.9)
+  - `/produtos/{categorySlug}` para cada categoria (0.8)
+  - `/produto/{productSlug}` para cada produto (0.7)
+  - `/sobre`, `/portfolio`, `/contato`, `/privacidade` (0.6-0.7)
+- Exclui rotas privadas (admin, cliente, checkout, login)
+- Retorna `Content-Type: application/xml`
+- Sem autenticação (público)
 
-## Implementado
-- Tabela `notifications_queue` com retry exponencial (5 tentativas, backoff 2^n * 30s)
-- Trigger SQL `enqueue_order_notification` na tabela `orders` (UPDATE de status)
-- Trigger SQL `enqueue_new_order_notification` na tabela `orders` (INSERT)
-- Edge Function `process-notifications` com batch processing (10/vez)
-- Cron job a cada minuto para processar fila
-- 6 templates React Email preparados:
-  - `pedido-criado` (cliente + admin)
-  - `pagamento-confirmado` (cliente)
-  - `aguardando-arte` (cliente)
-  - `arte-aprovada` (cliente)
-  - `pedido-enviado` (cliente)
-  - `pedido-cancelado` (cliente + admin)
+### 2. Atualizar `robots.txt`
 
-## Pendente: Configuração de Email
-- A infraestrutura de email (Lovable Emails) precisa ser configurada com um domínio verificado
-- Enquanto isso, as notificações são enfileiradas mas o envio falhará (com retry)
-- Assim que o domínio estiver verificado e `send-transactional-email` estiver disponível, os emails começam automaticamente
+Mudar a linha do Sitemap para apontar para a Edge Function:
+```
+Sitemap: https://wzdxseimfqarknttabbu.supabase.co/functions/v1/generate-sitemap
+```
 
----
+### 3. Canonical nas Páginas Dinâmicas
 
-# Limpeza de Arquivos Órfãos no Storage — ✅ Concluído
+Adicionar `<link rel="canonical">` via `react-helmet-async` em:
+- `ProductDetail.tsx` → `https://startmidialimeira.com.br/produto/{slug}`
+- `Shop.tsx` → `https://startmidialimeira.com.br/produtos` ou `.../produtos/{categorySlug}`
+- Páginas estáticas (Index, About, Portfolio, Contact) → canonical fixo
 
-## Implementado
-- Tabela `cleanup_reports` para relatórios auditáveis
-- Edge Function `cleanup-orphan-files` com modos dry_run e apply
-- Verifica buckets `customer-files` e `artwork-files`
-- Identifica arquivos sem referência ou de pedidos cancelados há mais de X dias
-- Cron job semanal (domingos 3h) em modo dry_run
-- Relatório salvo na tabela para consulta admin
+Atualizar o componente `SEO.tsx` para sempre renderizar o canonical quando fornecido (já suporta a prop).
+
+### 4. Remover `public/sitemap.xml` Estático
+
+O arquivo estático será substituído pela edge function dinâmica.
+
+## Arquivos
+
+| Arquivo | Alteração |
+|---|---|
+| `supabase/functions/generate-sitemap/index.ts` | Nova edge function |
+| `public/robots.txt` | Atualizar URL do sitemap |
+| `public/sitemap.xml` | Remover |
+| `src/pages/ProductDetail.tsx` | Adicionar canonical |
+| `src/pages/Shop.tsx` | Adicionar canonical |
+| `src/pages/Index.tsx` | Adicionar canonical |
+| `src/pages/About.tsx` | Adicionar canonical |
+| `src/pages/Portfolio.tsx` | Adicionar canonical |
+| `src/pages/Contact.tsx` | Adicionar canonical |
+
