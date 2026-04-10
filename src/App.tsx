@@ -50,6 +50,7 @@ import CmsPageCreate from "./pages/admin/cms/CmsPageCreate";
 import CmsPageEditorPage from "./pages/admin/cms/CmsPageEditor";
 import CmsPageRevisions from "./pages/admin/cms/CmsPageRevisions";
 import CmsMediaLibrary from "./pages/admin/cms/CmsMediaLibrary";
+import CmsPage from "./pages/CmsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -78,6 +79,7 @@ const App = () => (
                   <Route path="/verificar-email" element={<EmailVerification />} />
                   <Route path="/email-verificado" element={<EmailVerified />} />
                   <Route path="/privacidade" element={<Privacy />} />
+                  <Route path="/p/:slug" element={<CmsPage />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
 
                   <Route element={<RequireAuth />}>
