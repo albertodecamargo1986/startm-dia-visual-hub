@@ -396,11 +396,12 @@ const LabelEditor = () => {
   const fitToContainer = useCallback(() => {
     const fc = fabricRef.current; const container = containerRef.current;
     if (!fc || !container) return;
-    const cw = container.clientWidth - 40; const ch = container.clientHeight - 40;
+    const cw = container.clientWidth - 48; const ch = container.clientHeight - 48;
     if (cw <= 0 || ch <= 0) return;
     const canvasW = fc.getWidth(); const canvasH = fc.getHeight();
     if (canvasW <= 0 || canvasH <= 0) return;
-    const scale = Math.min(cw / canvasW, ch / canvasH, 1);
+    // Limit to 80% of container so canvas doesn't fill the whole area
+    const scale = Math.min((cw * 0.8) / canvasW, (ch * 0.8) / canvasH, 1);
     if (!Number.isFinite(scale) || scale <= 0) return;
     setZoom(scale); fc.setZoom(scale);
     fc.setDimensions({ width: canvasW * scale, height: canvasH * scale }, { cssOnly: true });
@@ -1095,18 +1096,7 @@ const LabelEditor = () => {
 
                       <Separator />
 
-                      {/* Design actions */}
-                      <div>
-                        <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Ações</p>
-                        <div className="space-y-1">
-                          <Button variant="outline" size="sm" className="w-full justify-start text-xs" onClick={handleDuplicateDesign}>
-                            <CopyPlus className="h-3 w-3 mr-2" />Duplicar design
-                          </Button>
-                          <Button variant="outline" size="sm" className="w-full justify-start text-xs" onClick={() => { setSaveAsName(projectName + ' (cópia)'); setShowSaveAsDialog(true); }}>
-                            <Copy className="h-3 w-3 mr-2" />Salvar como novo
-                          </Button>
-                        </div>
-                      </div>
+                      {/* Design actions removed — available in top bar */}
                     </div>
                   </ScrollArea>
                 </TabsContent>
@@ -1163,34 +1153,13 @@ const LabelEditor = () => {
 
           {/* ── CENTER: CANVAS ── */}
           <div className="flex-1 min-w-0 flex flex-col">
-            {/* Floating toolbar */}
+            {/* Simplified toolbar */}
             <div className="flex items-center justify-center gap-1 py-1.5 px-2 border-b bg-muted/30">
               <Tooltip><TooltipTrigger asChild>
                 <Button variant={showLeftPanel ? 'secondary' : 'ghost'} size="icon" className="h-8 w-8" onClick={() => setShowLeftPanel(!showLeftPanel)}>
                   <Palette className="h-4 w-4" />
                 </Button>
               </TooltipTrigger><TooltipContent>Painel de design</TooltipContent></Tooltip>
-
-              <Separator orientation="vertical" className="h-5 mx-1" />
-
-              <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs" onClick={addText}>
-                <Type className="h-4 w-4" />
-                <span className="hidden lg:inline">Texto</span>
-              </Button>
-
-              <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs" onClick={() => addShape('rect')}>
-                <Square className="h-4 w-4" />
-                <span className="hidden lg:inline">Forma</span>
-              </Button>
-
-              <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs" onClick={() => addShape('circle')}>
-                <CircleIcon className="h-4 w-4" />
-              </Button>
-
-              <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs" onClick={() => imageInputRef.current?.click()}>
-                <ImageIcon className="h-4 w-4" />
-                <span className="hidden lg:inline">Imagem</span>
-              </Button>
 
               <Separator orientation="vertical" className="h-5 mx-1" />
 
@@ -1223,16 +1192,12 @@ const LabelEditor = () => {
               <Tooltip><TooltipTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={deleteSelected}><Trash2 className="h-4 w-4" /></Button>
               </TooltipTrigger><TooltipContent>Excluir (Delete)</TooltipContent></Tooltip>
-
-              <Tooltip><TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowShortcuts(true)}><Keyboard className="h-4 w-4" /></Button>
-              </TooltipTrigger><TooltipContent>Atalhos</TooltipContent></Tooltip>
             </div>
 
-            {/* Canvas area */}
-            <div className="flex-1 flex items-center justify-center bg-muted/10 p-4 overflow-auto" ref={containerRef}>
-              <div className="relative border border-dashed border-muted-foreground/30 rounded-lg p-2 bg-white shadow-sm" id="canvas-wrapper">
-                <div className="absolute inset-2 rounded" style={gridOverlayStyle} />
+            {/* Canvas area — neutral worktable background, label centered */}
+            <div className="flex-1 flex items-center justify-center bg-muted/30 overflow-auto" ref={containerRef}>
+              <div className="relative bg-white shadow-lg rounded" id="canvas-wrapper" style={{ margin: 'auto' }}>
+                <div className="absolute inset-0 rounded" style={gridOverlayStyle} />
                 <div ref={canvasHostRef} />
               </div>
             </div>
