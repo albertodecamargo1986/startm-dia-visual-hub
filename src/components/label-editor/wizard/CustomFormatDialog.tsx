@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { X, Info } from 'lucide-react';
-import { type LabelShape, createFormat } from '@/lib/label-formats';
+import { type LabelShape } from '@/lib/label-formats';
 import { FormatPreview } from './FormatPreview';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
