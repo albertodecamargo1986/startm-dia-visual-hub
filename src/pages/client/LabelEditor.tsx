@@ -695,15 +695,23 @@ const LabelEditor = () => {
       <div style={{ display: currentProject ? 'none' : undefined }}>
         <div className="space-y-6 max-w-4xl mx-auto">
           {showOnboarding && (
-            <div className="relative bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 rounded-xl p-4 flex items-start gap-4">
-              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                <Sparkles className="h-6 w-6 text-primary" />
+            <div className="relative bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 rounded-xl p-5">
+              <Button variant="ghost" size="icon" className="absolute right-2 top-2 h-8 w-8" onClick={dismissOnboarding}><X className="h-4 w-4" /></Button>
+              <h3 className="font-semibold text-sm mb-3">Bem-vindo ao Editor de Etiquetas!</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-background/60">
+                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-sm font-bold text-primary">1</div>
+                  <div><p className="text-xs font-medium">Escolha o formato</p><p className="text-[11px] text-muted-foreground mt-0.5">Selecione a forma e o tamanho da etiqueta</p></div>
+                </div>
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-background/60">
+                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-sm font-bold text-primary">2</div>
+                  <div><p className="text-xs font-medium">Personalize</p><p className="text-[11px] text-muted-foreground mt-0.5">Adicione textos, imagens e escolha cores</p></div>
+                </div>
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-background/60">
+                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-sm font-bold text-primary">3</div>
+                  <div><p className="text-xs font-medium">Salve e peça</p><p className="text-[11px] text-muted-foreground mt-0.5">Salve o projeto e adicione ao carrinho</p></div>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-sm">Bem-vindo ao Editor de Etiquetas!</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">Escolha um formato abaixo, defina o tamanho e comece a personalizar. Você pode adicionar textos, imagens, formas e usar templates prontos.</p>
-              </div>
-              <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8" onClick={dismissOnboarding}><X className="h-4 w-4" /></Button>
             </div>
           )}
 
@@ -932,11 +940,15 @@ const LabelEditor = () => {
           {/* Actions */}
           <div className="flex items-center gap-1">
             <Tooltip><TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleSave}><Save className="h-4 w-4" /></Button>
-            </TooltipTrigger><TooltipContent>Salvar (Ctrl+S)</TooltipContent></Tooltip>
+              <Button variant="ghost" size="sm" className="h-8 gap-1" onClick={handleSave}>
+                <Save className="h-4 w-4" /><span className="hidden lg:inline text-xs">Salvar rascunho</span>
+              </Button>
+            </TooltipTrigger><TooltipContent>Salvar rascunho (Ctrl+S)</TooltipContent></Tooltip>
 
             <Tooltip><TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleSaveVersion}><FileText className="h-4 w-4" /></Button>
+              <Button variant="ghost" size="sm" className="h-8 gap-1" onClick={handleSaveVersion}>
+                <FileText className="h-4 w-4" /><span className="hidden lg:inline text-xs">Salvar versão</span>
+              </Button>
             </TooltipTrigger><TooltipContent>Salvar versão</TooltipContent></Tooltip>
 
             <Tooltip><TooltipTrigger asChild>
@@ -1246,6 +1258,50 @@ const LabelEditor = () => {
                             className="h-6 px-2 text-[10px]" onClick={() => updateObjectProp('fontSize', sz)}>{sz}</Button>
                         ))}
                       </div>
+                    </div>
+
+                    {/* Bold / Italic */}
+                    <div>
+                      <Label className="text-xs">Estilo</Label>
+                      <div className="flex gap-1 mt-1">
+                        <Button variant={selectedObject.fontWeight === 'bold' ? 'default' : 'outline'} size="icon" className="h-8 w-8"
+                          onClick={() => updateObjectProp('fontWeight', selectedObject.fontWeight === 'bold' ? 'normal' : 'bold')}>
+                          <Bold className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant={selectedObject.fontStyle === 'italic' ? 'default' : 'outline'} size="icon" className="h-8 w-8"
+                          onClick={() => updateObjectProp('fontStyle', selectedObject.fontStyle === 'italic' ? 'normal' : 'italic')}>
+                          <Italic className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Text Align */}
+                    <div>
+                      <Label className="text-xs">Alinhamento do texto</Label>
+                      <div className="flex gap-1 mt-1">
+                        <Button variant={(selectedObject.textAlign || 'left') === 'left' ? 'default' : 'outline'} size="icon" className="h-8 w-8"
+                          onClick={() => updateObjectProp('textAlign', 'left')}><AlignLeft className="h-3.5 w-3.5" /></Button>
+                        <Button variant={selectedObject.textAlign === 'center' ? 'default' : 'outline'} size="icon" className="h-8 w-8"
+                          onClick={() => updateObjectProp('textAlign', 'center')}><AlignCenter className="h-3.5 w-3.5" /></Button>
+                        <Button variant={selectedObject.textAlign === 'right' ? 'default' : 'outline'} size="icon" className="h-8 w-8"
+                          onClick={() => updateObjectProp('textAlign', 'right')}><AlignRight className="h-3.5 w-3.5" /></Button>
+                      </div>
+                    </div>
+
+                    {/* Char Spacing */}
+                    <div>
+                      <Label className="text-xs">Espaçamento entre letras</Label>
+                      <Input type="range" min={-200} max={800} step={10} value={selectedObject.charSpacing || 0}
+                        onChange={e => updateObjectProp('charSpacing', Number(e.target.value))} className="h-8 mt-1" />
+                      <span className="text-[10px] text-muted-foreground">{selectedObject.charSpacing || 0}</span>
+                    </div>
+
+                    {/* Line Height */}
+                    <div>
+                      <Label className="text-xs">Altura da linha</Label>
+                      <Input type="range" min={0.5} max={3} step={0.1} value={selectedObject.lineHeight || 1.16}
+                        onChange={e => updateObjectProp('lineHeight', Number(e.target.value))} className="h-8 mt-1" />
+                      <span className="text-[10px] text-muted-foreground">{(selectedObject.lineHeight || 1.16).toFixed(1)}</span>
                     </div>
                   </>
                 )}
