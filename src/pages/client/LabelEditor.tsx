@@ -331,8 +331,18 @@ const LabelEditor = () => {
     if (!host || fabricRef.current) return;
     const canvasEl = document.createElement('canvas');
     host.appendChild(canvasEl);
-    const fc = new FabricCanvas(canvasEl, { width: 400, height: 400, backgroundColor: '#ffffff', selection: true });
+    const fc = new FabricCanvas(canvasEl, { width: 400, height: 400, backgroundColor: '#ffffff', selection: true, uniformScaling: true });
     fabricRef.current = fc;
+    // Better corner styles for selection handles
+    FabricObject.prototype.set({
+      cornerSize: 10,
+      cornerColor: '#2563eb',
+      borderColor: '#2563eb',
+      cornerStrokeColor: '#ffffff',
+      cornerStyle: 'circle',
+      transparentCorners: false,
+      borderScaleFactor: 2,
+    });
     fc.on('object:modified', () => { markDirty(); pushHistory(); syncLayers(); });
     fc.on('object:added', () => { if (!isRestoring.current) { markDirty(); pushHistory(); } syncLayers(); });
     fc.on('object:removed', () => { markDirty(); pushHistory(); syncLayers(); });
