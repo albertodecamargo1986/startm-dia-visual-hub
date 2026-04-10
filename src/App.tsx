@@ -20,6 +20,7 @@ import Login from "./pages/Login";
 import EmailVerification from "./pages/EmailVerification";
 import EmailVerified from "./pages/EmailVerified";
 import Privacy from "./pages/Privacy";
+import ResetPassword from "./pages/ResetPassword";
 import Checkout from "./pages/Checkout";
 import CheckoutSuccess from "./pages/CheckoutSuccess";
 import ClientLayout from "./pages/client/ClientLayout";
@@ -70,6 +71,7 @@ const App = () => (
                   <Route path="/verificar-email" element={<EmailVerification />} />
                   <Route path="/email-verificado" element={<EmailVerified />} />
                   <Route path="/privacidade" element={<Privacy />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
 
                   <Route element={<RequireAuth />}>
                     <Route path="/checkout" element={<Checkout />} />
