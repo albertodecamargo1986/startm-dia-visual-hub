@@ -121,12 +121,19 @@ const Checkout = () => {
       order_id: order.id,
       product_id: item.productId,
       product_name: item.productName,
+      product_snapshot: {
+        thumbnail: item.thumbnail,
+        priceUnit: item.priceUnit,
+        needsArtwork: item.needsArtwork,
+        unitPrice: item.unitPrice,
+      },
       quantity: item.quantity,
       unit_price: item.unitPrice,
       total_price: item.unitPrice * item.quantity,
-      custom_width: item.customWidth,
-      custom_height: item.customHeight,
+      custom_width: item.customWidth || null,
+      custom_height: item.customHeight || null,
       notes: item.notes || '',
+      artwork_status: item.needsArtwork ? 'pending' : 'not_required',
     }));
 
     await supabase.from('order_items').insert(orderItems);
