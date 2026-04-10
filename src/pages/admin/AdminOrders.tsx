@@ -49,6 +49,21 @@ const AdminOrders = () => {
     },
   });
 
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-orders-realtime')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'orders',
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [queryClient]);
+
   const orders = data?.orders ?? [];
   const total = data?.total ?? 0;
   const totalPages = Math.ceil(total / PAGE_SIZE);
