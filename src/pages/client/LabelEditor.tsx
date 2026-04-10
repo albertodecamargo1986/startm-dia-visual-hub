@@ -1356,6 +1356,34 @@ const LabelEditor = () => {
                   </ScrollArea>
                 </TabsContent>
 
+                {/* ── Elements Library Tab ── */}
+                <TabsContent value="elements" className="flex-1 min-h-0 mt-0">
+                  <ScrollArea className="h-full">
+                    <div className="p-3 space-y-4">
+                      {SVG_ELEMENTS_LIBRARY.map(cat => (
+                        <div key={cat.id}>
+                          <div className="flex items-center gap-1.5 mb-2">
+                            {cat.icon}
+                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{cat.label}</p>
+                          </div>
+                          <div className="grid grid-cols-3 gap-1.5">
+                            {cat.elements.map(el => (
+                              <button key={el.id} onClick={() => addSvgElement(el)}
+                                className="flex flex-col items-center gap-1 p-2 rounded-lg border hover:border-primary/50 hover:bg-muted/50 transition-all group">
+                                <svg viewBox="0 0 24 24" className="w-6 h-6 text-foreground/70 group-hover:text-primary transition-colors" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d={el.path} />
+                                </svg>
+                                <span className="text-[9px] font-medium truncate w-full text-center text-muted-foreground">{el.name}</span>
+                              </button>
+                            ))}
+                          </div>
+                          <Separator className="mt-3" />
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </TabsContent>
+
                 <TabsContent value="layers" className="flex-1 min-h-0 mt-0">
                   <ScrollArea className="h-full">
                     <div className="p-3">
