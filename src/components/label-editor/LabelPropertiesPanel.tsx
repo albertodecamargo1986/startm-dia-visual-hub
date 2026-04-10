@@ -152,7 +152,7 @@ const LabelPropertiesPanel = ({
                selectedObject={selectedObject}
                onHistoryCapture={onHistoryCapture}
              />
-           )
+           )}
 
           {/* Curved text controller */}
           {(selectedObject as any)?.__isCurvedTextController && (
