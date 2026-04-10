@@ -1,74 +1,44 @@
 
 
-# Job de Limpeza de Arquivos Órfãos no Storage
+# Hardening do Webhook PagSeguro — ✅ Concluído
 
-## Visão Geral
+## Implementado
+- Tabela `payment_webhook_events` com UNIQUE constraint para idempotência
+- Validação de origem via API PagSeguro
+- Proteção contra rebaixamento de status (hierarquia pending < paid < refunded)
+- Logs estruturados em JSON
 
-Criar uma Edge Function `cleanup-orphan-files` que identifica e remove arquivos sem referência válida nos buckets `customer-files` e `artwork-files`. A função opera em dois modos: **dry-run** (apenas relatório) e **apply** (remoção efetiva).
+---
 
-## Alterações
+# Automação de Notificações de Pedido — ✅ Concluído
 
-### 1. Migração SQL — Tabela `cleanup_reports`
+## Implementado
+- Tabela `notifications_queue` com retry exponencial (5 tentativas, backoff 2^n * 30s)
+- Trigger SQL `enqueue_order_notification` na tabela `orders` (UPDATE de status)
+- Trigger SQL `enqueue_new_order_notification` na tabela `orders` (INSERT)
+- Edge Function `process-notifications` com batch processing (10/vez)
+- Cron job a cada minuto para processar fila
+- 6 templates React Email preparados:
+  - `pedido-criado` (cliente + admin)
+  - `pagamento-confirmado` (cliente)
+  - `aguardando-arte` (cliente)
+  - `arte-aprovada` (cliente)
+  - `pedido-enviado` (cliente)
+  - `pedido-cancelado` (cliente + admin)
 
-```sql
-CREATE TABLE public.cleanup_reports (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  mode text NOT NULL, -- 'dry_run' | 'apply'
-  bucket text NOT NULL,
-  total_orphans int DEFAULT 0,
-  bytes_freed bigint DEFAULT 0,
-  errors int DEFAULT 0,
-  details jsonb DEFAULT '[]'::jsonb, -- array of { path, reason, size, error? }
-  started_at timestamptz DEFAULT now(),
-  finished_at timestamptz,
-  created_at timestamptz DEFAULT now()
-);
-ALTER TABLE public.cleanup_reports ENABLE ROW LEVEL SECURITY;
--- Admin-only read
-CREATE POLICY "Cleanup reports: admin read" ON public.cleanup_reports
-  FOR SELECT TO authenticated
-  USING (has_role(auth.uid(), 'admin'::app_role) OR has_role(auth.uid(), 'super_admin'::app_role));
-```
+## Pendente: Configuração de Email
+- A infraestrutura de email (Lovable Emails) precisa ser configurada com um domínio verificado
+- Enquanto isso, as notificações são enfileiradas mas o envio falhará (com retry)
+- Assim que o domínio estiver verificado e `send-transactional-email` estiver disponível, os emails começam automaticamente
 
-### 2. Edge Function `cleanup-orphan-files`
+---
 
-Parâmetros (query string): `mode=dry_run|apply`, `days_threshold=30` (dias desde cancelamento).
+# Limpeza de Arquivos Órfãos no Storage — ✅ Concluído
 
-Lógica:
-1. Listar todos os arquivos nos buckets `customer-files` e `artwork-files` via Storage API (usando service role)
-2. Para cada arquivo, verificar se existe referência em `customer_files.file_url`
-3. Se referenciado, verificar se o pedido associado existe e não está cancelado há mais de X dias
-4. Classificar como órfão se: sem referência OU pedido cancelado há mais de X dias
-5. No modo `apply`: deletar o arquivo via Storage API
-6. Registrar resultado na tabela `cleanup_reports`
-7. Enfileirar notificação de resumo para admins na `notifications_queue`
-
-### 3. Cron Job Semanal
-
-Agendar execução semanal (domingos às 3h) em modo `dry_run` por padrão. Admin pode invocar manualmente em modo `apply`.
-
-```sql
-SELECT cron.schedule(
-  'cleanup-orphan-files-weekly',
-  '0 3 * * 0',
-  $$ SELECT net.http_post(...) $$
-);
-```
-
-### 4. Notificação para Admin
-
-Após cada execução, inserir na `notifications_queue` um evento `cleanup_report` com resumo (total de órfãos, bytes, erros). Reutiliza a infraestrutura de notificações existente.
-
-## Arquivos
-
-| Arquivo | Alteração |
-|---|---|
-| Nova migração SQL | Tabela `cleanup_reports` + cron job |
-| `supabase/functions/cleanup-orphan-files/index.ts` | Nova edge function |
-
-## Critérios de Aceite
-- Modo dry_run não deleta nenhum arquivo
-- Relatório auditável salvo na tabela `cleanup_reports`
-- Execução semanal automática configurada
-- Admin recebe resumo via notificação
-
+## Implementado
+- Tabela `cleanup_reports` para relatórios auditáveis
+- Edge Function `cleanup-orphan-files` com modos dry_run e apply
+- Verifica buckets `customer-files` e `artwork-files`
+- Identifica arquivos sem referência ou de pedidos cancelados há mais de X dias
+- Cron job semanal (domingos 3h) em modo dry_run
+- Relatório salvo na tabela para consulta admin
