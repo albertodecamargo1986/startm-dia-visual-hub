@@ -42,26 +42,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
+    let isMounted = true;
+
+    const syncSession = async (session: Session | null) => {
       if (session?.user) {
-        setTimeout(() => fetchProfile(session.user.id), 0);
+        await fetchProfile(session.user.id);
       } else {
-        setProfile(null);
-        setIsAdmin(false);
-        setIsSuperAdmin(false);
+        if (isMounted) {
+          setProfile(null);
+          setIsAdmin(false);
+          setIsSuperAdmin(false);
+        }
       }
-      setLoading(false);
-    });
+      if (isMounted) setLoading(false);
+    };
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session?.user) fetchProfile(session.user.id);
-      setLoading(false);
+      if (isMounted) {
+        setSession(session);
+        syncSession(session);
+      }
     });
 
-    return () => subscription.unsubscribe();
-  }, []);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!isMounted) return;
+      setSession(session);
+      syncSession(session);
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const login = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
