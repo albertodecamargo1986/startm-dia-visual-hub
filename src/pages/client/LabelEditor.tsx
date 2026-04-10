@@ -211,7 +211,7 @@ const LabelEditor = () => {
   const [layerNameDraft, setLayerNameDraft] = useState('');
 
   // Wizard state
-  const [wizardStep, setWizardStep] = useState(0); // 0=shape, 1=size, 2=name
+  const [wizardStep, setWizardStep] = useState(0); // 0=shape, 1=size, 2=name, 3=template
 
   // UX state
   const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem(ONBOARDING_KEY));
@@ -730,7 +730,7 @@ const LabelEditor = () => {
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-center gap-2 mb-6">
-                {['Formato', 'Tamanho', 'Nome'].map((label, i) => (
+                {['Formato', 'Tamanho', 'Nome', 'Modelo'].map((label, i) => (
                   <div key={label} className="flex items-center gap-2">
                     <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
                       wizardStep === i ? 'bg-primary text-primary-foreground' :
@@ -739,7 +739,7 @@ const LabelEditor = () => {
                       {wizardStep > i ? <Check className="h-4 w-4" /> : i + 1}
                     </div>
                     <span className={`text-sm hidden sm:inline ${wizardStep === i ? 'font-medium' : 'text-muted-foreground'}`}>{label}</span>
-                    {i < 2 && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                    {i < 3 && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
                   </div>
                 ))}
               </div>
@@ -819,9 +819,68 @@ const LabelEditor = () => {
                       <Label className="text-sm font-medium">Nome do projeto</Label>
                       <Input value={projectName} onChange={e => setProjectName(e.target.value)} placeholder="Ex: Etiqueta Natal 2025" className="mt-1" autoFocus />
                     </div>
-                    <Button className="w-full" size="lg" onClick={handleNewProject} disabled={!selectedFormat}>
-                      <Sparkles className="h-4 w-4 mr-2" />Criar Etiqueta
+                    <Button className="w-full" size="lg" onClick={() => setWizardStep(3)}>
+                      Próximo <ChevronRight className="h-4 w-4 ml-1" />
                     </Button>
+                  </div>
+                </div>
+              )}
+
+              {wizardStep === 3 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-4">
+                    <Button variant="ghost" size="sm" onClick={() => setWizardStep(2)}><ArrowLeft className="h-4 w-4 mr-1" />Voltar</Button>
+                    <h2 className="text-lg font-semibold">Comece com um modelo ou do zero</h2>
+                  </div>
+                  <div className="mb-4">
+                    <Button variant="outline" className="w-full mb-4 h-14 text-base" onClick={handleNewProject} disabled={!selectedFormat}>
+                      <Plus className="h-5 w-5 mr-2" />Começar do Zero (canvas em branco)
+                    </Button>
+                  </div>
+                  <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">Ou escolha um modelo pronto</p>
+                  <div className="space-y-4">
+                    {TEMPLATE_CATEGORIES.map(cat => {
+                      const templates = getTemplatesByCategory(cat.id);
+                      if (templates.length === 0) return null;
+                      return (
+                        <div key={cat.id}>
+                          <p className="text-sm font-medium mb-2">{cat.emoji} {cat.label}</p>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                            {templates.map(t => {
+                              const colors = getTemplateColors(t);
+                              return (
+                                <button key={t.id} onClick={async () => {
+                                  const proj = await createProject({ name: projectName || t.name, label_shape: selectedFormat!.shape, width_mm: selectedFormat!.widthMm, height_mm: selectedFormat!.heightMm });
+                                  if (proj) {
+                                    resetCanvas();
+                                    setCurrentProject(proj);
+                                    setProjectName(proj.name);
+                                    applyFormat(selectedFormat!);
+                                    const objs = t.getObjects(selectedFormat!.widthMm, selectedFormat!.heightMm);
+                                    objs.forEach(obj => { loadGoogleFont(obj.fontFamily || 'Arial'); addObjectFromJson(fabricRef.current!, obj); });
+                                    fabricRef.current?.renderAll();
+                                    pushHistory();
+                                    syncLayers();
+                                    markDirty();
+                                    toast.success(`Modelo "${t.name}" aplicado!`);
+                                  }
+                                }} className="flex flex-col items-center gap-2 p-3 rounded-xl border-2 border-border hover:border-primary/50 hover:shadow-md transition-all group">
+                                  <div className="w-full aspect-square rounded-lg flex items-center justify-center overflow-hidden relative bg-white">
+                                    <div className="w-full h-full flex gap-0.5">
+                                      {colors.map((c, i) => (
+                                        <div key={i} className="flex-1" style={{ backgroundColor: c }} />
+                                      ))}
+                                    </div>
+                                  </div>
+                                  <span className="text-xs font-medium truncate w-full text-center">{t.name}</span>
+                                  <span className="text-[10px] text-muted-foreground">{t.description}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
