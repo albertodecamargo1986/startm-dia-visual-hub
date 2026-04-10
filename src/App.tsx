@@ -45,6 +45,10 @@ import AdminPageEditor from "./pages/admin/AdminPageEditor";
 import AdminTheme from "./pages/admin/AdminTheme";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminBackups from "./pages/admin/AdminBackups";
+import CmsPageList from "./pages/admin/cms/CmsPageList";
+import CmsPageCreate from "./pages/admin/cms/CmsPageCreate";
+import CmsPageEditorPage from "./pages/admin/cms/CmsPageEditor";
+import CmsPageRevisions from "./pages/admin/cms/CmsPageRevisions";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -101,6 +105,10 @@ const App = () => (
                       <Route path="/admin/portfolio" element={<AdminPortfolio />} />
                       <Route path="/admin/arquivos" element={<AdminFiles />} />
                       <Route path="/admin/paginas" element={<AdminPageEditor />} />
+                      <Route path="/admin/cms" element={<CmsPageList />} />
+                      <Route path="/admin/cms/nova" element={<CmsPageCreate />} />
+                      <Route path="/admin/cms/:id" element={<CmsPageEditorPage />} />
+                      <Route path="/admin/cms/:id/revisoes" element={<CmsPageRevisions />} />
                       <Route path="/admin/aparencia" element={<AdminTheme />} />
                       <Route path="/admin/analytics" element={<AdminAnalytics />} />
                       <Route path="/admin/operacional" element={<AdminBackups />} />
