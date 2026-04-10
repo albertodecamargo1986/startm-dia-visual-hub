@@ -1186,19 +1186,19 @@ const LabelEditor = () => {
           {/* ── VERTICAL TOOLBAR (Photoshop style) ── */}
           <div className="w-12 shrink-0 border-r bg-card flex flex-col items-center py-2 gap-1">
             <Tooltip><TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => { fabricRef.current?.discardActiveObject(); fabricRef.current?.renderAll(); setSelectedObject(null); }}>
+              <Button variant={activeTool === 'select' ? 'secondary' : 'ghost'} size="icon" className="h-9 w-9" onClick={() => { toggleDrawingMode(false); setActiveTool('select'); fabricRef.current?.discardActiveObject(); fabricRef.current?.renderAll(); setSelectedObject(null); }}>
                 <MousePointer2 className="h-4 w-4" />
               </Button>
             </TooltipTrigger><TooltipContent side="right">Seleção</TooltipContent></Tooltip>
 
             <Tooltip><TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={addText}>
+              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => { toggleDrawingMode(false); setActiveTool('select'); addText(); }}>
                 <Type className="h-4 w-4" />
               </Button>
             </TooltipTrigger><TooltipContent side="right">Texto</TooltipContent></Tooltip>
 
             <Tooltip><TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={addCurvedText}>
+              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => { toggleDrawingMode(false); setActiveTool('select'); addCurvedText(); }}>
                 <WrapText className="h-4 w-4" />
               </Button>
             </TooltipTrigger><TooltipContent side="right">Texto em Arco</TooltipContent></Tooltip>
@@ -1206,25 +1206,25 @@ const LabelEditor = () => {
             <Separator className="w-6 my-1" />
 
             <Tooltip><TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => addShape('rect')}>
+              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => { toggleDrawingMode(false); addShape('rect'); }}>
                 <Square className="h-4 w-4" />
               </Button>
             </TooltipTrigger><TooltipContent side="right">Retângulo</TooltipContent></Tooltip>
 
             <Tooltip><TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => addShape('circle')}>
+              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => { toggleDrawingMode(false); addShape('circle'); }}>
                 <CircleIcon className="h-4 w-4" />
               </Button>
             </TooltipTrigger><TooltipContent side="right">Círculo</TooltipContent></Tooltip>
 
             <Tooltip><TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => addShape('triangle')}>
+              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => { toggleDrawingMode(false); addShape('triangle'); }}>
                 <TriangleIcon className="h-4 w-4" />
               </Button>
             </TooltipTrigger><TooltipContent side="right">Triângulo</TooltipContent></Tooltip>
 
             <Tooltip><TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => addShape('line')}>
+              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => { toggleDrawingMode(false); addShape('line'); }}>
                 <Minus className="h-4 w-4" />
               </Button>
             </TooltipTrigger><TooltipContent side="right">Linha</TooltipContent></Tooltip>
@@ -1232,7 +1232,13 @@ const LabelEditor = () => {
             <Separator className="w-6 my-1" />
 
             <Tooltip><TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => imageInputRef.current?.click()}>
+              <Button variant={activeTool === 'draw' ? 'secondary' : 'ghost'} size="icon" className="h-9 w-9" onClick={() => { if (drawingMode) { toggleDrawingMode(false); } else { toggleDrawingMode(true); } }}>
+                <PenTool className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger><TooltipContent side="right">Desenho Livre</TooltipContent></Tooltip>
+
+            <Tooltip><TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => { toggleDrawingMode(false); imageInputRef.current?.click(); }}>
                 <ImageIcon className="h-4 w-4" />
               </Button>
             </TooltipTrigger><TooltipContent side="right">Imagem</TooltipContent></Tooltip>
@@ -1243,7 +1249,7 @@ const LabelEditor = () => {
               <Button variant={showLeftPanel ? 'secondary' : 'ghost'} size="icon" className="h-9 w-9" onClick={() => setShowLeftPanel(!showLeftPanel)}>
                 <Palette className="h-4 w-4" />
               </Button>
-            </TooltipTrigger><TooltipContent side="right">Templates & Camadas</TooltipContent></Tooltip>
+            </TooltipTrigger><TooltipContent side="right">Templates & Elementos</TooltipContent></Tooltip>
 
             <Tooltip><TooltipTrigger asChild>
               <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setShowShortcuts(true)}>
