@@ -16,6 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ArrowLeft, Save, Globe, Eye, History, Loader2, Plus, Trash2, Copy, GripVertical, ChevronUp, ChevronDown, ChevronRight, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Section {
   id?: string;
@@ -30,6 +31,7 @@ interface Section {
 const CmsPageEditor = () => {
   const { id } = useParams<{ id: string }>();
   const qc = useQueryClient();
+  const { isSuperAdmin } = useAuth();
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [page, setPage] = useState({ title: '', slug: '', seo_title: '', seo_description: '', is_home: false, status: 'draft' });
