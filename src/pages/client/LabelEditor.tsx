@@ -266,10 +266,13 @@ const LabelEditor = () => {
     setLayers(items.reverse());
   }, []);
 
-  // ── Canvas init ──
+  // ── Canvas init (imperative to avoid React reconciliation conflicts with Fabric.js) ──
   useEffect(() => {
-    if (!canvasRef.current || fabricRef.current) return;
-    const fc = new FabricCanvas(canvasRef.current, { width: 400, height: 400, backgroundColor: '#ffffff', selection: true });
+    const host = canvasHostRef.current;
+    if (!host || fabricRef.current) return;
+    const canvasEl = document.createElement('canvas');
+    host.appendChild(canvasEl);
+    const fc = new FabricCanvas(canvasEl, { width: 400, height: 400, backgroundColor: '#ffffff', selection: true });
     fabricRef.current = fc;
     fc.on('object:modified', () => { markDirty(); pushHistory(); syncLayers(); });
     fc.on('object:added', () => { if (!isRestoring.current) { markDirty(); pushHistory(); } syncLayers(); });
