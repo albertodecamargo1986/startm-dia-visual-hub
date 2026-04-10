@@ -465,12 +465,12 @@ const LabelEditor = () => {
   const fitToContainer = useCallback(() => {
     const fc = fabricRef.current; const container = containerRef.current;
     if (!fc || !container) return;
-    const cw = container.clientWidth - 48; const ch = container.clientHeight - 48;
+    const cw = container.clientWidth - 24; const ch = container.clientHeight - 24;
     if (cw <= 0 || ch <= 0) return;
     const canvasW = fc.getWidth(); const canvasH = fc.getHeight();
     if (canvasW <= 0 || canvasH <= 0) return;
-    // Limit to 70% of container for breathing room (Photoshop style)
-    const scale = Math.min((cw * 0.7) / canvasW, (ch * 0.7) / canvasH, 1);
+    // Use 90% of container, allow upscale to 3x for small labels
+    const scale = Math.min((cw * 0.9) / canvasW, (ch * 0.9) / canvasH, 3);
     if (!Number.isFinite(scale) || scale <= 0) return;
     setZoom(scale); fc.setZoom(scale);
     fc.setDimensions({ width: canvasW * scale, height: canvasH * scale }, { cssOnly: true });
@@ -1437,8 +1437,8 @@ const LabelEditor = () => {
           {/* ── CENTER: CANVAS WORKSPACE ── */}
           <div className="flex-1 min-w-0 flex flex-col">
             {/* Canvas area — dark worktable background (Photoshop style) */}
-            <div className="flex-1 flex items-center justify-center overflow-auto" ref={containerRef} style={{ backgroundColor: '#3a3a3a' }}>
-              <div className="relative shadow-2xl" id="canvas-wrapper" style={{ margin: 'auto' }}>
+            <div className="flex-1 flex items-center justify-center overflow-auto p-4" ref={containerRef} style={{ backgroundColor: '#3a3a3a' }}>
+              <div className="relative shadow-2xl ring-1 ring-white/20" id="canvas-wrapper" style={{ margin: 'auto' }}>
                 <div className="absolute inset-0" style={gridOverlayStyle} />
                 <div ref={canvasHostRef} />
               </div>
