@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
@@ -18,7 +18,8 @@ import {
   LayoutTemplate, Frame, Image as ImageIcon, Lock, Unlock,
   AlignHorizontalJustifyCenter, AlignVerticalJustifyCenter,
   AlignStartHorizontal, AlignEndHorizontal, AlignStartVertical, AlignEndVertical,
-  GripVertical, Pencil
+  GripVertical, Pencil, ShoppingCart, Printer, CopyPlus, Sparkles,
+  ChevronRight, ChevronLeft, X
 } from 'lucide-react';
 import { LABEL_SHAPES, getFormatsForShape, mmToPx, type LabelFormat } from '@/lib/label-formats';
 import { exportLabelPDF } from '@/lib/label-pdf-export';
@@ -28,8 +29,10 @@ import {
   DECORATIVE_CATEGORIES, DECORATIVE_ELEMENTS, getDecorativeByCategory,
   type LabelTemplate, type DecorativeElement
 } from '@/lib/label-templates';
+import { useCart } from '@/contexts/CartContext';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 
 const GOOGLE_FONTS = [
   'Arial', 'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Oswald',
@@ -49,7 +52,6 @@ function loadGoogleFont(fontName: string) {
 
 ['Roboto', 'Montserrat', 'Playfair Display', 'Dancing Script'].forEach(loadGoogleFont);
 
-// --- Layer item type ---
 interface LayerItem {
   id: number;
   name: string;
@@ -59,11 +61,143 @@ interface LayerItem {
   obj: FabricObject;
 }
 
+const ONBOARDING_KEY = 'label_editor_onboarding_done';
+const FINISHING_OPTIONS = [
+  { id: 'glossy', label: 'Brilhante (Verniz)', price: 0 },
+  { id: 'matte', label: 'Fosco', price: 0.02 },
+  { id: 'transparent', label: 'Transparente', price: 0.05 },
+  { id: 'kraft', label: 'Kraft (papel pardo)', price: 0.03 },
+];
+
+// --- Onboarding Component ---
+const OnboardingOverlay = ({ onDismiss }: { onDismiss: () => void }) => {
+  const [step, setStep] = useState(0);
+  const steps = [
+    {
+      title: '🎨 Crie sua etiqueta',
+      desc: 'Clique em "Novo" para escolher o formato (redondo, quadrado, retangular) e o tamanho da sua etiqueta personalizada.',
+      icon: <Plus className="h-10 w-10 text-primary" />,
+    },
+    {
+      title: '✏️ Personalize o design',
+      desc: 'Adicione textos, formas, imagens e aplique templates prontos. Use as camadas para organizar os elementos.',
+      icon: <Palette className="h-10 w-10 text-primary" />,
+    },
+    {
+      title: '🛒 Exporte ou peça',
+      desc: 'Exporte em PDF profissional para impressão ou adicione direto ao carrinho com a quantidade e acabamento desejados.',
+      icon: <ShoppingCart className="h-10 w-10 text-primary" />,
+    },
+  ];
+
+  return (
+    <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
+      <Card className="max-w-md w-full">
+        <CardContent className="p-6 text-center space-y-4">
+          <div className="h-20 w-20 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
+            {steps[step].icon}
+          </div>
+          <h2 className="text-xl font-display font-bold">{steps[step].title}</h2>
+          <p className="text-sm text-muted-foreground">{steps[step].desc}</p>
+
+          <div className="flex items-center justify-center gap-2">
+            {steps.map((_, i) => (
+              <div key={i} className={`h-2 w-2 rounded-full transition-colors ${i === step ? 'bg-primary' : 'bg-muted'}`} />
+            ))}
+          </div>
+
+          <div className="flex gap-2 justify-center">
+            {step > 0 && (
+              <Button variant="outline" size="sm" onClick={() => setStep(step - 1)}>
+                <ChevronLeft className="h-4 w-4 mr-1" />Anterior
+              </Button>
+            )}
+            {step < steps.length - 1 ? (
+              <Button size="sm" onClick={() => setStep(step + 1)}>
+                Próximo<ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            ) : (
+              <Button size="sm" onClick={onDismiss}>
+                <Sparkles className="h-4 w-4 mr-1" />Começar!
+              </Button>
+            )}
+          </div>
+          <button onClick={onDismiss} className="text-xs text-muted-foreground hover:text-foreground">
+            Pular tutorial
+          </button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+// --- Print Preview Component ---
+const PrintPreviewDialog = ({ open, onOpenChange, canvasRef, format }: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  canvasRef: React.RefObject<FabricCanvas | null>;
+  format: LabelFormat | null;
+}) => {
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open || !canvasRef.current || !format) return;
+    const fc = canvasRef.current;
+    const origZoom = fc.getZoom();
+    fc.setZoom(1);
+    fc.renderAll();
+    const el = fc.toCanvasElement(2);
+    const url = el.toDataURL('image/png');
+    fc.setZoom(origZoom);
+    fc.renderAll();
+    setPreviewUrl(url);
+    return () => setPreviewUrl(null);
+  }, [open, canvasRef, format]);
+
+  if (!format) return null;
+
+  const isRound = format.shape === 'round';
+  const isRounded = format.shape === 'rounded-square' || format.shape === 'rounded-rectangle';
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader><DialogTitle>Prévia de Impressão</DialogTitle></DialogHeader>
+        <div className="flex flex-col items-center gap-4">
+          <p className="text-xs text-muted-foreground">Simulação do resultado final com corte</p>
+          <div className="bg-white p-8 rounded-lg border shadow-inner flex items-center justify-center" style={{ minHeight: 300 }}>
+            {previewUrl && (
+              <div
+                className="relative shadow-lg"
+                style={{
+                  width: Math.min(250, mmToPx(format.widthMm)),
+                  height: Math.min(250, mmToPx(format.heightMm)),
+                  borderRadius: isRound ? '50%' : isRounded ? 12 : 0,
+                  overflow: 'hidden',
+                  border: '1px dashed #ccc',
+                }}
+              >
+                <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+              </div>
+            )}
+          </div>
+          <div className="text-xs text-muted-foreground text-center">
+            <p>Formato: {format.shape} • {format.widthMm / 10}×{format.heightMm / 10}cm</p>
+            <p>A linha tracejada indica a área de corte</p>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 const LabelEditor = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fabricRef = useRef<FabricCanvas | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
+  const { addItem } = useCart();
 
   // State
   const [selectedShape, setSelectedShape] = useState('round');
@@ -80,12 +214,21 @@ const LabelEditor = () => {
   const [editingLayerName, setEditingLayerName] = useState<number | null>(null);
   const [layerNameDraft, setLayerNameDraft] = useState('');
 
+  // UX states
+  const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem(ONBOARDING_KEY));
+  const [showPrintPreview, setShowPrintPreview] = useState(false);
+  const [showAddToCart, setShowAddToCart] = useState(false);
+  const [cartQuantity, setCartQuantity] = useState(100);
+  const [cartFinishing, setCartFinishing] = useState('glossy');
+  const [showSaveAsDialog, setShowSaveAsDialog] = useState(false);
+  const [saveAsName, setSaveAsName] = useState('');
+
   // Undo/redo
   const [history, setHistory] = useState<string[]>([]);
   const [historyIdx, setHistoryIdx] = useState(-1);
   const isRestoring = useRef(false);
 
-  const { projects, loading, createProject, saveProject, saveVersion, deleteProject } = useLabelProjects();
+  const { projects, loading, createProject, saveProject, saveVersion, deleteProject, refetch } = useLabelProjects();
 
   const getCanvasJson = useCallback(() => {
     if (!fabricRef.current) return {};
@@ -93,6 +236,12 @@ const LabelEditor = () => {
   }, []);
 
   const { markDirty } = useAutoSave(currentProject?.id || null, getCanvasJson);
+
+  // Dismiss onboarding
+  const dismissOnboarding = useCallback(() => {
+    setShowOnboarding(false);
+    localStorage.setItem(ONBOARDING_KEY, '1');
+  }, []);
 
   // --- Layers sync ---
   const syncLayers = useCallback(() => {
@@ -109,27 +258,15 @@ const LabelEditor = () => {
       else if (obj.type === 'line') typeName = 'Linha';
       else if (obj.type === 'ellipse') typeName = 'Elipse';
       else if (obj.type === 'image') typeName = 'Imagem';
-      return {
-        id: i,
-        name: customName || `${typeName} ${i + 1}`,
-        type: typeName,
-        visible: obj.visible !== false,
-        locked: !obj.selectable,
-        obj,
-      };
+      return { id: i, name: customName || `${typeName} ${i + 1}`, type: typeName, visible: obj.visible !== false, locked: !obj.selectable, obj };
     });
-    setLayers(items.reverse()); // top layer first
+    setLayers(items.reverse());
   }, []);
 
   // Initialize canvas
   useEffect(() => {
     if (!canvasRef.current || fabricRef.current) return;
-    const fc = new FabricCanvas(canvasRef.current, {
-      width: 400,
-      height: 400,
-      backgroundColor: '#ffffff',
-      selection: true,
-    });
+    const fc = new FabricCanvas(canvasRef.current, { width: 400, height: 400, backgroundColor: '#ffffff', selection: true });
     fabricRef.current = fc;
 
     fc.on('object:modified', () => { markDirty(); pushHistory(); syncLayers(); });
@@ -139,7 +276,6 @@ const LabelEditor = () => {
     fc.on('selection:updated', (e: any) => setSelectedObject(e.selected?.[0] || null));
     fc.on('selection:cleared', () => setSelectedObject(null));
 
-    // Snap to center guides
     fc.on('object:moving', (e: any) => {
       if (!snapEnabled) return;
       const obj = e.target;
@@ -151,13 +287,8 @@ const LabelEditor = () => {
       const objCenterX = (obj.left || 0) + (obj.getScaledWidth() / 2);
       const objCenterY = (obj.top || 0) + (obj.getScaledHeight() / 2);
       const threshold = 6;
-
-      if (Math.abs(objCenterX - centerX) < threshold) {
-        obj.set('left', centerX - obj.getScaledWidth() / 2);
-      }
-      if (Math.abs(objCenterY - centerY) < threshold) {
-        obj.set('top', centerY - obj.getScaledHeight() / 2);
-      }
+      if (Math.abs(objCenterX - centerX) < threshold) obj.set('left', centerX - obj.getScaledWidth() / 2);
+      if (Math.abs(objCenterY - centerY) < threshold) obj.set('top', centerY - obj.getScaledHeight() / 2);
     });
 
     return () => { fc.dispose(); fabricRef.current = null; };
@@ -199,7 +330,6 @@ const LabelEditor = () => {
     });
   }, [history, historyIdx, syncLayers]);
 
-  // Apply format to canvas
   const applyFormat = useCallback((fmt: LabelFormat) => {
     const fc = fabricRef.current;
     if (!fc) return;
@@ -208,11 +338,9 @@ const LabelEditor = () => {
     fc.setDimensions({ width: w, height: h });
     fc.clipPath = undefined;
     if (fmt.shape === 'round') {
-      const clip = new Circle({ radius: w / 2, originX: 'center', originY: 'center', left: w / 2, top: h / 2 });
-      fc.clipPath = clip;
+      fc.clipPath = new Circle({ radius: w / 2, originX: 'center', originY: 'center', left: w / 2, top: h / 2 });
     } else if (fmt.shape === 'rounded-square' || fmt.shape === 'rounded-rectangle') {
-      const clip = new Rect({ width: w, height: h, rx: mmToPx(3), ry: mmToPx(3), originX: 'center', originY: 'center', left: w / 2, top: h / 2 });
-      fc.clipPath = clip;
+      fc.clipPath = new Rect({ width: w, height: h, rx: mmToPx(3), ry: mmToPx(3), originX: 'center', originY: 'center', left: w / 2, top: h / 2 });
     }
     fc.renderAll();
     fitToContainer();
@@ -237,36 +365,18 @@ const LabelEditor = () => {
     return () => window.removeEventListener('resize', fitToContainer);
   }, [fitToContainer]);
 
-  // Create new project
   const handleNewProject = async () => {
     if (!selectedFormat) { toast.error('Selecione um formato'); return; }
-    const proj = await createProject({
-      name: projectName,
-      label_shape: selectedFormat.shape,
-      width_mm: selectedFormat.widthMm,
-      height_mm: selectedFormat.heightMm,
-    });
-    if (proj) {
-      setCurrentProject(proj);
-      applyFormat(selectedFormat);
-      setShowNewDialog(false);
-      pushHistory();
-    }
+    const proj = await createProject({ name: projectName, label_shape: selectedFormat.shape, width_mm: selectedFormat.widthMm, height_mm: selectedFormat.heightMm });
+    if (proj) { setCurrentProject(proj); applyFormat(selectedFormat); setShowNewDialog(false); pushHistory(); }
   };
 
-  // Load project
   const loadProject = useCallback(async (proj: LabelProject) => {
     const fc = fabricRef.current;
     if (!fc) return;
     setCurrentProject(proj);
     setProjectName(proj.name);
-    const fmt: LabelFormat = {
-      id: `${proj.label_shape}-${proj.width_mm}x${proj.height_mm}`,
-      shape: proj.label_shape as any,
-      label: `${proj.width_mm / 10}×${proj.height_mm / 10} cm`,
-      widthMm: proj.width_mm,
-      heightMm: proj.height_mm,
-    };
+    const fmt: LabelFormat = { id: `${proj.label_shape}-${proj.width_mm}x${proj.height_mm}`, shape: proj.label_shape as any, label: `${proj.width_mm / 10}×${proj.height_mm / 10} cm`, widthMm: proj.width_mm, heightMm: proj.height_mm };
     setSelectedFormat(fmt);
     setSelectedShape(proj.label_shape);
     applyFormat(fmt);
@@ -284,13 +394,7 @@ const LabelEditor = () => {
   const addText = () => {
     const fc = fabricRef.current;
     if (!fc) return;
-    const text = new IText('Texto', {
-      left: fc.getWidth() / (2 * (zoom || 1)) - 30,
-      top: fc.getHeight() / (2 * (zoom || 1)) - 10,
-      fontSize: 24,
-      fontFamily: 'Arial',
-      fill: '#333333',
-    });
+    const text = new IText('Texto', { left: fc.getWidth() / (2 * (zoom || 1)) - 30, top: fc.getHeight() / (2 * (zoom || 1)) - 10, fontSize: 24, fontFamily: 'Arial', fill: '#333333' });
     fc.add(text);
     fc.setActiveObject(text);
     fc.renderAll();
@@ -303,21 +407,11 @@ const LabelEditor = () => {
     const centerY = fc.getHeight() / (2 * (zoom || 1));
     let obj: any;
     switch (type) {
-      case 'rect':
-        obj = new Rect({ left: centerX - 30, top: centerY - 20, width: 60, height: 40, fill: '#e2e8f0', stroke: '#94a3b8', strokeWidth: 1 });
-        break;
-      case 'circle':
-        obj = new Circle({ left: centerX - 20, top: centerY - 20, radius: 20, fill: '#dbeafe', stroke: '#60a5fa', strokeWidth: 1 });
-        break;
-      case 'triangle':
-        obj = new Triangle({ left: centerX - 20, top: centerY - 20, width: 40, height: 40, fill: '#fef3c7', stroke: '#f59e0b', strokeWidth: 1 });
-        break;
-      case 'line':
-        obj = new Line([centerX - 40, centerY, centerX + 40, centerY], { stroke: '#333', strokeWidth: 2 });
-        break;
-      case 'ellipse':
-        obj = new Ellipse({ left: centerX - 30, top: centerY - 15, rx: 30, ry: 15, fill: '#ede9fe', stroke: '#8b5cf6', strokeWidth: 1 });
-        break;
+      case 'rect': obj = new Rect({ left: centerX - 30, top: centerY - 20, width: 60, height: 40, fill: '#e2e8f0', stroke: '#94a3b8', strokeWidth: 1 }); break;
+      case 'circle': obj = new Circle({ left: centerX - 20, top: centerY - 20, radius: 20, fill: '#dbeafe', stroke: '#60a5fa', strokeWidth: 1 }); break;
+      case 'triangle': obj = new Triangle({ left: centerX - 20, top: centerY - 20, width: 40, height: 40, fill: '#fef3c7', stroke: '#f59e0b', strokeWidth: 1 }); break;
+      case 'line': obj = new Line([centerX - 40, centerY, centerX + 40, centerY], { stroke: '#333', strokeWidth: 2 }); break;
+      case 'ellipse': obj = new Ellipse({ left: centerX - 30, top: centerY - 15, rx: 30, ry: 15, fill: '#ede9fe', stroke: '#8b5cf6', strokeWidth: 1 }); break;
       default: return;
     }
     fc.add(obj);
@@ -325,7 +419,6 @@ const LabelEditor = () => {
     fc.renderAll();
   };
 
-  // --- Image upload ---
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !fabricRef.current) return;
@@ -341,12 +434,7 @@ const LabelEditor = () => {
         const canvasH = fc.getHeight() / (fc.getZoom() || 1);
         const maxDim = Math.min(canvasW, canvasH) * 0.6;
         const scale = Math.min(maxDim / imgEl.width, maxDim / imgEl.height, 1);
-        const fabricImg = new FabricImage(imgEl, {
-          left: canvasW / 2 - (imgEl.width * scale) / 2,
-          top: canvasH / 2 - (imgEl.height * scale) / 2,
-          scaleX: scale,
-          scaleY: scale,
-        });
+        const fabricImg = new FabricImage(imgEl, { left: canvasW / 2 - (imgEl.width * scale) / 2, top: canvasH / 2 - (imgEl.height * scale) / 2, scaleX: scale, scaleY: scale });
         (fabricImg as any).__layerName = file.name.replace(/\.[^.]+$/, '');
         fc.add(fabricImg);
         fc.setActiveObject(fabricImg);
@@ -358,7 +446,6 @@ const LabelEditor = () => {
     if (e.target) e.target.value = '';
   };
 
-  // Apply template
   const applyTemplate = (template: LabelTemplate) => {
     const fc = fabricRef.current;
     if (!fc || !selectedFormat) return;
@@ -366,10 +453,7 @@ const LabelEditor = () => {
     fc.backgroundColor = '#ffffff';
     if (selectedFormat) applyFormat(selectedFormat);
     const objs = template.getObjects(selectedFormat.widthMm, selectedFormat.heightMm);
-    objs.forEach(obj => {
-      loadGoogleFont(obj.fontFamily || 'Arial');
-      addObjectFromJson(fc, obj);
-    });
+    objs.forEach(obj => { loadGoogleFont(obj.fontFamily || 'Arial'); addObjectFromJson(fc, obj); });
     fc.renderAll();
     markDirty();
     syncLayers();
@@ -389,29 +473,16 @@ const LabelEditor = () => {
   const addObjectFromJson = (fc: FabricCanvas, obj: any) => {
     let fabricObj: FabricObject | null = null;
     switch (obj.type) {
-      case 'rect':
-        fabricObj = new Rect({ left: obj.left, top: obj.top, width: obj.width, height: obj.height, fill: obj.fill, stroke: obj.stroke, strokeWidth: obj.strokeWidth, rx: obj.rx, ry: obj.ry, strokeDashArray: obj.strokeDashArray });
-        break;
-      case 'circle':
-        fabricObj = new Circle({ left: obj.left, top: obj.top, radius: obj.radius, fill: obj.fill, stroke: obj.stroke, strokeWidth: obj.strokeWidth });
-        break;
-      case 'i-text':
-        fabricObj = new IText(obj.text || '', { left: obj.left, top: obj.top, fontSize: obj.fontSize, fontFamily: obj.fontFamily, fill: obj.fill, textAlign: obj.textAlign, fontWeight: obj.fontWeight, fontStyle: obj.fontStyle, charSpacing: obj.charSpacing });
-        break;
-      case 'line':
-        fabricObj = new Line([obj.x1, obj.y1, obj.x2, obj.y2], { stroke: obj.stroke, strokeWidth: obj.strokeWidth });
-        break;
-      case 'triangle':
-        fabricObj = new Triangle({ left: obj.left, top: obj.top, width: obj.width, height: obj.height, fill: obj.fill, stroke: obj.stroke, strokeWidth: obj.strokeWidth });
-        break;
-      case 'ellipse':
-        fabricObj = new Ellipse({ left: obj.left, top: obj.top, rx: obj.rx, ry: obj.ry, fill: obj.fill, stroke: obj.stroke, strokeWidth: obj.strokeWidth });
-        break;
+      case 'rect': fabricObj = new Rect({ left: obj.left, top: obj.top, width: obj.width, height: obj.height, fill: obj.fill, stroke: obj.stroke, strokeWidth: obj.strokeWidth, rx: obj.rx, ry: obj.ry, strokeDashArray: obj.strokeDashArray }); break;
+      case 'circle': fabricObj = new Circle({ left: obj.left, top: obj.top, radius: obj.radius, fill: obj.fill, stroke: obj.stroke, strokeWidth: obj.strokeWidth }); break;
+      case 'i-text': fabricObj = new IText(obj.text || '', { left: obj.left, top: obj.top, fontSize: obj.fontSize, fontFamily: obj.fontFamily, fill: obj.fill, textAlign: obj.textAlign, fontWeight: obj.fontWeight, fontStyle: obj.fontStyle, charSpacing: obj.charSpacing }); break;
+      case 'line': fabricObj = new Line([obj.x1, obj.y1, obj.x2, obj.y2], { stroke: obj.stroke, strokeWidth: obj.strokeWidth }); break;
+      case 'triangle': fabricObj = new Triangle({ left: obj.left, top: obj.top, width: obj.width, height: obj.height, fill: obj.fill, stroke: obj.stroke, strokeWidth: obj.strokeWidth }); break;
+      case 'ellipse': fabricObj = new Ellipse({ left: obj.left, top: obj.top, rx: obj.rx, ry: obj.ry, fill: obj.fill, stroke: obj.stroke, strokeWidth: obj.strokeWidth }); break;
     }
     if (fabricObj) fc.add(fabricObj);
   };
 
-  // Object properties
   const updateObjectProp = (prop: string, value: any) => {
     if (!selectedObject || !fabricRef.current) return;
     selectedObject.set(prop, value);
@@ -419,7 +490,6 @@ const LabelEditor = () => {
     markDirty();
   };
 
-  // --- Alignment helpers ---
   const alignObject = (alignment: string) => {
     const fc = fabricRef.current;
     if (!fc || !selectedObject) return;
@@ -437,49 +507,13 @@ const LabelEditor = () => {
     markDirty();
   };
 
-  // --- Layer actions ---
-  const toggleLayerVisibility = (layer: LayerItem) => {
-    layer.obj.visible = !layer.obj.visible;
-    fabricRef.current?.renderAll();
-    syncLayers();
-    markDirty();
-  };
+  const toggleLayerVisibility = (layer: LayerItem) => { layer.obj.visible = !layer.obj.visible; fabricRef.current?.renderAll(); syncLayers(); markDirty(); };
+  const toggleLayerLock = (layer: LayerItem) => { const locked = !layer.locked; layer.obj.selectable = !locked; layer.obj.evented = !locked; fabricRef.current?.renderAll(); syncLayers(); };
+  const selectLayer = (layer: LayerItem) => { if (!layer.obj.selectable) return; fabricRef.current?.setActiveObject(layer.obj); fabricRef.current?.renderAll(); setSelectedObject(layer.obj); };
+  const moveLayerUp = (layer: LayerItem) => { fabricRef.current?.bringObjectForward(layer.obj); fabricRef.current?.renderAll(); syncLayers(); markDirty(); };
+  const moveLayerDown = (layer: LayerItem) => { fabricRef.current?.sendObjectBackwards(layer.obj); fabricRef.current?.renderAll(); syncLayers(); markDirty(); };
+  const renameLayer = (layer: LayerItem, newName: string) => { (layer.obj as any).__layerName = newName; syncLayers(); };
 
-  const toggleLayerLock = (layer: LayerItem) => {
-    const locked = !layer.locked;
-    layer.obj.selectable = !locked;
-    layer.obj.evented = !locked;
-    fabricRef.current?.renderAll();
-    syncLayers();
-  };
-
-  const selectLayer = (layer: LayerItem) => {
-    if (!layer.obj.selectable) return;
-    fabricRef.current?.setActiveObject(layer.obj);
-    fabricRef.current?.renderAll();
-    setSelectedObject(layer.obj);
-  };
-
-  const moveLayerUp = (layer: LayerItem) => {
-    fabricRef.current?.bringObjectForward(layer.obj);
-    fabricRef.current?.renderAll();
-    syncLayers();
-    markDirty();
-  };
-
-  const moveLayerDown = (layer: LayerItem) => {
-    fabricRef.current?.sendObjectBackwards(layer.obj);
-    fabricRef.current?.renderAll();
-    syncLayers();
-    markDirty();
-  };
-
-  const renameLayer = (layer: LayerItem, newName: string) => {
-    (layer.obj as any).__layerName = newName;
-    syncLayers();
-  };
-
-  // Export PDF
   const handleExportPDF = async () => {
     const fc = fabricRef.current;
     if (!fc || !selectedFormat) { toast.error('Nenhum projeto aberto'); return; }
@@ -491,13 +525,7 @@ const LabelEditor = () => {
     fc.setZoom(origZoom);
     fitToContainer();
     try {
-      const blob = await exportLabelPDF({
-        format: selectedFormat,
-        canvasEl,
-        projectName: currentProject?.name || 'etiqueta',
-        includeBleed,
-        includeCutMarks,
-      });
+      const blob = await exportLabelPDF({ format: selectedFormat, canvasEl, projectName: currentProject?.name || 'etiqueta', includeBleed, includeCutMarks });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -521,6 +549,67 @@ const LabelEditor = () => {
     await saveVersion(currentProject.id, fabricRef.current.toJSON());
   };
 
+  // --- Duplicate Design (creates a new project with same canvas) ---
+  const handleDuplicateDesign = async () => {
+    if (!currentProject || !fabricRef.current || !selectedFormat) return;
+    const proj = await createProject({
+      name: `${currentProject.name} (cópia)`,
+      label_shape: selectedFormat.shape,
+      width_mm: selectedFormat.widthMm,
+      height_mm: selectedFormat.heightMm,
+    });
+    if (proj) {
+      await saveProject(proj.id, fabricRef.current.toJSON());
+      await refetch();
+      toast.success('Design duplicado! Abra na aba Projetos.');
+    }
+  };
+
+  // --- Save As New ---
+  const handleSaveAsNew = async () => {
+    if (!fabricRef.current || !selectedFormat || !saveAsName.trim()) return;
+    const proj = await createProject({
+      name: saveAsName.trim(),
+      label_shape: selectedFormat.shape,
+      width_mm: selectedFormat.widthMm,
+      height_mm: selectedFormat.heightMm,
+    });
+    if (proj) {
+      await saveProject(proj.id, fabricRef.current.toJSON());
+      setCurrentProject(proj);
+      setProjectName(proj.name);
+      setShowSaveAsDialog(false);
+      await refetch();
+      toast.success('Salvo como novo projeto!');
+    }
+  };
+
+  // --- Add to Cart ---
+  const handleAddToCart = () => {
+    if (!currentProject || !selectedFormat) return;
+    const finishing = FINISHING_OPTIONS.find(f => f.id === cartFinishing);
+    const basePrice = 0.15; // base price per label
+    const unitPrice = basePrice + (finishing?.price || 0);
+
+    addItem({
+      productId: `label-${currentProject.id}`,
+      productName: `Etiqueta: ${currentProject.name}`,
+      thumbnail: '',
+      unitPrice,
+      quantity: cartQuantity,
+      customWidth: selectedFormat.widthMm,
+      customHeight: selectedFormat.heightMm,
+      notes: `Formato: ${selectedFormat.shape} | Acabamento: ${finishing?.label || 'Brilhante'} | Projeto: ${currentProject.id}`,
+      needsArtwork: false,
+      priceUnit: 'unidade',
+    });
+
+    setShowAddToCart(false);
+    toast.success('Etiqueta adicionada ao carrinho!', {
+      action: { label: 'Ver Carrinho', onClick: () => navigate('/carrinho') },
+    });
+  };
+
   const deleteSelected = () => {
     const fc = fabricRef.current;
     if (!fc) return;
@@ -542,27 +631,22 @@ const LabelEditor = () => {
     });
   };
 
-  const zoomIn = () => {
-    const fc = fabricRef.current;
-    if (!fc) return;
-    const newZoom = Math.min(zoom * 1.2, 3);
-    setZoom(newZoom);
-    fc.setZoom(newZoom);
-    fc.setDimensions({ width: fc.getWidth() * (newZoom / zoom), height: fc.getHeight() * (newZoom / zoom) }, { cssOnly: true });
-  };
-  const zoomOut = () => {
-    const fc = fabricRef.current;
-    if (!fc) return;
-    const newZoom = Math.max(zoom / 1.2, 0.3);
-    setZoom(newZoom);
-    fc.setZoom(newZoom);
-    fc.setDimensions({ width: fc.getWidth() * (newZoom / zoom), height: fc.getHeight() * (newZoom / zoom) }, { cssOnly: true });
-  };
+  const zoomIn = () => { const fc = fabricRef.current; if (!fc) return; const nz = Math.min(zoom * 1.2, 3); setZoom(nz); fc.setZoom(nz); fc.setDimensions({ width: fc.getWidth() * (nz / zoom), height: fc.getHeight() * (nz / zoom) }, { cssOnly: true }); };
+  const zoomOut = () => { const fc = fabricRef.current; if (!fc) return; const nz = Math.max(zoom / 1.2, 0.3); setZoom(nz); fc.setZoom(nz); fc.setDimensions({ width: fc.getWidth() * (nz / zoom), height: fc.getHeight() * (nz / zoom) }, { cssOnly: true }); };
 
   const availableFormats = getFormatsForShape(selectedShape);
+  const selectedFinishing = FINISHING_OPTIONS.find(f => f.id === cartFinishing);
+  const cartUnitPrice = 0.15 + (selectedFinishing?.price || 0);
+  const cartTotal = cartUnitPrice * cartQuantity;
 
   return (
     <div className="space-y-4">
+      {/* Onboarding */}
+      {showOnboarding && <OnboardingOverlay onDismiss={dismissOnboarding} />}
+
+      {/* Print Preview */}
+      <PrintPreviewDialog open={showPrintPreview} onOpenChange={setShowPrintPreview} canvasRef={fabricRef} format={selectedFormat} />
+
       {/* Hidden image input */}
       <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
 
@@ -591,7 +675,11 @@ const LabelEditor = () => {
               />
               <Button size="sm" variant="outline" onClick={handleSave}><Save className="h-4 w-4 mr-1" />Salvar</Button>
               <Button size="sm" variant="outline" onClick={handleSaveVersion}><FileText className="h-4 w-4 mr-1" />Versão</Button>
-              <Button size="sm" onClick={handleExportPDF}><Download className="h-4 w-4 mr-1" />PDF</Button>
+              <Button size="sm" variant="outline" onClick={() => setShowPrintPreview(true)}><Printer className="h-4 w-4 mr-1" />Prévia</Button>
+              <Button size="sm" variant="outline" onClick={handleExportPDF}><Download className="h-4 w-4 mr-1" />PDF</Button>
+              <Button size="sm" variant="default" onClick={() => setShowAddToCart(true)}>
+                <ShoppingCart className="h-4 w-4 mr-1" />Pedir
+              </Button>
             </>
           )}
           <Dialog open={showNewDialog} onOpenChange={setShowNewDialog}>
@@ -694,6 +782,20 @@ const LabelEditor = () => {
                   <Label className="text-xs">Snap ao centro</Label>
                   <Switch checked={snapEnabled} onCheckedChange={setSnapEnabled} />
                 </div>
+                {currentProject && (
+                  <>
+                    <Separator />
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground mb-1">Design</p>
+                      <Button variant="outline" size="sm" className="w-full justify-start text-xs" onClick={handleDuplicateDesign}>
+                        <CopyPlus className="h-3 w-3 mr-2" />Duplicar design
+                      </Button>
+                      <Button variant="outline" size="sm" className="w-full justify-start text-xs" onClick={() => { setSaveAsName(projectName + ' (cópia)'); setShowSaveAsDialog(true); }}>
+                        <Copy className="h-3 w-3 mr-2" />Salvar como novo
+                      </Button>
+                    </div>
+                  </>
+                )}
               </TabsContent>
 
               <TabsContent value="templates" className="mt-3">
@@ -710,8 +812,7 @@ const LabelEditor = () => {
                             <p className="text-xs font-medium text-muted-foreground mb-1">{cat.emoji} {cat.label}</p>
                             <div className="space-y-1">
                               {templates.map(t => (
-                                <Button key={t.id} variant="outline" size="sm" className="w-full justify-start text-xs h-auto py-1.5"
-                                  onClick={() => applyTemplate(t)}>
+                                <Button key={t.id} variant="outline" size="sm" className="w-full justify-start text-xs h-auto py-1.5" onClick={() => applyTemplate(t)}>
                                   <LayoutTemplate className="h-3 w-3 mr-2 shrink-0" />
                                   <div className="text-left">
                                     <span className="block font-medium">{t.name}</span>
@@ -742,10 +843,8 @@ const LabelEditor = () => {
                             <p className="text-xs font-medium text-muted-foreground mb-1">{cat.emoji} {cat.label}</p>
                             <div className="grid grid-cols-2 gap-1">
                               {elements.map(el => (
-                                <Button key={el.id} variant="outline" size="sm" className="text-xs h-auto py-1.5"
-                                  onClick={() => addDecorative(el)}>
-                                  <Frame className="h-3 w-3 mr-1 shrink-0" />
-                                  {el.name}
+                                <Button key={el.id} variant="outline" size="sm" className="text-xs h-auto py-1.5" onClick={() => addDecorative(el)}>
+                                  <Frame className="h-3 w-3 mr-1 shrink-0" />{el.name}
                                 </Button>
                               ))}
                             </div>
@@ -805,7 +904,7 @@ const LabelEditor = () => {
           </Card>
         </div>
 
-        {/* Right panel - Properties + Layers */}
+        {/* Right panel */}
         {currentProject && (
           <Card className="lg:w-64 shrink-0">
             <CardContent className="p-3">
@@ -822,12 +921,10 @@ const LabelEditor = () => {
                       <div>
                         <Label className="text-xs">Cor de preenchimento</Label>
                         <div className="flex gap-2 items-center mt-1">
-                          <input type="color" value={selectedObject.fill || '#000000'}
-                            onChange={e => updateObjectProp('fill', e.target.value)} className="h-8 w-8 rounded border cursor-pointer" />
+                          <input type="color" value={selectedObject.fill || '#000000'} onChange={e => updateObjectProp('fill', e.target.value)} className="h-8 w-8 rounded border cursor-pointer" />
                           <Input value={selectedObject.fill || ''} onChange={e => updateObjectProp('fill', e.target.value)} className="h-8 text-xs flex-1" />
                         </div>
                       </div>
-
                       {selectedObject.type === 'i-text' && (
                         <>
                           <div>
@@ -835,9 +932,7 @@ const LabelEditor = () => {
                             <Select value={selectedObject.fontFamily || 'Arial'} onValueChange={v => { loadGoogleFont(v); updateObjectProp('fontFamily', v); }}>
                               <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                               <SelectContent>
-                                {GOOGLE_FONTS.map(f => (
-                                  <SelectItem key={f} value={f} style={{ fontFamily: f }}>{f}</SelectItem>
-                                ))}
+                                {GOOGLE_FONTS.map(f => (<SelectItem key={f} value={f} style={{ fontFamily: f }}>{f}</SelectItem>))}
                               </SelectContent>
                             </Select>
                           </div>
@@ -847,23 +942,17 @@ const LabelEditor = () => {
                           </div>
                         </>
                       )}
-
                       <div>
                         <Label className="text-xs">Contorno</Label>
                         <div className="flex gap-2 items-center mt-1">
-                          <input type="color" value={selectedObject.stroke || '#000000'}
-                            onChange={e => updateObjectProp('stroke', e.target.value)} className="h-8 w-8 rounded border cursor-pointer" />
-                          <Input type="number" value={selectedObject.strokeWidth || 0} min={0}
-                            onChange={e => updateObjectProp('strokeWidth', Number(e.target.value))} className="h-8 text-xs flex-1" placeholder="Espessura" />
+                          <input type="color" value={selectedObject.stroke || '#000000'} onChange={e => updateObjectProp('stroke', e.target.value)} className="h-8 w-8 rounded border cursor-pointer" />
+                          <Input type="number" value={selectedObject.strokeWidth || 0} min={0} onChange={e => updateObjectProp('strokeWidth', Number(e.target.value))} className="h-8 text-xs flex-1" placeholder="Espessura" />
                         </div>
                       </div>
-
                       <div>
                         <Label className="text-xs">Opacidade</Label>
-                        <Input type="range" min={0} max={1} step={0.05} value={selectedObject.opacity ?? 1}
-                          onChange={e => updateObjectProp('opacity', Number(e.target.value))} className="h-8" />
+                        <Input type="range" min={0} max={1} step={0.05} value={selectedObject.opacity ?? 1} onChange={e => updateObjectProp('opacity', Number(e.target.value))} className="h-8" />
                       </div>
-
                       <Separator />
                       <div>
                         <Label className="text-xs mb-1 block">Alinhar</Label>
@@ -876,7 +965,6 @@ const LabelEditor = () => {
                           <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => alignObject('bottom')} title="Fundo"><AlignEndVertical className="h-3 w-3" /></Button>
                         </div>
                       </div>
-
                       <Separator />
                       <div className="flex gap-1 flex-wrap">
                         <Button variant="outline" size="icon" className="h-8 w-8" onClick={bringForward} title="Trazer para frente"><ArrowUp className="h-3 w-3" /></Button>
@@ -897,31 +985,18 @@ const LabelEditor = () => {
                     ) : (
                       <div className="space-y-1">
                         {layers.map(layer => (
-                          <div
-                            key={`${layer.id}-${layer.name}`}
-                            className={`flex items-center gap-1 p-1.5 rounded text-xs cursor-pointer transition-colors ${
-                              selectedObject === layer.obj ? 'bg-primary/10 border border-primary' : 'hover:bg-muted border border-transparent'
-                            }`}
-                            onClick={() => selectLayer(layer)}
-                          >
+                          <div key={`${layer.id}-${layer.name}`}
+                            className={`flex items-center gap-1 p-1.5 rounded text-xs cursor-pointer transition-colors ${selectedObject === layer.obj ? 'bg-primary/10 border border-primary' : 'hover:bg-muted border border-transparent'}`}
+                            onClick={() => selectLayer(layer)}>
                             <GripVertical className="h-3 w-3 text-muted-foreground shrink-0" />
                             <div className="flex-1 min-w-0">
                               {editingLayerName === layer.id ? (
-                                <Input
-                                  value={layerNameDraft}
-                                  onChange={e => setLayerNameDraft(e.target.value)}
+                                <Input value={layerNameDraft} onChange={e => setLayerNameDraft(e.target.value)}
                                   onBlur={() => { renameLayer(layer, layerNameDraft); setEditingLayerName(null); }}
                                   onKeyDown={e => { if (e.key === 'Enter') { renameLayer(layer, layerNameDraft); setEditingLayerName(null); } }}
-                                  className="h-5 text-xs p-1"
-                                  autoFocus
-                                  onClick={e => e.stopPropagation()}
-                                />
+                                  className="h-5 text-xs p-1" autoFocus onClick={e => e.stopPropagation()} />
                               ) : (
-                                <span className="truncate block" onDoubleClick={(e) => {
-                                  e.stopPropagation();
-                                  setEditingLayerName(layer.id);
-                                  setLayerNameDraft(layer.name);
-                                }}>{layer.name}</span>
+                                <span className="truncate block" onDoubleClick={(e) => { e.stopPropagation(); setEditingLayerName(layer.id); setLayerNameDraft(layer.name); }}>{layer.name}</span>
                               )}
                             </div>
                             <div className="flex items-center gap-0.5 shrink-0">
@@ -957,6 +1032,10 @@ const LabelEditor = () => {
                   <Button className="w-full" onClick={handleExportPDF} disabled={!currentProject}>
                     <Download className="h-4 w-4 mr-2" />Exportar PDF Vetorial
                   </Button>
+                  <Separator />
+                  <Button variant="outline" className="w-full" onClick={() => setShowPrintPreview(true)}>
+                    <Printer className="h-4 w-4 mr-2" />Prévia de Impressão
+                  </Button>
                   <p className="text-xs text-muted-foreground">PDF compatível com CorelDRAW, Illustrator e outros editores vetoriais.</p>
                 </TabsContent>
               </Tabs>
@@ -964,6 +1043,77 @@ const LabelEditor = () => {
           </Card>
         )}
       </div>
+
+      {/* Save As Dialog */}
+      <Dialog open={showSaveAsDialog} onOpenChange={setShowSaveAsDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Salvar como novo projeto</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-sm">Nome do novo projeto</Label>
+              <Input value={saveAsName} onChange={e => setSaveAsName(e.target.value)} placeholder="Nome do projeto" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSaveAsDialog(false)}>Cancelar</Button>
+            <Button onClick={handleSaveAsNew} disabled={!saveAsName.trim()}>Salvar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add to Cart Dialog */}
+      <Dialog open={showAddToCart} onOpenChange={setShowAddToCart}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Adicionar ao Carrinho</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div className="p-3 rounded-lg bg-muted/50 text-sm">
+              <p className="font-medium">{currentProject?.name}</p>
+              <p className="text-xs text-muted-foreground">{selectedFormat?.shape} • {selectedFormat && `${selectedFormat.widthMm / 10}×${selectedFormat.heightMm / 10}cm`}</p>
+            </div>
+
+            <div>
+              <Label className="text-sm">Quantidade</Label>
+              <div className="flex items-center gap-2 mt-1">
+                {[50, 100, 250, 500, 1000].map(qty => (
+                  <Button key={qty} variant={cartQuantity === qty ? 'default' : 'outline'} size="sm" className="text-xs"
+                    onClick={() => setCartQuantity(qty)}>{qty}</Button>
+                ))}
+              </div>
+              <Input type="number" value={cartQuantity} onChange={e => setCartQuantity(Math.max(10, Number(e.target.value)))} className="mt-2 h-9" min={10} />
+            </div>
+
+            <div>
+              <Label className="text-sm">Acabamento</Label>
+              <div className="grid grid-cols-2 gap-2 mt-1">
+                {FINISHING_OPTIONS.map(opt => (
+                  <Button key={opt.id} variant={cartFinishing === opt.id ? 'default' : 'outline'} size="sm" className="text-xs h-auto py-2"
+                    onClick={() => setCartFinishing(opt.id)}>
+                    <div className="text-left">
+                      <span className="block">{opt.label}</span>
+                      {opt.price > 0 && <span className="block text-[10px] text-muted-foreground">+R$ {opt.price.toFixed(2)}/un</span>}
+                    </div>
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <Separator />
+
+            <div className="flex items-center justify-between text-sm">
+              <span>Preço unitário:</span>
+              <span className="font-medium">R$ {cartUnitPrice.toFixed(2)}</span>
+            </div>
+            <div className="flex items-center justify-between text-lg font-bold">
+              <span>Total:</span>
+              <span className="text-primary">R$ {cartTotal.toFixed(2)}</span>
+            </div>
+
+            <Button className="w-full" size="lg" onClick={handleAddToCart}>
+              <ShoppingCart className="h-4 w-4 mr-2" />Adicionar ao Carrinho
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
