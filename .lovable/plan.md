@@ -1,62 +1,52 @@
 
 
-# Otimização da Home — Componentização + Performance
+# Prompt 9 — Recuperação de Senha + Prompt 10 — Pipeline CI
 
-## Situação Atual
+## Prompt 9: Fluxo de Reset de Senha
 
-O `Index.tsx` tem 535 linhas com 7 seções já definidas como componentes internos (`HeroBanner`, `CategoriesSection`, `FeaturedProducts`, `DifferentialsSection`, `PortfolioPreviewSection`, `TestimonialsSection`, `CTASection`). As queries estão inline nos componentes. Não há lazy loading.
+### Situação Atual
+- `Login.tsx` já tem `handleForgotPassword` com `redirectTo: /reset-password`
+- A página `/reset-password` **não existe** — usuário é redirecionado mas não há nada lá
+- Rota não está registrada em `App.tsx`
 
-## Plano
+### Plano
 
-### 1. Extrair seções para arquivos individuais
+**1. Criar `src/pages/ResetPassword.tsx`**
+- Detectar token de recuperação via `supabase.auth.onAuthStateChange` (evento `PASSWORD_RECOVERY`)
+- Formulário com "Nova senha" + "Confirmar senha" com validação zod
+- Chamar `supabase.auth.updateUser({ password })` ao submeter
+- Estados visuais: carregando, token inválido/expirado, sucesso com redirect para `/login`
+- Canonical tag e Helmet
 
-Mover cada componente para `src/components/home/`:
+**2. Atualizar `App.tsx`**
+- Adicionar rota pública `/reset-password` → `<ResetPassword />`
 
-| Componente | Arquivo |
-|---|---|
-| `HeroBanner` | `src/components/home/HeroBanner.tsx` |
-| `CategoriesSection` | `src/components/home/CategoriesSection.tsx` |
-| `FeaturedProducts` | `src/components/home/FeaturedProducts.tsx` |
-| `DifferentialsSection` | `src/components/home/DifferentialsSection.tsx` |
-| `PortfolioPreviewSection` | `src/components/home/PortfolioPreviewSection.tsx` |
-| `TestimonialsSection` | `src/components/home/TestimonialsSection.tsx` |
-| `CTASection` | `src/components/home/CTASection.tsx` |
+**3. Testes básicos**
+- Criar `src/pages/__tests__/ResetPassword.test.tsx`
+- Testar renderização do formulário, validação de senhas diferentes, validação de senha curta
 
-### 2. Extrair queries para hooks reutilizáveis
+---
 
-Criar `src/hooks/use-home-data.ts` com hooks:
-- `useBanners()` — query de banners ativos
-- `useCategories()` — query de categorias ativas
-- `useFeaturedProducts()` — query de produtos em destaque
+## Prompt 10: Pipeline CI
 
-Esses hooks podem ser reutilizados em outras páginas (Shop, admin, etc.).
+### Contexto
+Lovable gerencia deploys internamente. Não temos acesso a criar GitHub Actions ou CI pipelines externos. O projeto já tem vitest configurado.
 
-### 3. Lazy loading para seções abaixo do fold
+### O que podemos fazer
+- Garantir que `npm run lint`, `npm test`, e `npm run build` funcionam corretamente
+- Adicionar script `ci` no `package.json` que encadeia lint → test → build
+- Isso não substitui um CI externo, mas prepara o projeto para quando o usuário exportar para GitHub
 
-Usar `React.lazy` + `Suspense` para carregar sob demanda:
-- **Eager (above fold):** `HeroBanner`, `CategoriesSection`
-- **Lazy:** `FeaturedProducts`, `DifferentialsSection`, `PortfolioPreviewSection`, `TestimonialsSection`, `CTASection`
+**Nota:** Lovable não suporta configuração de pipelines CI (GitHub Actions, etc.) diretamente. Se o usuário exportar o projeto, poderá usar o script `ci` como base para seu workflow.
 
-### 4. Otimizações de imagens
-
-- Confirmar `loading="lazy"` em todas as `<img>` (já presente em FeaturedProducts)
-- Adicionar `loading="lazy"` nas imagens do hero banner (exceto o primeiro slide)
-- Adicionar `decoding="async"` nas imagens de produto
-
-### 5. Index.tsx final
-
-Ficará com ~40 linhas: imports, Helmet/SEO, e composição dos componentes com Suspense.
+---
 
 ## Arquivos
 
 | Arquivo | Alteração |
 |---|---|
-| `src/components/home/*.tsx` (7 arquivos) | Novos — seções extraídas |
-| `src/hooks/use-home-data.ts` | Novo — hooks de query |
-| `src/pages/Index.tsx` | Refatorado — composição com lazy loading |
-
-## Critérios
-- Layout visual idêntico ao atual
-- Index.tsx enxuto e legível
-- Seções abaixo do fold carregam sob demanda
+| `src/pages/ResetPassword.tsx` | **Novo** — página de redefinição de senha |
+| `src/App.tsx` | Adicionar rota `/reset-password` |
+| `src/pages/__tests__/ResetPassword.test.tsx` | **Novo** — testes do fluxo |
+| `package.json` | Adicionar script `"ci"` |
 
