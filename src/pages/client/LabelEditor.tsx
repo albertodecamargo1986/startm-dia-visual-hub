@@ -211,7 +211,7 @@ const LabelEditor = () => {
   const [layerNameDraft, setLayerNameDraft] = useState('');
 
   // Wizard state
-  const [wizardStep, setWizardStep] = useState(0); // 0=shape, 1=size, 2=name
+  const [wizardStep, setWizardStep] = useState(0); // 0=shape, 1=size, 2=name, 3=template
 
   // UX state
   const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem(ONBOARDING_KEY));
@@ -347,6 +347,41 @@ const LabelEditor = () => {
     });
   }, [history, historyIdx, syncLayers]);
 
+  // ── Add shape delimiter to canvas ──
+  const addShapeDelimiter = useCallback((fc: FabricCanvas, fmt: LabelFormat) => {
+    // Remove existing delimiter
+    const existing = fc.getObjects().filter((o: any) => o.__isDelimiter);
+    existing.forEach(o => fc.remove(o));
+
+    const w = mmToPx(fmt.widthMm);
+    const h = mmToPx(fmt.heightMm);
+    let delimiter: FabricObject;
+
+    if (fmt.shape === 'round') {
+      delimiter = new Circle({
+        left: w / 2, top: h / 2,
+        radius: w / 2 - 2,
+        originX: 'center', originY: 'center',
+        fill: 'transparent', stroke: '#cbd5e1', strokeWidth: 2,
+        strokeDashArray: [8, 6],
+        selectable: false, evented: false,
+      });
+    } else {
+      const rx = (fmt.shape === 'rounded-square' || fmt.shape === 'rounded-rectangle') ? mmToPx(3) : 0;
+      delimiter = new Rect({
+        left: 1, top: 1, width: w - 2, height: h - 2,
+        rx, ry: rx,
+        fill: 'transparent', stroke: '#cbd5e1', strokeWidth: 2,
+        strokeDashArray: [8, 6],
+        selectable: false, evented: false,
+      });
+    }
+    (delimiter as any).__isDelimiter = true;
+    (delimiter as any).__layerName = '— Limite —';
+    fc.add(delimiter);
+    fc.sendObjectToBack(delimiter);
+  }, []);
+
   const applyFormat = useCallback((fmt: LabelFormat) => {
     const fc = fabricRef.current; if (!fc) return;
     const w = mmToPx(fmt.widthMm); const h = mmToPx(fmt.heightMm);
@@ -354,8 +389,9 @@ const LabelEditor = () => {
     fc.clipPath = undefined;
     if (fmt.shape === 'round') fc.clipPath = new Circle({ radius: w / 2, originX: 'center', originY: 'center', left: w / 2, top: h / 2 });
     else if (fmt.shape === 'rounded-square' || fmt.shape === 'rounded-rectangle') fc.clipPath = new Rect({ width: w, height: h, rx: mmToPx(3), ry: mmToPx(3), originX: 'center', originY: 'center', left: w / 2, top: h / 2 });
+    addShapeDelimiter(fc, fmt);
     fc.renderAll(); fitToContainer();
-  }, []);
+  }, [addShapeDelimiter]);
 
   const fitToContainer = useCallback(() => {
     const fc = fabricRef.current; const container = containerRef.current;
@@ -445,7 +481,16 @@ const LabelEditor = () => {
   // ── Add elements ──
   const addText = () => {
     const fc = fabricRef.current; if (!fc) return;
-    const text = new IText('Texto', { left: fc.getWidth() / (2 * (zoom || 1)) - 30, top: fc.getHeight() / (2 * (zoom || 1)) - 10, fontSize: 24, fontFamily: 'Arial', fill: '#333333' });
+    const canvasW = fc.getWidth() / (fc.getZoom() || 1);
+    const canvasH = fc.getHeight() / (fc.getZoom() || 1);
+    const minDim = Math.min(canvasW, canvasH);
+    const fontSize = Math.max(16, Math.round(minDim * 0.12));
+    const text = new IText('Seu Texto', {
+      left: canvasW / 2, top: canvasH / 2,
+      originX: 'center', originY: 'center',
+      fontSize, fontFamily: 'Montserrat', fill: '#333333', textAlign: 'center',
+    });
+    loadGoogleFont('Montserrat');
     fc.add(text); fc.setActiveObject(text); fc.renderAll();
   };
 
@@ -685,7 +730,7 @@ const LabelEditor = () => {
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-center gap-2 mb-6">
-                {['Formato', 'Tamanho', 'Nome'].map((label, i) => (
+                {['Formato', 'Tamanho', 'Nome', 'Modelo'].map((label, i) => (
                   <div key={label} className="flex items-center gap-2">
                     <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
                       wizardStep === i ? 'bg-primary text-primary-foreground' :
@@ -694,7 +739,7 @@ const LabelEditor = () => {
                       {wizardStep > i ? <Check className="h-4 w-4" /> : i + 1}
                     </div>
                     <span className={`text-sm hidden sm:inline ${wizardStep === i ? 'font-medium' : 'text-muted-foreground'}`}>{label}</span>
-                    {i < 2 && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                    {i < 3 && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
                   </div>
                 ))}
               </div>
@@ -774,9 +819,68 @@ const LabelEditor = () => {
                       <Label className="text-sm font-medium">Nome do projeto</Label>
                       <Input value={projectName} onChange={e => setProjectName(e.target.value)} placeholder="Ex: Etiqueta Natal 2025" className="mt-1" autoFocus />
                     </div>
-                    <Button className="w-full" size="lg" onClick={handleNewProject} disabled={!selectedFormat}>
-                      <Sparkles className="h-4 w-4 mr-2" />Criar Etiqueta
+                    <Button className="w-full" size="lg" onClick={() => setWizardStep(3)}>
+                      Próximo <ChevronRight className="h-4 w-4 ml-1" />
                     </Button>
+                  </div>
+                </div>
+              )}
+
+              {wizardStep === 3 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-4">
+                    <Button variant="ghost" size="sm" onClick={() => setWizardStep(2)}><ArrowLeft className="h-4 w-4 mr-1" />Voltar</Button>
+                    <h2 className="text-lg font-semibold">Comece com um modelo ou do zero</h2>
+                  </div>
+                  <div className="mb-4">
+                    <Button variant="outline" className="w-full mb-4 h-14 text-base" onClick={handleNewProject} disabled={!selectedFormat}>
+                      <Plus className="h-5 w-5 mr-2" />Começar do Zero (canvas em branco)
+                    </Button>
+                  </div>
+                  <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">Ou escolha um modelo pronto</p>
+                  <div className="space-y-4">
+                    {TEMPLATE_CATEGORIES.map(cat => {
+                      const templates = getTemplatesByCategory(cat.id);
+                      if (templates.length === 0) return null;
+                      return (
+                        <div key={cat.id}>
+                          <p className="text-sm font-medium mb-2">{cat.emoji} {cat.label}</p>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                            {templates.map(t => {
+                              const colors = getTemplateColors(t);
+                              return (
+                                <button key={t.id} onClick={async () => {
+                                  const proj = await createProject({ name: projectName || t.name, label_shape: selectedFormat!.shape, width_mm: selectedFormat!.widthMm, height_mm: selectedFormat!.heightMm });
+                                  if (proj) {
+                                    resetCanvas();
+                                    setCurrentProject(proj);
+                                    setProjectName(proj.name);
+                                    applyFormat(selectedFormat!);
+                                    const objs = t.getObjects(selectedFormat!.widthMm, selectedFormat!.heightMm);
+                                    objs.forEach(obj => { loadGoogleFont(obj.fontFamily || 'Arial'); addObjectFromJson(fabricRef.current!, obj); });
+                                    fabricRef.current?.renderAll();
+                                    pushHistory();
+                                    syncLayers();
+                                    markDirty();
+                                    toast.success(`Modelo "${t.name}" aplicado!`);
+                                  }
+                                }} className="flex flex-col items-center gap-2 p-3 rounded-xl border-2 border-border hover:border-primary/50 hover:shadow-md transition-all group">
+                                  <div className="w-full aspect-square rounded-lg flex items-center justify-center overflow-hidden relative bg-white">
+                                    <div className="w-full h-full flex gap-0.5">
+                                      {colors.map((c, i) => (
+                                        <div key={i} className="flex-1" style={{ backgroundColor: c }} />
+                                      ))}
+                                    </div>
+                                  </div>
+                                  <span className="text-xs font-medium truncate w-full text-center">{t.name}</span>
+                                  <span className="text-[10px] text-muted-foreground">{t.description}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -965,18 +1069,22 @@ const LabelEditor = () => {
                       {/* Decorative elements */}
                       <div>
                         <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Molduras & Ornamentos</p>
-                        <div className="space-y-2">
+                        <div className="space-y-3">
                           {DECORATIVE_CATEGORIES.map(cat => {
                             const elements = getDecorativeByCategory(cat.id);
                             if (elements.length === 0) return null;
                             return (
                               <div key={cat.id}>
-                                <p className="text-xs text-muted-foreground mb-1">{cat.emoji} {cat.label}</p>
-                                <div className="grid grid-cols-2 gap-1">
+                                <p className="text-xs text-muted-foreground mb-1.5">{cat.emoji} {cat.label}</p>
+                                <div className="grid grid-cols-2 gap-1.5">
                                   {elements.map(el => (
-                                    <Button key={el.id} variant="outline" size="sm" className="text-xs h-auto py-1.5" onClick={() => addDecorative(el)}>
-                                      <Frame className="h-3 w-3 mr-1 shrink-0" />{el.name}
-                                    </Button>
+                                    <button key={el.id} onClick={() => addDecorative(el)}
+                                      className="flex flex-col items-center gap-1 p-2 rounded-lg border hover:border-primary/50 hover:bg-muted/50 transition-all">
+                                      <div className="w-full h-10 rounded bg-muted/30 border border-dashed border-muted-foreground/20 flex items-center justify-center">
+                                        <Frame className="h-4 w-4 text-muted-foreground" />
+                                      </div>
+                                      <span className="text-[10px] font-medium truncate w-full text-center">{el.name}</span>
+                                    </button>
                                   ))}
                                 </div>
                               </div>
@@ -1065,21 +1173,24 @@ const LabelEditor = () => {
 
               <Separator orientation="vertical" className="h-5 mx-1" />
 
-              <Tooltip><TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={addText}><Type className="h-4 w-4" /></Button>
-              </TooltipTrigger><TooltipContent>Texto</TooltipContent></Tooltip>
+              <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs" onClick={addText}>
+                <Type className="h-4 w-4" />
+                <span className="hidden lg:inline">Texto</span>
+              </Button>
 
-              <Tooltip><TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => addShape('rect')}><Square className="h-4 w-4" /></Button>
-              </TooltipTrigger><TooltipContent>Retângulo</TooltipContent></Tooltip>
+              <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs" onClick={() => addShape('rect')}>
+                <Square className="h-4 w-4" />
+                <span className="hidden lg:inline">Forma</span>
+              </Button>
 
-              <Tooltip><TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => addShape('circle')}><CircleIcon className="h-4 w-4" /></Button>
-              </TooltipTrigger><TooltipContent>Círculo</TooltipContent></Tooltip>
+              <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs" onClick={() => addShape('circle')}>
+                <CircleIcon className="h-4 w-4" />
+              </Button>
 
-              <Tooltip><TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => imageInputRef.current?.click()}><ImageIcon className="h-4 w-4" /></Button>
-              </TooltipTrigger><TooltipContent>Imagem</TooltipContent></Tooltip>
+              <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs" onClick={() => imageInputRef.current?.click()}>
+                <ImageIcon className="h-4 w-4" />
+                <span className="hidden lg:inline">Imagem</span>
+              </Button>
 
               <Separator orientation="vertical" className="h-5 mx-1" />
 
@@ -1174,7 +1285,21 @@ const LabelEditor = () => {
                     </div>
                     <div>
                       <Label className="text-xs">Tamanho</Label>
-                      <Input type="number" value={selectedObject.fontSize || 24} onChange={e => updateObjectProp('fontSize', Number(e.target.value))} className="h-8 text-xs" />
+                      <div className="flex items-center gap-1 mt-1">
+                        <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => updateObjectProp('fontSize', Math.max(6, (selectedObject.fontSize || 24) - 1))}>
+                          <Minus className="h-3 w-3" />
+                        </Button>
+                        <Input type="number" value={selectedObject.fontSize || 24} onChange={e => updateObjectProp('fontSize', Math.max(6, Number(e.target.value)))} className="h-8 text-xs text-center flex-1" min={6} />
+                        <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => updateObjectProp('fontSize', (selectedObject.fontSize || 24) + 1)}>
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      <div className="flex gap-1 mt-1.5 flex-wrap">
+                        {[12, 16, 20, 24, 32, 48].map(sz => (
+                          <Button key={sz} variant={(selectedObject.fontSize || 24) === sz ? 'default' : 'outline'} size="sm"
+                            className="h-6 px-2 text-[10px]" onClick={() => updateObjectProp('fontSize', sz)}>{sz}</Button>
+                        ))}
+                      </div>
                     </div>
                   </>
                 )}
