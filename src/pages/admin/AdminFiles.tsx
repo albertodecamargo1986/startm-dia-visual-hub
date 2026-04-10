@@ -44,10 +44,10 @@ const AdminFiles = () => {
   const approve = useMutation({
     mutationFn: async (id: string) => {
       await supabase.from('customer_files').update({ status: 'approved' }).eq('id', id);
-      // Also update order_items if linked
       const file = files?.find(f => f.id === id);
       if (file?.order_item_id) {
         await supabase.from('order_items').update({ artwork_status: 'approved' }).eq('id', file.order_item_id);
+        await checkAndAdvanceOrder(file.order_item_id);
       }
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin-files'] }); toast.success('Arquivo aprovado!'); },
@@ -59,6 +59,7 @@ const AdminFiles = () => {
       const file = files?.find(f => f.id === rejectId);
       if (file?.order_item_id) {
         await supabase.from('order_items').update({ artwork_status: 'rejected' }).eq('id', file.order_item_id);
+        await recordArtRejection(file.order_item_id, rejectReason);
       }
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin-files'] }); toast.success('Arquivo rejeitado.'); setRejectOpen(false); setRejectReason(''); },
