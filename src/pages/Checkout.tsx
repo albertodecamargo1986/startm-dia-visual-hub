@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { toast } from 'sonner';
 import { User, Upload, CreditCard, CheckCircle, Ruler, MessageCircle, X, FileText } from 'lucide-react';
 import { formatBRL } from '@/lib/format';
+import { trackEvent } from '@/lib/analytics';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const STEPS = [
@@ -59,6 +60,7 @@ const Checkout = () => {
 
   useEffect(() => {
     if (!items.length) navigate('/carrinho');
+    else trackEvent('checkout_started', { itemCount: items.length, total });
   }, [items, navigate]);
 
   useEffect(() => {
@@ -140,6 +142,8 @@ const Checkout = () => {
       const result = data as unknown as { order_id: string; order_number: string; items: Array<{ cart_index: number; order_item_id: string }> };
       setOrderId(result.order_id);
 
+      trackEvent('order_created', { orderId: result.order_id, orderNumber: result.order_number, total }, result.order_id);
+
       // Build cart item ID → order item ID map
       const map: Record<string, string> = {};
       result.items.forEach(({ cart_index, order_item_id }) => {
@@ -214,12 +218,14 @@ const Checkout = () => {
       artwork_status: 'pending',
     }).eq('id', orderItemId);
 
+    trackEvent('artwork_uploaded', { orderId, itemId: orderItemId }, orderId);
     toast.success(`Arquivo "${file.name}" enviado com sucesso!`);
   };
 
   const handlePayment = async () => {
     if (!orderId) return;
     setLoading(true);
+    trackEvent('payment_redirected', { orderId, method: 'pagseguro' }, orderId);
     try {
       const { data, error } = await supabase.functions.invoke('create-pagseguro-payment', {
         body: { orderId },
