@@ -22,7 +22,7 @@ import {
   GripVertical, ShoppingCart, Printer, CopyPlus, Sparkles,
   ChevronLeft, ChevronRight, X, Grid3X3, Keyboard, FileText,
   ArrowLeft, Check, Pencil, Bold, Italic, AlignLeft, AlignCenter, AlignRight,
-  MousePointer2
+  MousePointer2, WrapText
 } from 'lucide-react';
 import { LABEL_SHAPES, getFormatsForShape, mmToPx, type LabelFormat } from '@/lib/label-formats';
 
@@ -1020,9 +1020,13 @@ const LabelEditor = () => {
             </TooltipTrigger><TooltipContent side="right">Atalhos</TooltipContent></Tooltip>
           </div>
 
-          {/* ── LEFT PANEL (collapsible design/layers) ── */}
+          {/* ── LEFT PANEL (floating overlay on canvas) ── */}
           {showLeftPanel && (
-            <div className="w-52 lg:w-60 shrink-0 border-r bg-card overflow-hidden flex flex-col">
+            <div className="absolute left-12 top-0 bottom-0 z-30 w-56 lg:w-64 bg-card border-r shadow-xl flex flex-col" style={{ maxHeight: '100%' }}>
+              <div className="flex items-center justify-between px-3 py-2 border-b shrink-0">
+                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Painel</span>
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setShowLeftPanel(false)}><X className="h-3.5 w-3.5" /></Button>
+              </div>
               <Tabs defaultValue="design" className="flex flex-col flex-1 min-h-0">
                 <TabsList className="w-full grid grid-cols-2 mx-2 mt-2 shrink-0">
                   <TabsTrigger value="design" className="text-xs"><Palette className="h-3 w-3 mr-1" />Design</TabsTrigger>
