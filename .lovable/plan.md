@@ -1,51 +1,29 @@
 
 
-# Plano: Desenho Livre, Elementos Prontos e Melhorias de Interação
+# Plano: Centralizar e ampliar a área de pintura da etiqueta
 
-## Mudanças planejadas
+## Problema
+O canvas da etiqueta está pequeno e difícil de usar. O `fitToContainer` limita a 70% do container e subtrai 48px extras, resultando numa área de trabalho pequena demais. O canvas precisa ocupar mais espaço e ficar visualmente centralizado de forma clara.
 
-### 1. Ferramenta de Desenho Livre (Freehand Drawing)
-Adicionar botão "Desenho livre" na toolbar vertical. Usa o modo de desenho nativo do Fabric.js (`canvas.isDrawingMode = true`) com controles de:
-- Espessura do traço (1-20px)
-- Cor do traço
-- Borracha (apaga último traço)
+## Mudanças em `src/pages/client/LabelEditor.tsx`
 
-Ao ativar, o cursor muda para pincel. Ao clicar em "Seleção", volta ao modo normal.
+### 1. Ampliar escala do canvas
+- Alterar `fitToContainer`: remover o fator `0.7` e usar `0.9` (90% do container), e reduzir a margem de 48px para 24px
+- Isso fará a etiqueta ocupar quase toda a área disponível, muito mais fácil de desenhar
 
-### 2. Nova aba "Elementos" no painel overlay esquerdo
-Adicionar uma terceira aba no painel (Design | Camadas | **Elementos**) com uma biblioteca de formas SVG prontas organizadas por categoria:
+### 2. Melhorar centralização visual
+- Adicionar padding interno no container do canvas (`p-4`) para respiro uniforme
+- Garantir que o `canvas-wrapper` tenha `display: flex` e centralização absoluta com `margin: auto` funcional
 
-**Setas** (8 variações): seta simples, seta dupla, seta curva, seta grossa, chevron
-**Símbolos** (8 variações): estrela, coração, raio/relâmpago, diamante, coroa, medalha, check, xis
-**Decorativos** (6 variações): onda, espiral, folha, flor, sol, gota
-**Ícones** (6 variações): telefone, email, instagram, facebook, localização, carrinho
+### 3. Remover limite `scale ≤ 1`
+- Atualmente `Math.min(..., 1)` impede que etiquetas pequenas (4x4cm) sejam ampliadas para caber na tela
+- Alterar para `Math.min(..., 3)` para permitir zoom automático de etiquetas pequenas, tornando-as usáveis
 
-Cada elemento é inserido ao clicar, centralizado no canvas, e totalmente editável (cor, tamanho, rotação).
+### 4. Borda visual na área de desenho
+- Adicionar uma borda branca fina (`ring-1 ring-white/20`) no `canvas-wrapper` para delimitar claramente onde é a área editável
 
-Implementação: os SVG paths serão definidos inline como constantes (sem dependências externas). Inseridos via `fabric.Path`.
-
-### 3. Melhorias de escala e interação com mouse
-- Habilitar `uniformScaling` por padrão para que imagens/objetos mantenham proporção ao redimensionar pelos cantos
-- Adicionar controles de rotação mais visíveis (custom corner style)
-- Configurar `cornerSize: 10`, `cornerColor`, `borderColor` para feedback visual melhor
-- Lock aspect ratio toggle no painel de propriedades
-
-### 4. Estado ativo na toolbar
-Destacar visualmente a ferramenta ativa (seleção, texto, desenho, etc.) com `variant="secondary"` para indicar qual modo está ativo.
-
-## Arquivos modificados
-- `src/pages/client/LabelEditor.tsx`:
-  - Novo estado `activeTool` para rastrear ferramenta selecionada
-  - Função `toggleDrawingMode` para ativar/desativar desenho livre
-  - Controles de pincel no painel direito quando modo desenho ativo
-  - Nova aba "Elementos" no painel overlay com grid de SVG clicáveis
-  - Configuração de `cornerSize`, `uniformScaling` nos objetos
-  - Highlight da ferramenta ativa na toolbar
-  - ~120 linhas de elementos SVG paths como constantes
-  - ~40 linhas para drawing mode
-  - ~20 linhas para melhorias de interação
-
-## Sem mudanças
-- Banco de dados, RLS, edge functions
-- Lógica de salvamento, templates existentes, exportação
+## Resumo técnico
+- Arquivo: `src/pages/client/LabelEditor.tsx`
+- ~10 linhas alteradas na função `fitToContainer` e no JSX do container
+- Sem mudanças em banco de dados, lógica de salvamento, ou outras funcionalidades
 
