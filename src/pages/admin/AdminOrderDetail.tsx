@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { useState } from 'react';
 import { Check, X, Download, MessageCircle, Save } from 'lucide-react';
 import { formatBRL, formatDateTime } from '@/lib/format';
+import { checkAndAdvanceOrder, recordArtRejection } from '@/lib/artwork-helpers';
 
 const statuses: OrderStatus[] = ['pending_payment', 'awaiting_artwork', 'in_production', 'ready', 'shipped', 'delivered', 'cancelled', 'refunded'];
 
@@ -118,10 +119,13 @@ const AdminOrderDetail = () => {
     mutationFn: async ({ fileId, itemId }: { fileId: string; itemId: string }) => {
       await supabase.from('customer_files').update({ status: 'approved' }).eq('id', fileId);
       await supabase.from('order_items').update({ artwork_status: 'approved' }).eq('id', itemId);
+      await checkAndAdvanceOrder(itemId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-order-files', id] });
       queryClient.invalidateQueries({ queryKey: ['admin-order-items', id] });
+      queryClient.invalidateQueries({ queryKey: ['admin-order-timeline', id] });
+      queryClient.invalidateQueries({ queryKey: ['admin-order', id] });
       toast.success('Arte aprovada!');
     },
   });
@@ -130,10 +134,12 @@ const AdminOrderDetail = () => {
     mutationFn: async () => {
       await supabase.from('customer_files').update({ status: 'rejected', admin_comment: rejectReason }).eq('id', rejectFileId);
       await supabase.from('order_items').update({ artwork_status: 'rejected' }).eq('id', rejectItemId);
+      await recordArtRejection(rejectItemId, rejectReason);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-order-files', id] });
       queryClient.invalidateQueries({ queryKey: ['admin-order-items', id] });
+      queryClient.invalidateQueries({ queryKey: ['admin-order-timeline', id] });
       toast.success('Arte rejeitada.');
       setRejectOpen(false);
       setRejectReason('');
