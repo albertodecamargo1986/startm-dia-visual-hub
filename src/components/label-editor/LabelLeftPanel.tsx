@@ -5,20 +5,21 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Palette, Shapes, Layers, X, Frame, Eye, EyeOff, Lock, Unlock, ArrowUp, ArrowDown, GripVertical } from 'lucide-react';
 import {
-  TEMPLATE_CATEGORIES, getTemplatesByCategory,
   DECORATIVE_CATEGORIES, getDecorativeByCategory,
   type LabelTemplate, type DecorativeElement
 } from '@/lib/label-templates';
 import { SVG_ELEMENTS_LIBRARY } from './svg-library';
+import { TemplateGallery } from './panels/TemplateGallery';
 import type { LayerItem, SvgElement } from './types';
 
 interface LabelLeftPanelProps {
   bgColor: string;
+  widthMm: number;
+  heightMm: number;
   onBgColorChange: (color: string) => void;
   onApplyTemplate: (t: LabelTemplate) => void;
   onAddDecorative: (el: DecorativeElement) => void;
   onAddSvgElement: (el: SvgElement) => void;
-  getTemplateColors: (t: LabelTemplate) => string[];
   layers: LayerItem[];
   selectedObject: any;
   editingLayerName: number | null;
