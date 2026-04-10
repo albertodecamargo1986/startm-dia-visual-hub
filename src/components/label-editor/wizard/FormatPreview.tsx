@@ -3,102 +3,85 @@ import type { LabelFormat } from '@/lib/label-formats';
 interface Props {
   format: LabelFormat;
   size?: number;
+  isSelected?: boolean;
 }
 
-export function FormatPreview({ format, size = 40 }: Props) {
-  const { shape, widthMm, heightMm } = format;
-  const aspect = widthMm / heightMm;
-  const w = aspect >= 1 ? size : size * aspect;
-  const h = aspect >= 1 ? size / aspect : size;
+export function FormatPreview({ format, size = 50, isSelected }: Props) {
+  const { shape, widthMm, heightMm, cornerRadiusMm } = format;
 
-  const commonProps = {
-    className: 'text-primary/60',
-    style: { width: w, height: h } as React.CSSProperties,
+  const maxDim = Math.max(widthMm, heightMm);
+  const scaleW = (widthMm / maxDim) * size;
+  const scaleH = (heightMm / maxDim) * size;
+  const color = isSelected ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))';
+  const fill = isSelected ? 'hsl(var(--primary) / 0.12)' : 'hsl(var(--muted-foreground) / 0.06)';
+  const radius = cornerRadiusMm ? (cornerRadiusMm / maxDim) * size : 0;
+
+  const cx = size / 2;
+  const cy = size / 2;
+  const x = cx - scaleW / 2;
+  const y = cy - scaleH / 2;
+
+  const renderShape = () => {
+    switch (shape) {
+      case 'round':
+        return (
+          <ellipse cx={cx} cy={cy} rx={scaleW / 2} ry={scaleW / 2}
+            fill={fill} stroke={color} strokeWidth={1.5} />
+        );
+      case 'oval':
+        return (
+          <ellipse cx={cx} cy={cy} rx={scaleW / 2} ry={scaleH / 2}
+            fill={fill} stroke={color} strokeWidth={1.5} />
+        );
+      case 'square':
+        return (
+          <rect x={x} y={y} width={scaleW} height={scaleH}
+            fill={fill} stroke={color} strokeWidth={1.5} />
+        );
+      case 'rounded-square':
+      case 'rounded-rectangle':
+        return (
+          <rect x={x} y={y} width={scaleW} height={scaleH} rx={radius} ry={radius}
+            fill={fill} stroke={color} strokeWidth={1.5} />
+        );
+      case 'rectangle':
+        return (
+          <rect x={x} y={y} width={scaleW} height={scaleH}
+            fill={fill} stroke={color} strokeWidth={1.5} />
+        );
+      case 'hexagon': {
+        const r = scaleW / 2;
+        const pts = Array.from({ length: 6 }, (_, i) => {
+          const a = (Math.PI / 3) * i - Math.PI / 6;
+          return `${cx + r * Math.cos(a)},${cy + r * Math.sin(a)}`;
+        }).join(' ');
+        return <polygon points={pts} fill={fill} stroke={color} strokeWidth={1.5} />;
+      }
+      case 'pentagon': {
+        const r = scaleW / 2;
+        const pts = Array.from({ length: 5 }, (_, i) => {
+          const a = (2 * Math.PI / 5) * i - Math.PI / 2;
+          return `${cx + r * Math.cos(a)},${cy + r * Math.sin(a)}`;
+        }).join(' ');
+        return <polygon points={pts} fill={fill} stroke={color} strokeWidth={1.5} />;
+      }
+      case 'diamond': {
+        const pts = [
+          `${cx},${y}`, `${x + scaleW},${cy}`, `${cx},${y + scaleH}`, `${x},${cy}`,
+        ].join(' ');
+        return <polygon points={pts} fill={fill} stroke={color} strokeWidth={1.5} />;
+      }
+      default:
+        return (
+          <rect x={x} y={y} width={scaleW} height={scaleH}
+            fill={fill} stroke={color} strokeWidth={1.5} />
+        );
+    }
   };
 
-  switch (shape) {
-    case 'round':
-      return (
-        <div
-          {...commonProps}
-          className="border-2 border-primary/40 rounded-full bg-primary/10"
-          style={{ width: Math.min(w, h), height: Math.min(w, h) }}
-        />
-      );
-    case 'square':
-      return (
-        <div
-          className="border-2 border-primary/40 bg-primary/10"
-          style={{ width: Math.min(w, h), height: Math.min(w, h) }}
-        />
-      );
-    case 'rounded-square':
-      return (
-        <div
-          className="border-2 border-primary/40 bg-primary/10 rounded-lg"
-          style={{ width: Math.min(w, h), height: Math.min(w, h) }}
-        />
-      );
-    case 'rectangle':
-      return (
-        <div
-          className="border-2 border-primary/40 bg-primary/10"
-          style={{ width: w, height: h }}
-        />
-      );
-    case 'rounded-rectangle':
-      return (
-        <div
-          className="border-2 border-primary/40 bg-primary/10 rounded-md"
-          style={{ width: w, height: h }}
-        />
-      );
-    case 'oval':
-      return (
-        <div
-          className="border-2 border-primary/40 bg-primary/10 rounded-full"
-          style={{ width: w, height: h }}
-        />
-      );
-    case 'hexagon':
-      return (
-        <svg width={w} height={h} viewBox="0 0 100 100" className="text-primary/40">
-          <polygon
-            points="50,2 95,25 95,75 50,98 5,75 5,25"
-            fill="hsl(var(--primary) / 0.1)"
-            stroke="currentColor"
-            strokeWidth="4"
-          />
-        </svg>
-      );
-    case 'pentagon':
-      return (
-        <svg width={w} height={h} viewBox="0 0 100 100" className="text-primary/40">
-          <polygon
-            points="50,2 97,38 80,95 20,95 3,38"
-            fill="hsl(var(--primary) / 0.1)"
-            stroke="currentColor"
-            strokeWidth="4"
-          />
-        </svg>
-      );
-    case 'diamond':
-      return (
-        <svg width={w} height={h} viewBox="0 0 100 120" className="text-primary/40">
-          <polygon
-            points="50,2 98,60 50,118 2,60"
-            fill="hsl(var(--primary) / 0.1)"
-            stroke="currentColor"
-            strokeWidth="4"
-          />
-        </svg>
-      );
-    default:
-      return (
-        <div
-          className="border-2 border-dashed border-primary/40 bg-primary/10 rounded"
-          style={{ width: w, height: h }}
-        />
-      );
-  }
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="flex-shrink-0">
+      {renderShape()}
+    </svg>
+  );
 }

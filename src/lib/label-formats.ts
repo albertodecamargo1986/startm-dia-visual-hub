@@ -37,7 +37,7 @@ export function pxToMm(px: number): number {
 }
 
 // Helper to create a LabelFormat from dimensions
-export function createFormat(
+function createFormat(
   shape: LabelShape,
   widthMm: number,
   heightMm: number,
