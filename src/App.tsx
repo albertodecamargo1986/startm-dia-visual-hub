@@ -29,6 +29,7 @@ import ClientOrders from "./pages/client/ClientOrders";
 import ClientOrderDetail from "./pages/client/ClientOrderDetail";
 import ClientFiles from "./pages/client/ClientFiles";
 import ClientProfile from "./pages/client/ClientProfile";
+import LabelEditor from "./pages/client/LabelEditor";
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminOrders from "./pages/admin/AdminOrders";
@@ -91,6 +92,7 @@ const App = () => (
                       <Route path="/cliente/pedidos/:id" element={<ClientOrderDetail />} />
                       <Route path="/cliente/arquivos" element={<ClientFiles />} />
                       <Route path="/cliente/perfil" element={<ClientProfile />} />
+                      <Route path="/cliente/etiquetas" element={<LabelEditor />} />
                     </Route>
                   </Route>
 

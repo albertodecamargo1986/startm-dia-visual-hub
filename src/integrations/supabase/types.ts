@@ -465,6 +465,80 @@ export type Database = {
         }
         Relationships: []
       }
+      label_project_versions: {
+        Row: {
+          created_at: string
+          id: string
+          project_id: string
+          snapshot: Json
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          project_id: string
+          snapshot?: Json
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          project_id?: string
+          snapshot?: Json
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "label_project_versions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "label_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      label_projects: {
+        Row: {
+          canvas_json: Json
+          created_at: string
+          height_mm: number
+          id: string
+          label_shape: string
+          name: string
+          status: string
+          thumbnail_url: string | null
+          updated_at: string
+          user_id: string
+          width_mm: number
+        }
+        Insert: {
+          canvas_json?: Json
+          created_at?: string
+          height_mm?: number
+          id?: string
+          label_shape?: string
+          name?: string
+          status?: string
+          thumbnail_url?: string | null
+          updated_at?: string
+          user_id: string
+          width_mm?: number
+        }
+        Update: {
+          canvas_json?: Json
+          created_at?: string
+          height_mm?: number
+          id?: string
+          label_shape?: string
+          name?: string
+          status?: string
+          thumbnail_url?: string | null
+          updated_at?: string
+          user_id?: string
+          width_mm?: number
+        }
+        Relationships: []
+      }
       notifications_queue: {
         Row: {
           attempts: number | null
