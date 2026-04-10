@@ -33,7 +33,7 @@ const AdminAnalytics = () => {
       const since = new Date();
       since.setDate(since.getDate() - Number(period));
 
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from('analytics_events')
         .select('event_name, created_at')
         .gte('created_at', since.toISOString())
