@@ -2,7 +2,6 @@ import { useState, useMemo, useCallback } from 'react';
 import { LABEL_TEMPLATES, type LabelTemplate } from '@/lib/label-templates';
 import { ALL_FORMATS, type LabelFormat } from '@/lib/label-formats';
 
-// ── Types ────────────────────────────────────────────────────
 export type SortOrder = 'az' | 'za' | 'newest' | 'oldest';
 export type PremiumFilter = 'all' | 'free' | 'premium';
 
@@ -28,7 +27,6 @@ export interface ElementFilters {
   category: string;
 }
 
-// ── Defaults ─────────────────────────────────────────────────
 export const DEFAULT_TEMPLATE_FILTERS: TemplateFilters = {
   search: '',
   category: 'todos',
@@ -51,7 +49,6 @@ export const DEFAULT_ELEMENT_FILTERS: ElementFilters = {
   category: 'todos',
 };
 
-// ── Main hook ────────────────────────────────────────────────
 export function useLabelFilters() {
   const [templateFilters, setTemplateFilters] =
     useState<TemplateFilters>(DEFAULT_TEMPLATE_FILTERS);
@@ -60,7 +57,6 @@ export function useLabelFilters() {
   const [elementFilters, setElementFilters] =
     useState<ElementFilters>(DEFAULT_ELEMENT_FILTERS);
 
-  // ── Template filtering ────────────────────────────────────
   const filteredTemplates = useMemo(() => {
     let result = [...LABEL_TEMPLATES];
 
@@ -105,7 +101,6 @@ export function useLabelFilters() {
     return result;
   }, [templateFilters]);
 
-  // ── Format filtering ──────────────────────────────────────
   const filteredFormats = useMemo(() => {
     let result = [...ALL_FORMATS];
 
@@ -135,7 +130,6 @@ export function useLabelFilters() {
     return result;
   }, [formatFilters]);
 
-  // ── Partial updaters ──────────────────────────────────────
   const updateTemplateFilter = useCallback(
     <K extends keyof TemplateFilters>(key: K, value: TemplateFilters[K]) => {
       setTemplateFilters((prev) => ({ ...prev, [key]: value }));
@@ -166,7 +160,6 @@ export function useLabelFilters() {
     }));
   }, []);
 
-  // ── Resets ────────────────────────────────────────────────
   const resetTemplateFilters = useCallback(
     () => setTemplateFilters(DEFAULT_TEMPLATE_FILTERS), [],
   );
@@ -177,7 +170,6 @@ export function useLabelFilters() {
     () => setElementFilters(DEFAULT_ELEMENT_FILTERS), [],
   );
 
-  // ── Active filter count (for badges) ──────────────────────
   const activeTemplateFilterCount = useMemo(() => {
     let count = 0;
     if (templateFilters.search) count++;
