@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,6 +14,8 @@ import {
   AlignStartHorizontal, AlignEndHorizontal, AlignStartVertical, AlignEndVertical,
 } from 'lucide-react';
 import { GOOGLE_FONTS, loadGoogleFont, type LayerItem } from './types';
+import { GradientPanel } from './panels/GradientPanel';
+import type { Canvas as FabricCanvas } from 'fabric';
 
 interface LabelPropertiesPanelProps {
   drawingMode: boolean;
@@ -23,6 +26,8 @@ interface LabelPropertiesPanelProps {
   shapeLabel: string;
   sizeLabel: string;
   layerCount: number;
+  canvas: FabricCanvas | null;
+  onHistoryCapture: () => void;
   onBrushColorChange: (color: string) => void;
   onBrushWidthChange: (width: number) => void;
   onEraseLastDrawing: () => void;
