@@ -1027,6 +1027,12 @@ const LabelEditor = () => {
               </Button>
             </TooltipTrigger><TooltipContent side="right">Texto</TooltipContent></Tooltip>
 
+            <Tooltip><TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={addCurvedText}>
+                <WrapText className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger><TooltipContent side="right">Texto em Arco</TooltipContent></Tooltip>
+
             <Separator className="w-6 my-1" />
 
             <Tooltip><TooltipTrigger asChild>
