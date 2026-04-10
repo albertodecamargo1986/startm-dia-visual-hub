@@ -26,6 +26,13 @@ import { LabelEditorProvider, useLabelEditor } from '@/contexts/LabelEditorConte
 // ── Inner component that consumes context ──
 const LabelEditorInner = () => {
   const ctx = useLabelEditor();
+  const {
+    formatFilters, filteredFormats,
+    updateFormatFilter, resetFormatFilters, activeFormatFilterCount,
+    templateFilters, filteredTemplates,
+    updateTemplateFilter, toggleTemplateTag,
+    resetTemplateFilters, activeTemplateFilterCount,
+  } = useLabelFilters();
 
   return (
     <TooltipProvider delayDuration={300}>
