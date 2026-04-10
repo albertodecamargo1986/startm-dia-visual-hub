@@ -529,13 +529,204 @@ export const templateBotanico: LabelTemplate = {
   },
 };
 
-// Append new templates to the main array
+// =============================================
+// ALIMENTOS — Brigadeiro Gourmet
+// =============================================
+export const templateBrigadeiroGourmet: LabelTemplate = {
+  id: 'alimento-brigadeiro-01',
+  name: 'Brigadeiro Gourmet',
+  category: 'alimentos',
+  subcategory: 'doces',
+  description: 'Rótulo artesanal para doces gourmet',
+  tags: ['brigadeiro', 'doce', 'confeitaria', 'artesanal', 'gourmet'],
+  premium: false,
+  getObjects: (wm, hm) => {
+    const { cx, cy, w, h } = center(wm, hm);
+    return [
+      { type: 'rect', left: 0, top: 0, width: w, height: h, fill: '#FFF5E6', selectable: false },
+      { type: 'rect', left: w * 0.04, top: h * 0.04, width: w * 0.92, height: h * 0.92, fill: 'transparent', stroke: '#6B3A2A', strokeWidth: 3, rx: 6, ry: 6 },
+      { type: 'rect', left: w * 0.07, top: h * 0.07, width: w * 0.86, height: h * 0.86, fill: 'transparent', stroke: '#6B3A2A', strokeWidth: 1, strokeDashArray: [6, 3], rx: 3, ry: 3 },
+      { type: 'rect', left: w * 0.04, top: h * 0.04, width: w * 0.92, height: h * 0.18, fill: '#6B3A2A', rx: 6, ry: 6 },
+      { type: 'i-text', text: '✦  CONFEITARIA ARTESANAL  ✦', left: cx, top: h * 0.13, originX: 'center', originY: 'center', fontSize: h * 0.052, fontFamily: 'Montserrat', fontWeight: 'bold', fill: '#FFF5E6', charSpacing: 80 },
+      { type: 'i-text', text: 'Brigadeiro', left: cx, top: h * 0.36, originX: 'center', originY: 'center', fontSize: h * 0.12, fontFamily: 'Playfair Display', fontStyle: 'italic', fill: '#3E1F0D' },
+      { type: 'i-text', text: 'Gourmet ao Leite Ninho', left: cx, top: h * 0.5, originX: 'center', originY: 'center', fontSize: h * 0.055, fontFamily: 'Dancing Script', fill: '#6B3A2A' },
+      { type: 'i-text', text: '— ✦ —', left: cx, top: h * 0.62, originX: 'center', originY: 'center', fontSize: h * 0.065, fontFamily: 'Georgia', fill: '#6B3A2A' },
+      { type: 'i-text', text: 'Peso: 30g     Val: ___/___', left: cx, top: h * 0.74, originX: 'center', originY: 'center', fontSize: h * 0.045, fontFamily: 'Roboto', fill: '#6B3A2A' },
+      { type: 'i-text', text: 'Doce Maria', left: cx, top: h * 0.87, originX: 'center', originY: 'center', fontSize: h * 0.06, fontFamily: 'Great Vibes', fill: '#3E1F0D' },
+    ];
+  },
+};
+
+// =============================================
+// ALIMENTOS — Mel Artesanal
+// =============================================
+export const templateMelArtesanal: LabelTemplate = {
+  id: 'alimento-mel-01',
+  name: 'Mel Artesanal',
+  category: 'alimentos',
+  subcategory: 'naturais',
+  description: 'Rótulo âmbar para mel e produtos apícolas',
+  tags: ['mel', 'natural', 'orgânico', 'artesanal', 'abelha'],
+  premium: false,
+  getObjects: (wm, hm) => {
+    const { cx, cy, w, h } = center(wm, hm);
+    return [
+      { type: 'rect', left: 0, top: 0, width: w, height: h, fill: '#FFF8E1', selectable: false },
+      { type: 'i-text', text: '⬡', left: cx, top: h * 0.28, originX: 'center', originY: 'center', fontSize: h * 0.55, fill: '#FFF0A0', selectable: false },
+      { type: 'rect', left: w * 0.05, top: h * 0.05, width: w * 0.9, height: h * 0.9, fill: 'transparent', stroke: '#E6A817', strokeWidth: 2, rx: 4, ry: 4 },
+      { type: 'i-text', text: '🐝', left: cx, top: h * 0.16, originX: 'center', originY: 'center', fontSize: h * 0.1 },
+      { type: 'i-text', text: 'MEL PURO', left: cx, top: h * 0.33, originX: 'center', originY: 'center', fontSize: h * 0.1, fontFamily: 'Montserrat', fontWeight: 'bold', fill: '#7B4F00', charSpacing: 200 },
+      { type: 'i-text', text: 'ARTESANAL', left: cx, top: h * 0.46, originX: 'center', originY: 'center', fontSize: h * 0.065, fontFamily: 'Montserrat', fill: '#E6A817', charSpacing: 300 },
+      { type: 'line', x1: w * 0.15, y1: h * 0.56, x2: w * 0.85, y2: h * 0.56, stroke: '#E6A817', strokeWidth: 2 },
+      { type: 'i-text', text: '100% Natural • Sem Conservantes\nFlora Silvestre', left: cx, top: h * 0.68, originX: 'center', originY: 'center', fontSize: h * 0.048, fontFamily: 'Lato', fill: '#7B4F00', textAlign: 'center', lineHeight: 1.5 },
+      { type: 'i-text', text: '300g  •  Val: ___/___', left: cx, top: h * 0.85, originX: 'center', originY: 'center', fontSize: h * 0.044, fontFamily: 'Roboto', fill: '#7B4F00' },
+    ];
+  },
+};
+
+// =============================================
+// COSMÉTICOS — Luxo Preto & Dourado
+// =============================================
+export const templateCosmeticoPreto: LabelTemplate = {
+  id: 'cosmetico-luxo-preto-01',
+  name: 'Luxo Preto & Dourado',
+  category: 'cosmeticos',
+  description: 'Rótulo premium preto com moldura dourada dupla',
+  tags: ['cosmetico', 'luxo', 'premium', 'skincare', 'dourado', 'preto'],
+  premium: false,
+  getObjects: (wm, hm) => {
+    const { cx, cy, w, h } = center(wm, hm);
+    return [
+      { type: 'rect', left: 0, top: 0, width: w, height: h, fill: '#080808', selectable: false },
+      { type: 'rect', left: w * 0.04, top: h * 0.04, width: w * 0.92, height: h * 0.92, fill: 'transparent', stroke: '#C9A84C', strokeWidth: 2, rx: 2, ry: 2 },
+      { type: 'rect', left: w * 0.07, top: h * 0.07, width: w * 0.86, height: h * 0.86, fill: 'transparent', stroke: '#C9A84C', strokeWidth: 0.5, rx: 1, ry: 1 },
+      { type: 'i-text', text: '◆', left: cx, top: h * 0.18, originX: 'center', originY: 'center', fontSize: h * 0.07, fill: '#C9A84C' },
+      { type: 'i-text', text: 'MAISON', left: cx, top: h * 0.32, originX: 'center', originY: 'center', fontSize: h * 0.11, fontFamily: 'Playfair Display', fill: '#FFFFFF', charSpacing: 500 },
+      { type: 'i-text', text: 'DORÉE', left: cx, top: h * 0.44, originX: 'center', originY: 'center', fontSize: h * 0.065, fontFamily: 'Montserrat', fill: '#C9A84C', charSpacing: 800 },
+      { type: 'line', x1: w * 0.25, y1: h * 0.54, x2: w * 0.75, y2: h * 0.54, stroke: '#C9A84C', strokeWidth: 1 },
+      { type: 'i-text', text: 'Sérum Facial\nHidratação Profunda', left: cx, top: h * 0.67, originX: 'center', originY: 'center', fontSize: h * 0.052, fontFamily: 'Lato', fill: '#BBBBBB', textAlign: 'center', lineHeight: 1.5 },
+      { type: 'i-text', text: '30 ml', left: cx, top: h * 0.84, originX: 'center', originY: 'center', fontSize: h * 0.05, fontFamily: 'Montserrat', fill: '#C9A84C', charSpacing: 300 },
+    ];
+  },
+};
+
+// =============================================
+// FESTAS — Aniversário Rosa
+// =============================================
+export const templateAniversarioRosa: LabelTemplate = {
+  id: 'festa-aniversario-rosa-01',
+  name: 'Aniversário Rosa',
+  category: 'festas',
+  subcategory: 'aniversario',
+  description: 'Etiqueta rosa vibrante para festas infantis',
+  tags: ['aniversário', 'festa', 'rosa', 'menina', 'infantil', 'balão'],
+  premium: false,
+  getObjects: (wm, hm) => {
+    const { cx, cy, w, h } = center(wm, hm);
+    return [
+      { type: 'rect', left: 0, top: 0, width: w, height: h, fill: '#FFF0F5', selectable: false },
+      { type: 'rect', left: 0, top: 0, width: w, height: h * 0.22, fill: '#FF6B9D', selectable: false },
+      { type: 'rect', left: 0, top: h * 0.78, width: w, height: h * 0.22, fill: '#FF6B9D', selectable: false },
+      { type: 'i-text', text: '✦ ✦ ✦ ✦ ✦', left: cx, top: h * 0.11, originX: 'center', originY: 'center', fontSize: h * 0.07, fill: '#FFFFFF' },
+      { type: 'i-text', text: 'Feliz', left: cx, top: h * 0.34, originX: 'center', originY: 'center', fontSize: h * 0.1, fontFamily: 'Dancing Script', fill: '#FF6B9D' },
+      { type: 'i-text', text: 'ANIVERSÁRIO', left: cx, top: h * 0.48, originX: 'center', originY: 'center', fontSize: h * 0.075, fontFamily: 'Montserrat', fontWeight: 'bold', fill: '#C2185B', charSpacing: 100 },
+      { type: 'i-text', text: 'Sofia', left: cx, top: h * 0.63, originX: 'center', originY: 'center', fontSize: h * 0.11, fontFamily: 'Pacifico', fill: '#FF6B9D' },
+      { type: 'i-text', text: '✦ ✦ ✦ ✦ ✦', left: cx, top: h * 0.88, originX: 'center', originY: 'center', fontSize: h * 0.07, fill: '#FFFFFF' },
+    ];
+  },
+};
+
+// =============================================
+// BOTÂNICO — Chá de Ervas
+// =============================================
+export const templateBotanicoErvas: LabelTemplate = {
+  id: 'botanico-ervas-01',
+  name: 'Chá de Ervas',
+  category: 'botanico',
+  description: 'Rótulo verde com moldura dupla para chás naturais',
+  tags: ['chá', 'ervas', 'natural', 'orgânico', 'botânico', 'verde'],
+  premium: false,
+  getObjects: (wm, hm) => {
+    const { cx, cy, w, h } = center(wm, hm);
+    return [
+      { type: 'rect', left: 0, top: 0, width: w, height: h, fill: '#F0F7EE', selectable: false },
+      { type: 'rect', left: w * 0.05, top: h * 0.05, width: w * 0.9, height: h * 0.9, fill: 'transparent', stroke: '#2E7D32', strokeWidth: 2, rx: 4, ry: 4 },
+      { type: 'rect', left: w * 0.08, top: h * 0.08, width: w * 0.84, height: h * 0.84, fill: 'transparent', stroke: '#66BB6A', strokeWidth: 1, strokeDashArray: [4, 4], rx: 2, ry: 2 },
+      { type: 'i-text', text: '🌿', left: cx, top: h * 0.18, originX: 'center', originY: 'center', fontSize: h * 0.12 },
+      { type: 'i-text', text: 'Chá de\nCamomila', left: cx, top: h * 0.38, originX: 'center', originY: 'center', fontSize: h * 0.1, fontFamily: 'Playfair Display', fontStyle: 'italic', fill: '#1B5E20', textAlign: 'center', lineHeight: 1.2 },
+      { type: 'i-text', text: '— ✦ —', left: cx, top: h * 0.57, originX: 'center', originY: 'center', fontSize: h * 0.06, fill: '#2E7D32' },
+      { type: 'i-text', text: 'Calmante • Digestivo\n100% Natural', left: cx, top: h * 0.7, originX: 'center', originY: 'center', fontSize: h * 0.05, fontFamily: 'Lato', fill: '#2E7D32', textAlign: 'center', lineHeight: 1.5 },
+      { type: 'i-text', text: '25g  •  Val: ___/___', left: cx, top: h * 0.85, originX: 'center', originY: 'center', fontSize: h * 0.044, fontFamily: 'Roboto', fill: '#388E3C' },
+    ];
+  },
+};
+
+// =============================================
+// MINIMALISTA — Preto & Branco
+// =============================================
+export const templateMinimalistaPreto: LabelTemplate = {
+  id: 'minimalista-preto-01',
+  name: 'Minimalista Preto',
+  category: 'minimalista',
+  description: 'Layout clean preto e branco com barras',
+  tags: ['minimalista', 'clean', 'moderno', 'preto', 'simples', 'elegante'],
+  premium: false,
+  getObjects: (wm, hm) => {
+    const { cx, cy, w, h } = center(wm, hm);
+    return [
+      { type: 'rect', left: 0, top: 0, width: w, height: h, fill: '#FFFFFF', selectable: false },
+      { type: 'rect', left: 0, top: 0, width: w, height: h * 0.08, fill: '#111111', selectable: false },
+      { type: 'rect', left: 0, top: h * 0.92, width: w, height: h * 0.08, fill: '#111111', selectable: false },
+      { type: 'i-text', text: 'MARCA', left: cx, top: h * 0.22, originX: 'center', originY: 'center', fontSize: h * 0.08, fontFamily: 'Montserrat', fontWeight: 'bold', fill: '#111111', charSpacing: 500 },
+      { type: 'line', x1: w * 0.2, y1: h * 0.33, x2: w * 0.8, y2: h * 0.33, stroke: '#111111', strokeWidth: 1 },
+      { type: 'i-text', text: 'Nome do Produto', left: cx, top: h * 0.5, originX: 'center', originY: 'center', fontSize: h * 0.075, fontFamily: 'Playfair Display', fontStyle: 'italic', fill: '#111111' },
+      { type: 'i-text', text: 'Descrição breve do produto', left: cx, top: h * 0.64, originX: 'center', originY: 'center', fontSize: h * 0.045, fontFamily: 'Lato', fill: '#666666' },
+      { type: 'line', x1: w * 0.2, y1: h * 0.74, x2: w * 0.8, y2: h * 0.74, stroke: '#CCCCCC', strokeWidth: 1 },
+      { type: 'i-text', text: 'www.suamarca.com.br', left: cx, top: h * 0.83, originX: 'center', originY: 'center', fontSize: h * 0.042, fontFamily: 'Roboto', fill: '#999999', charSpacing: 50 },
+    ];
+  },
+};
+
+// =============================================
+// VINTAGE — Retrô Café
+// =============================================
+export const templateVintageRetro: LabelTemplate = {
+  id: 'vintage-retro-01',
+  name: 'Vintage Retrô',
+  category: 'vintage',
+  description: 'Estilo retrô envelhecido com ornamentos',
+  tags: ['vintage', 'retrô', 'antigo', 'clássico', 'bege', 'café'],
+  premium: false,
+  getObjects: (wm, hm) => {
+    const { cx, cy, w, h } = center(wm, hm);
+    return [
+      { type: 'rect', left: 0, top: 0, width: w, height: h, fill: '#F5ECD7', selectable: false },
+      { type: 'rect', left: w * 0.03, top: h * 0.03, width: w * 0.94, height: h * 0.94, fill: 'transparent', stroke: '#5C4033', strokeWidth: 4, rx: 2, ry: 2 },
+      { type: 'rect', left: w * 0.06, top: h * 0.06, width: w * 0.88, height: h * 0.88, fill: 'transparent', stroke: '#5C4033', strokeWidth: 1, rx: 1, ry: 1 },
+      { type: 'i-text', text: '✦ ═══════ ✦', left: cx, top: h * 0.15, originX: 'center', originY: 'center', fontSize: h * 0.055, fill: '#5C4033' },
+      { type: 'i-text', text: 'CAFÉ', left: cx, top: h * 0.32, originX: 'center', originY: 'center', fontSize: h * 0.18, fontFamily: 'Oswald', fontWeight: 'bold', fill: '#3E2723', charSpacing: 300 },
+      { type: 'i-text', text: 'ESPECIAL', left: cx, top: h * 0.48, originX: 'center', originY: 'center', fontSize: h * 0.07, fontFamily: 'Oswald', fill: '#8D6E63', charSpacing: 400 },
+      { type: 'i-text', text: '✦ ═══════ ✦', left: cx, top: h * 0.58, originX: 'center', originY: 'center', fontSize: h * 0.055, fill: '#5C4033' },
+      { type: 'i-text', text: 'Grãos Selecionados\nTorrado Artesanalmente', left: cx, top: h * 0.71, originX: 'center', originY: 'center', fontSize: h * 0.052, fontFamily: 'Lato', fill: '#5C4033', textAlign: 'center', lineHeight: 1.5 },
+      { type: 'i-text', text: '✦ ═══════ ✦', left: cx, top: h * 0.87, originX: 'center', originY: 'center', fontSize: h * 0.055, fill: '#5C4033' },
+    ];
+  },
+};
+
+// Append all new templates to the main array
 LABEL_TEMPLATES.push(
   templateProdutoMinimalista,
   templateAlimentoArtesanal,
   templateCosmeticoLuxo,
   templateFestaBalloon,
   templateBotanico,
+  templateBrigadeiroGourmet,
+  templateMelArtesanal,
+  templateCosmeticoPreto,
+  templateAniversarioRosa,
+  templateBotanicoErvas,
+  templateMinimalistaPreto,
+  templateVintageRetro,
 );
 
 export function getTemplatesByCategory(category: string): LabelTemplate[] {
