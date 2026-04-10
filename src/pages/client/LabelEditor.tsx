@@ -393,6 +393,63 @@ const LabelEditor = () => {
     fc.renderAll(); fitToContainer();
   }, [addShapeDelimiter]);
 
+  const fitToContainer = useCallback(() => {
+    const fc = fabricRef.current; const container = containerRef.current;
+    if (!fc || !container) return;
+    const cw = container.clientWidth - 40; const ch = container.clientHeight - 40;
+    if (cw <= 0 || ch <= 0) return;
+    const canvasW = fc.getWidth(); const canvasH = fc.getHeight();
+    if (canvasW <= 0 || canvasH <= 0) return;
+    const scale = Math.min(cw / canvasW, ch / canvasH, 1);
+    if (!Number.isFinite(scale) || scale <= 0) return;
+    setZoom(scale); fc.setZoom(scale);
+    fc.setDimensions({ width: canvasW * scale, height: canvasH * scale }, { cssOnly: true });
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('resize', fitToContainer);
+    return () => window.removeEventListener('resize', fitToContainer);
+  }, [fitToContainer]);
+
+  useEffect(() => {
+    if (!currentProject || !selectedFormat) return;
+    const frame = window.requestAnimationFrame(() => fitToContainer());
+    return () => window.cancelAnimationFrame(frame);
+  }, [currentProject?.id, selectedFormat?.id, fitToContainer]);
+
+  useEffect(() => {
+    if (currentProject) return;
+    setSelectedObject(null);
+    setLayers([]);
+  }, [currentProject]);
+
+  const handleBgColorChange = useCallback((color: string) => {
+    setBgColor(color);
+    const fc = fabricRef.current;
+    if (fc) { fc.backgroundColor = color; fc.renderAll(); markDirty(); }
+  }, [markDirty]);
+
+  const generateThumbnail = useCallback(async () => {
+    const fc = fabricRef.current;
+    if (!fc || !currentProject || !selectedFormat || !user) return;
+    await generateAndUploadThumbnail(fc, currentProject.id, user.id, selectedFormat);
+  }, [currentProject, selectedFormat, user]);
+
+  const resetCanvas = useCallback((background = '#ffffff') => {
+    const fc = fabricRef.current;
+    if (!fc) return;
+    isRestoring.current = true;
+    fc.clear();
+    fc.backgroundColor = background;
+    fc.clipPath = undefined;
+    fc.discardActiveObject();
+    fc.renderAll();
+    isRestoring.current = false;
+    setSelectedObject(null);
+    setLayers([]);
+    setBgColor(background);
+  }, []);
+
   // ── Add elements ──
   const addText = () => {
     const fc = fabricRef.current; if (!fc) return;
