@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import type { EmailVerificationLocationState } from '@/types';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { supabase } from '@/integrations/supabase/client';

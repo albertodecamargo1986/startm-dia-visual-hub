@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { LoginLocationState } from '@/types';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { supabase } from '@/integrations/supabase/client';
