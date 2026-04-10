@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import * as fabric from 'fabric';
 import {
-  type GradientPreset,
+  type LabelGradientPreset,
   type GradientStop,
   type GradientType,
   type GradientDirection,
@@ -22,10 +22,11 @@ export function useGradient({ canvas, onHistoryCapture }: UseGradientProps) {
   ]);
   const [customType, setCustomType] = useState<GradientType>('linear');
   const [customDirection, setCustomDirection] = useState<GradientDirection>('to-right');
+  const [customAngle, setCustomAngle] = useState(0);
   const [gradientTarget, setGradientTarget] = useState<'fill' | 'background'>('fill');
 
   const applyPreset = useCallback(
-    (preset: GradientPreset, target: 'fill' | 'background' = 'fill') => {
+    (preset: LabelGradientPreset, target: 'fill' | 'background' = 'fill') => {
       if (!canvas) return;
       if (target === 'background') {
         applyGradientToBackground(canvas, preset);
@@ -43,9 +44,11 @@ export function useGradient({ canvas, onHistoryCapture }: UseGradientProps) {
   const applyCustomGradient = useCallback(
     (target: 'fill' | 'background' = 'fill') => {
       if (!canvas) return;
-      const customPreset: GradientPreset = {
+      const customPreset: LabelGradientPreset = {
         id: 'custom', name: 'Personalizado', category: 'personalizado',
-        type: customType, direction: customDirection, stops: customStops,
+        type: customType, direction: customDirection,
+        angle: customDirection === 'custom-angle' ? customAngle : undefined,
+        stops: customStops,
       };
       if (target === 'background') {
         applyGradientToBackground(canvas, customPreset);
@@ -56,7 +59,7 @@ export function useGradient({ canvas, onHistoryCapture }: UseGradientProps) {
       }
       onHistoryCapture?.();
     },
-    [canvas, customType, customDirection, customStops, onHistoryCapture],
+    [canvas, customType, customDirection, customAngle, customStops, onHistoryCapture],
   );
 
   const removeGradient = useCallback(
@@ -96,12 +99,14 @@ export function useGradient({ canvas, onHistoryCapture }: UseGradientProps) {
 
   const customGradientCSS = gradientToCSS({
     id: 'custom', name: '', category: 'personalizado',
-    type: customType, direction: customDirection, stops: customStops,
+    type: customType, direction: customDirection,
+    angle: customDirection === 'custom-angle' ? customAngle : undefined,
+    stops: customStops,
   });
 
   return {
-    customStops, customType, customDirection, gradientTarget, customGradientCSS,
-    setCustomType, setCustomDirection, setGradientTarget,
+    customStops, customType, customDirection, customAngle, gradientTarget, customGradientCSS,
+    setCustomType, setCustomDirection, setCustomAngle, setGradientTarget,
     applyPreset, applyCustomGradient, removeGradient,
     addStop, removeStop, updateStop,
   };
