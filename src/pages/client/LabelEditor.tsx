@@ -113,8 +113,17 @@ const LabelEditorInner = () => {
                     <Button variant="ghost" size="sm" onClick={() => ctx.setWizardStep(0)}><ArrowLeft className="h-4 w-4 mr-1" />Voltar</Button>
                     <h2 className="text-lg font-semibold">Escolha o tamanho</h2>
                   </div>
+                  <div className="mb-4">
+                    <FormatFiltersBar
+                      filters={formatFilters}
+                      activeFilterCount={activeFormatFilterCount}
+                      onUpdate={updateFormatFilter}
+                      onReset={resetFormatFilters}
+                      totalResults={filteredFormats.length}
+                    />
+                  </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                    {ctx.availableFormats.map(f => {
+                    {(filteredFormats.length > 0 ? filteredFormats : ctx.availableFormats).map(f => {
                       const isSquare = f.widthMm === f.heightMm;
                       const maxPrev = 60;
                       const prevW = maxPrev;
