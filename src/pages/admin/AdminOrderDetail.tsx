@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { useState } from 'react';
 import { Check, X, Download, MessageCircle, Save } from 'lucide-react';
 import { formatBRL, formatDateTime } from '@/lib/format';
+import { checkAndAdvanceOrder, recordArtRejection } from '@/lib/artwork-helpers';
 
 const statuses: OrderStatus[] = ['pending_payment', 'awaiting_artwork', 'in_production', 'ready', 'shipped', 'delivered', 'cancelled', 'refunded'];
 

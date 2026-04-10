@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { Download, Check, X, Eye } from 'lucide-react';
 import type { CustomerFile } from '@/types';
 import { formatDate } from '@/lib/format';
+import { checkAndAdvanceOrder, recordArtRejection } from '@/lib/artwork-helpers';
 
 const statusColors: Record<string, string> = {
   pending: 'bg-yellow-500/20 text-yellow-400',
