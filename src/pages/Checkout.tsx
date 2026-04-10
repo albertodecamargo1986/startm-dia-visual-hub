@@ -52,6 +52,7 @@ const Checkout = () => {
   // Step 2 state
   const [artworkFiles, setArtworkFiles] = useState<Record<string, { file: File; progress: number; url?: string }>>({});
   const [requestArtItems, setRequestArtItems] = useState<Set<string>>(new Set());
+  const [itemIdMap, setItemIdMap] = useState<Record<string, string>>({});
 
   const artworkItems = items.filter(i => i.needsArtwork);
   const needsArtworkStep = artworkItems.length > 0;
