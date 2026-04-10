@@ -1,19 +1,19 @@
 
 
-# Fix: Upload de arquivo no Checkout — URL assinada + vínculo ao pedido
+# Fix: Download de arquivos no admin
 
 ## Problema
-`handleFileSelect` salva o `data.path` interno no banco. Como o bucket `artwork-files` é privado, esse path não funciona para download. Além disso, não vincula o arquivo ao `order_item` correspondente.
+`handleDownload` tenta extrair path de URL pública, mas `file_url` agora pode ser URL assinada ou path interno. A extração falha.
 
-## Alteração
+## Alterações
 
-### `src/pages/Checkout.tsx` — Atualizar `handleFileSelect`
-- Gerar nome de arquivo único com `itemId-timestamp.ext`
-- Após upload, criar URL assinada de 1 ano via `createSignedUrl`
-- Buscar o `order_item.id` correspondente pelo `product_name` e `order_id`
-- Salvar `fileUrl` (URL assinada) em `customer_files` com `order_item_id`
-- Atualizar `artwork_url` e `artwork_status` no `order_items`
-- Adicionar `profile` à guard inicial (`if (!orderId || !user || !profile)`)
+### `src/pages/admin/AdminFiles.tsx`
+- Substituir `handleDownload` por versão que detecta se é URL (abre direto) ou path interno (gera signed URL)
+- Atualizar chamada para passar `f.file_name` como segundo argumento
 
-Apenas a função `handleFileSelect` será substituída — todo o resto do arquivo permanece igual.
+### `src/pages/admin/AdminOrderDetail.tsx`
+- Mesma substituição de `handleDownload`
+- Atualizar chamada para incluir `f.file_name`
+
+Ambas as funções usarão a mesma lógica: URLs HTTP abrem direto via `<a>` tag com download; paths internos geram signed URL via `createSignedUrl`.
 
