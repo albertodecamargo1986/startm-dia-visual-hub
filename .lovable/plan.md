@@ -1,18 +1,16 @@
 
 
-# Fix: Race condition no AuthContext — loading vs fetchProfile
+# Fix: Salvar product_snapshot nos order_items
 
 ## Problema
-`setLoading(false)` é chamado imediatamente após `setSession`, antes de `fetchProfile` resolver. O `RequireAdmin` vê `loading=false` + `isAdmin=false` e redireciona o admin para `/` antes dos roles carregarem.
+`product_snapshot` não é preenchido ao criar pedido, fazendo com que fotos e dados dos itens desapareçam quando o produto original é editado/removido.
 
 ## Alteração
 
-### `src/contexts/AuthContext.tsx` — Substituir useEffect (linhas 44–64)
-- Criar função `syncSession` que faz `await fetchProfile()` antes de `setLoading(false)`
-- Adicionar flag `isMounted` para evitar state updates após unmount
-- Remover o `setTimeout` que desacoplava fetchProfile do fluxo
-- `getSession` inicial: aguardar `syncSession` antes de liberar loading
-- `onAuthStateChange`: chamar `syncSession` que também aguarda profile
+### `src/pages/Checkout.tsx` — bloco `orderItems` dentro de `handleCreateOrder` (~linhas 95-105)
+- Adicionar campo `product_snapshot` com `thumbnail`, `priceUnit`, `needsArtwork`, `unitPrice`
+- Adicionar `custom_width: item.customWidth || null` e `custom_height: item.customHeight || null` (com fallback null)
+- Definir `artwork_status` como `'pending'` se `needsArtwork`, senão `'not_required'`
 
-Nenhuma outra alteração no arquivo.
+Nenhuma outra alteração necessária.
 
