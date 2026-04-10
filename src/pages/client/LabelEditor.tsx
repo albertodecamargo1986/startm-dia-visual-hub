@@ -292,21 +292,7 @@ const LabelEditor = () => {
     return () => { fc.dispose(); fabricRef.current = null; };
   }, []);
 
-  // Move canvas element into the correct container when project opens/closes
-  useEffect(() => {
-    const canvasEl = canvasRef.current;
-    if (!canvasEl) return;
-    // Fabric wraps the canvas in a container div
-    const fabricWrapper = canvasEl.parentElement;
-    if (!fabricWrapper) return;
-    
-    if (currentProject) {
-      const wrapper = document.getElementById('canvas-wrapper');
-      if (wrapper && fabricWrapper.parentElement !== wrapper) {
-        wrapper.insertBefore(fabricWrapper, wrapper.firstChild);
-      }
-    }
-  }, [currentProject]);
+  // No DOM manipulation needed - canvas always lives in canvas-wrapper via stable rendering
 
   // ── Keyboard shortcuts ──
   useEffect(() => {
@@ -628,7 +614,7 @@ const LabelEditor = () => {
       <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
 
       {/* ── WIZARD VIEW (no project open) ── */}
-      {!currentProject && (
+      <div style={{ display: currentProject ? 'none' : undefined }}>
         <div className="space-y-6 max-w-4xl mx-auto">
           {showOnboarding && (
             <div className="relative bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 rounded-xl p-4 flex items-start gap-4">
@@ -779,11 +765,10 @@ const LabelEditor = () => {
             </div>
           )}
         </div>
-      )}
+      </div>
 
       {/* ── EDITOR VIEW (project open) ── */}
-      {currentProject && (
-        <div className="flex flex-col h-[calc(100vh-140px)]">
+      <div style={{ display: currentProject ? undefined : 'none' }} className="flex flex-col h-[calc(100vh-140px)]">
           <PrintPreviewDialog open={showPrintPreview} onOpenChange={setShowPrintPreview} canvasRef={fabricRef} format={selectedFormat} />
 
         {/* ── TOP BAR ── */}
@@ -1089,6 +1074,7 @@ const LabelEditor = () => {
             <div className="flex-1 flex items-center justify-center bg-muted/10 p-4 overflow-auto" ref={containerRef}>
               <div className="relative border border-dashed border-muted-foreground/30 rounded-lg p-2 bg-white shadow-sm" id="canvas-wrapper">
                 {showGrid && <div className="absolute inset-2 rounded" style={gridOverlayStyle} />}
+                <canvas ref={canvasRef} />
               </div>
             </div>
 
@@ -1289,10 +1275,7 @@ const LabelEditor = () => {
           </DialogContent>
         </Dialog>
         </div>
-      )}
-
-      {/* Persistent canvas element - always in DOM */}
-      <canvas ref={canvasRef} style={currentProject ? undefined : { position: 'absolute', left: -9999, top: -9999, pointerEvents: 'none' }} />
+      </div>
     </TooltipProvider>
   );
 };
