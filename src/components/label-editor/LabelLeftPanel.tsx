@@ -12,19 +12,23 @@ import { SVG_ELEMENTS_LIBRARY } from './svg-library';
 import { TemplateGallery } from './panels/TemplateGallery';
 import { TemplateFiltersBar } from './filters/TemplateFiltersBar';
 import { ElementFiltersBar } from './filters/ElementFiltersBar';
+import { GradientPanel } from './panels/GradientPanel';
 import { useLabelFilters } from '@/hooks/use-label-filters';
 import type { LayerItem, SvgElement } from './types';
+import type { Canvas as FabricCanvas, FabricObject } from 'fabric';
 
 interface LabelLeftPanelProps {
   bgColor: string;
   widthMm: number;
   heightMm: number;
+  canvas: FabricCanvas | null;
+  selectedObject: any;
+  onHistoryCapture: () => void;
   onBgColorChange: (color: string) => void;
   onApplyTemplate: (t: LabelTemplate) => void;
   onAddDecorative: (el: DecorativeElement) => void;
   onAddSvgElement: (el: SvgElement) => void;
   layers: LayerItem[];
-  selectedObject: any;
   editingLayerName: number | null;
   layerNameDraft: string;
   onClose: () => void;
@@ -39,8 +43,9 @@ interface LabelLeftPanelProps {
 }
 
 const LabelLeftPanel = ({
-  bgColor, widthMm, heightMm, onBgColorChange, onApplyTemplate, onAddDecorative, onAddSvgElement,
-  layers, selectedObject, editingLayerName, layerNameDraft,
+  bgColor, widthMm, heightMm, canvas, selectedObject, onHistoryCapture,
+  onBgColorChange, onApplyTemplate, onAddDecorative, onAddSvgElement,
+  layers, editingLayerName, layerNameDraft,
   onClose, onSelectLayer, onToggleLayerVisibility, onToggleLayerLock,
   onMoveLayerUp, onMoveLayerDown, onStartEditLayerName, onLayerNameDraftChange, onFinishEditLayerName,
 }: LabelLeftPanelProps) => {
@@ -91,6 +96,18 @@ const LabelLeftPanel = ({
                     <Button variant="ghost" size="sm" className="h-8 text-xs px-2 shrink-0" onClick={() => onBgColorChange('#ffffff')}>Reset</Button>
                   )}
                 </div>
+              </div>
+
+              <Separator />
+
+              {/* Gradients */}
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">✨ Gradientes</p>
+                <GradientPanel
+                  canvas={canvas}
+                  selectedObject={selectedObject}
+                  onHistoryCapture={onHistoryCapture}
+                />
               </div>
 
               <Separator />

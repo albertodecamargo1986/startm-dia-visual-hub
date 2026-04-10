@@ -115,6 +115,8 @@ export interface LabelEditorState {
 }
 
 export interface LabelEditorActions {
+  // History capture (for gradient panel etc.)
+  pushHistory: () => void;
   // State setters
   setSelectedShape: (shape: string) => void;
   setSelectedFormat: (fmt: LabelFormat | null) => void;
@@ -828,7 +830,7 @@ export const LabelEditorProvider: React.FC<{ children: React.ReactNode }> = ({ c
     zoomIn, zoomOut, undo, redo,
     toggleLayerVisibility, toggleLayerLock, selectLayer,
     moveLayerUp, moveLayerDown, renameLayer,
-    dismissOnboarding, closeProject, deleteProject, getTemplateColors, fabricRenderAll,
+    dismissOnboarding, closeProject, deleteProject, getTemplateColors, fabricRenderAll, pushHistory,
 
     // Refs
     canvasHostRef, containerRef, imageInputRef, fabricRef,

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,6 +14,8 @@ import {
   AlignStartHorizontal, AlignEndHorizontal, AlignStartVertical, AlignEndVertical,
 } from 'lucide-react';
 import { GOOGLE_FONTS, loadGoogleFont, type LayerItem } from './types';
+import { GradientPanel } from './panels/GradientPanel';
+import type { Canvas as FabricCanvas } from 'fabric';
 
 interface LabelPropertiesPanelProps {
   drawingMode: boolean;
@@ -23,6 +26,8 @@ interface LabelPropertiesPanelProps {
   shapeLabel: string;
   sizeLabel: string;
   layerCount: number;
+  canvas: FabricCanvas | null;
+  onHistoryCapture: () => void;
   onBrushColorChange: (color: string) => void;
   onBrushWidthChange: (width: number) => void;
   onEraseLastDrawing: () => void;
@@ -41,11 +46,15 @@ interface LabelPropertiesPanelProps {
 const LabelPropertiesPanel = ({
   drawingMode, selectedObject,
   brushColor, brushWidth, bgColor, shapeLabel, sizeLabel, layerCount,
+  canvas, onHistoryCapture,
   onBrushColorChange, onBrushWidthChange, onEraseLastDrawing, onToggleDrawingOff,
   onBgColorChange, onUpdateObjectProp, onAlignObject,
   onBringForward, onSendBackward, onDuplicate, onDelete,
   onRebuildCurvedText, fabricRenderAll,
-}: LabelPropertiesPanelProps) => (
+}: LabelPropertiesPanelProps) => {
+  const [showGradientPanel, setShowGradientPanel] = useState(false);
+
+  return (
   <div className="w-56 lg:w-60 shrink-0 border-l bg-card overflow-auto">
     <div className="p-3 space-y-3">
       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -123,7 +132,27 @@ const LabelPropertiesPanel = ({
               <input type="color" value={selectedObject.fill || '#000000'} onChange={e => onUpdateObjectProp('fill', e.target.value)} className="h-8 w-8 rounded border cursor-pointer" />
               <Input value={selectedObject.fill || ''} onChange={e => onUpdateObjectProp('fill', e.target.value)} className="h-8 text-xs flex-1" />
             </div>
-          </div>
+           </div>
+
+           {/* Gradient toggle */}
+           <button
+             onClick={() => setShowGradientPanel((v) => !v)}
+             className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px]
+                        transition-colors border
+                        ${showGradientPanel
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-muted text-muted-foreground border-border hover:bg-accent'}`}
+           >
+             🌈 Gradiente
+           </button>
+
+           {showGradientPanel && (
+             <GradientPanel
+               canvas={canvas}
+               selectedObject={selectedObject}
+               onHistoryCapture={onHistoryCapture}
+             />
+           )}
 
           {/* Curved text controller */}
           {(selectedObject as any)?.__isCurvedTextController && (
@@ -289,7 +318,8 @@ const LabelPropertiesPanel = ({
         </>
       )}
     </div>
-  </div>
-);
+   </div>
+  );
+};
 
 export default LabelPropertiesPanel;

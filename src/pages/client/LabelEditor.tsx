@@ -298,12 +298,14 @@ const LabelEditorInner = () => {
               bgColor={ctx.bgColor}
               widthMm={ctx.selectedFormat?.widthMm ?? 50}
               heightMm={ctx.selectedFormat?.heightMm ?? 50}
+              canvas={ctx.fabricRef.current}
+              selectedObject={ctx.selectedObject}
+              onHistoryCapture={ctx.pushHistory}
               onBgColorChange={ctx.handleBgColorChange}
               onApplyTemplate={ctx.applyTemplate}
               onAddDecorative={ctx.addDecorative}
               onAddSvgElement={ctx.addSvgElement}
               layers={ctx.layers}
-              selectedObject={ctx.selectedObject}
               editingLayerName={ctx.editingLayerName}
               layerNameDraft={ctx.layerNameDraft}
               onClose={() => ctx.setShowLeftPanel(false)}
@@ -353,6 +355,8 @@ const LabelEditorInner = () => {
             shapeLabel={ctx.currentShapeLabel}
             sizeLabel={ctx.currentSizeLabel}
             layerCount={ctx.layers.length}
+            canvas={ctx.fabricRef.current}
+            onHistoryCapture={ctx.pushHistory}
             onBrushColorChange={ctx.setBrushColor}
             onBrushWidthChange={ctx.setBrushWidth}
             onEraseLastDrawing={ctx.eraseLastDrawing}
