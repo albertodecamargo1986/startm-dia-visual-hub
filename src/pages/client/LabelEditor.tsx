@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Canvas as FabricCanvas, Rect, Circle, IText, Line, Ellipse, Triangle } from 'fabric';
+import { Canvas as FabricCanvas, Rect, Circle, IText, Line, Ellipse, Triangle, FabricObject } from 'fabric';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -14,11 +14,17 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Plus, Download, Save, Trash2, Type, Square, Circle as CircleIcon,
   Minus, Triangle as TriangleIcon, Undo2, Redo2, ZoomIn, ZoomOut,
-  FileText, Layers, Palette, ArrowUp, ArrowDown, Eye, EyeOff, Copy
+  FileText, Layers, Palette, ArrowUp, ArrowDown, Eye, EyeOff, Copy,
+  LayoutTemplate, Frame
 } from 'lucide-react';
 import { LABEL_SHAPES, getFormatsForShape, mmToPx, type LabelFormat } from '@/lib/label-formats';
 import { exportLabelPDF } from '@/lib/label-pdf-export';
 import { useLabelProjects, useAutoSave, type LabelProject } from '@/hooks/use-label-projects';
+import {
+  TEMPLATE_CATEGORIES, LABEL_TEMPLATES, getTemplatesByCategory,
+  DECORATIVE_CATEGORIES, DECORATIVE_ELEMENTS, getDecorativeByCategory,
+  type LabelTemplate, type DecorativeElement
+} from '@/lib/label-templates';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
@@ -260,6 +266,62 @@ const LabelEditor = () => {
     fc.renderAll();
   };
 
+  // Apply template to canvas
+  const applyTemplate = (template: LabelTemplate) => {
+    const fc = fabricRef.current;
+    if (!fc || !selectedFormat) return;
+    // Clear canvas first
+    fc.clear();
+    fc.backgroundColor = '#ffffff';
+    // Re-apply clip path
+    if (selectedFormat) applyFormat(selectedFormat);
+    // Add template objects
+    const objs = template.getObjects(selectedFormat.widthMm, selectedFormat.heightMm);
+    objs.forEach(obj => {
+      loadGoogleFont(obj.fontFamily || 'Arial');
+      addObjectFromJson(fc, obj);
+    });
+    fc.renderAll();
+    markDirty();
+    toast.success(`Template "${template.name}" aplicado`);
+  };
+
+  // Add decorative element
+  const addDecorative = (element: DecorativeElement) => {
+    const fc = fabricRef.current;
+    if (!fc || !selectedFormat) return;
+    const objs = element.getObjects(selectedFormat.widthMm, selectedFormat.heightMm);
+    objs.forEach(obj => addObjectFromJson(fc, obj));
+    fc.renderAll();
+    markDirty();
+  };
+
+  // Helper to create fabric objects from JSON-like specs
+  const addObjectFromJson = (fc: FabricCanvas, obj: any) => {
+    let fabricObj: FabricObject | null = null;
+    switch (obj.type) {
+      case 'rect':
+        fabricObj = new Rect({ left: obj.left, top: obj.top, width: obj.width, height: obj.height, fill: obj.fill, stroke: obj.stroke, strokeWidth: obj.strokeWidth, rx: obj.rx, ry: obj.ry, strokeDashArray: obj.strokeDashArray });
+        break;
+      case 'circle':
+        fabricObj = new Circle({ left: obj.left, top: obj.top, radius: obj.radius, fill: obj.fill, stroke: obj.stroke, strokeWidth: obj.strokeWidth });
+        break;
+      case 'i-text':
+        fabricObj = new IText(obj.text || '', { left: obj.left, top: obj.top, fontSize: obj.fontSize, fontFamily: obj.fontFamily, fill: obj.fill, textAlign: obj.textAlign, fontWeight: obj.fontWeight, fontStyle: obj.fontStyle, charSpacing: obj.charSpacing });
+        break;
+      case 'line':
+        fabricObj = new Line([obj.x1, obj.y1, obj.x2, obj.y2], { stroke: obj.stroke, strokeWidth: obj.strokeWidth });
+        break;
+      case 'triangle':
+        fabricObj = new Triangle({ left: obj.left, top: obj.top, width: obj.width, height: obj.height, fill: obj.fill, stroke: obj.stroke, strokeWidth: obj.strokeWidth });
+        break;
+      case 'ellipse':
+        fabricObj = new Ellipse({ left: obj.left, top: obj.top, rx: obj.rx, ry: obj.ry, fill: obj.fill, stroke: obj.stroke, strokeWidth: obj.strokeWidth });
+        break;
+    }
+    if (fabricObj) fc.add(fabricObj);
+  };
+
   // Object properties
   const updateObjectProp = (prop: string, value: any) => {
     if (!selectedObject || !fabricRef.current) return;
@@ -435,8 +497,10 @@ const LabelEditor = () => {
         <Card className="lg:w-64 shrink-0">
           <CardContent className="p-3">
             <Tabs defaultValue="elements">
-              <TabsList className="w-full grid grid-cols-3">
+              <TabsList className="w-full grid grid-cols-5">
                 <TabsTrigger value="elements" className="text-xs">Elementos</TabsTrigger>
+                <TabsTrigger value="templates" className="text-xs">Templates</TabsTrigger>
+                <TabsTrigger value="decor" className="text-xs">Molduras</TabsTrigger>
                 <TabsTrigger value="projects" className="text-xs">Projetos</TabsTrigger>
                 <TabsTrigger value="export" className="text-xs">Exportar</TabsTrigger>
               </TabsList>
@@ -477,6 +541,67 @@ const LabelEditor = () => {
                     <Button variant="outline" size="icon" onClick={deleteSelected} title="Excluir"><Trash2 className="h-4 w-4" /></Button>
                   </div>
                 </div>
+              </TabsContent>
+
+              <TabsContent value="templates" className="mt-3">
+                <ScrollArea className="h-[400px]">
+                  {!currentProject ? (
+                    <p className="text-xs text-muted-foreground">Crie um projeto primeiro.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {TEMPLATE_CATEGORIES.map(cat => {
+                        const templates = getTemplatesByCategory(cat.id);
+                        if (templates.length === 0) return null;
+                        return (
+                          <div key={cat.id}>
+                            <p className="text-xs font-medium text-muted-foreground mb-1">{cat.emoji} {cat.label}</p>
+                            <div className="space-y-1">
+                              {templates.map(t => (
+                                <Button key={t.id} variant="outline" size="sm" className="w-full justify-start text-xs h-auto py-1.5"
+                                  onClick={() => applyTemplate(t)}>
+                                  <LayoutTemplate className="h-3 w-3 mr-2 shrink-0" />
+                                  <div className="text-left">
+                                    <span className="block font-medium">{t.name}</span>
+                                    <span className="block text-muted-foreground text-[10px]">{t.description}</span>
+                                  </div>
+                                </Button>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </ScrollArea>
+              </TabsContent>
+
+              <TabsContent value="decor" className="mt-3">
+                <ScrollArea className="h-[400px]">
+                  {!currentProject ? (
+                    <p className="text-xs text-muted-foreground">Crie um projeto primeiro.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {DECORATIVE_CATEGORIES.map(cat => {
+                        const elements = getDecorativeByCategory(cat.id);
+                        if (elements.length === 0) return null;
+                        return (
+                          <div key={cat.id}>
+                            <p className="text-xs font-medium text-muted-foreground mb-1">{cat.emoji} {cat.label}</p>
+                            <div className="grid grid-cols-2 gap-1">
+                              {elements.map(el => (
+                                <Button key={el.id} variant="outline" size="sm" className="text-xs h-auto py-1.5"
+                                  onClick={() => addDecorative(el)}>
+                                  <Frame className="h-3 w-3 mr-1 shrink-0" />
+                                  {el.name}
+                                </Button>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </ScrollArea>
               </TabsContent>
 
               <TabsContent value="projects" className="mt-3">
