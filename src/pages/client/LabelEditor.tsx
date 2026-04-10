@@ -292,6 +292,22 @@ const LabelEditor = () => {
     return () => { fc.dispose(); fabricRef.current = null; };
   }, []);
 
+  // Move canvas element into the correct container when project opens/closes
+  useEffect(() => {
+    const canvasEl = canvasRef.current;
+    if (!canvasEl) return;
+    // Fabric wraps the canvas in a container div
+    const fabricWrapper = canvasEl.parentElement;
+    if (!fabricWrapper) return;
+    
+    if (currentProject) {
+      const wrapper = document.getElementById('canvas-wrapper');
+      if (wrapper && fabricWrapper.parentElement !== wrapper) {
+        wrapper.insertBefore(fabricWrapper, wrapper.firstChild);
+      }
+    }
+  }, [currentProject]);
+
   // ── Keyboard shortcuts ──
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -605,15 +621,15 @@ const LabelEditor = () => {
   };
 
   // ══════════════════════════════════════
-  // ── RENDER ──
+  // ── RENDER (single return to keep canvas mounted) ──
   // ══════════════════════════════════════
+  return (
+    <TooltipProvider delayDuration={300}>
+      <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
 
-  // If no project is open, show the creation wizard / project list
-  if (!currentProject) {
-    return (
-      <TooltipProvider>
+      {/* ── WIZARD VIEW (no project open) ── */}
+      {!currentProject && (
         <div className="space-y-6 max-w-4xl mx-auto">
-          {/* Subtle onboarding banner */}
           {showOnboarding && (
             <div className="relative bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 rounded-xl p-4 flex items-start gap-4">
               <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
@@ -632,10 +648,8 @@ const LabelEditor = () => {
             <p className="text-muted-foreground text-sm mt-1">Crie etiquetas personalizadas de forma fácil e profissional</p>
           </div>
 
-          {/* ── WIZARD ── */}
           <Card>
             <CardContent className="p-6">
-              {/* Step indicators */}
               <div className="flex items-center justify-center gap-2 mb-6">
                 {['Formato', 'Tamanho', 'Nome'].map((label, i) => (
                   <div key={label} className="flex items-center gap-2">
@@ -651,7 +665,6 @@ const LabelEditor = () => {
                 ))}
               </div>
 
-              {/* Step 0: Shape */}
               {wizardStep === 0 && (
                 <div>
                   <h2 className="text-lg font-semibold text-center mb-4">Qual o formato da sua etiqueta?</h2>
@@ -659,17 +672,12 @@ const LabelEditor = () => {
                     {LABEL_SHAPES.map(s => {
                       const vis = SHAPE_VISUALS[s.id];
                       return (
-                        <button
-                          key={s.id}
-                          onClick={() => { setSelectedShape(s.id); setSelectedFormat(null); setWizardStep(1); }}
+                        <button key={s.id} onClick={() => { setSelectedShape(s.id); setSelectedFormat(null); setWizardStep(1); }}
                           className={`group relative flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all hover:shadow-md hover:border-primary/50 ${
                             selectedShape === s.id ? 'border-primary bg-primary/5 shadow-md' : 'border-border'
-                          }`}
-                        >
+                          }`}>
                           <div className={`w-20 h-20 rounded-lg bg-gradient-to-br ${vis?.color || ''} flex items-center justify-center transition-transform group-hover:scale-105`}>
-                            <svg viewBox="0 0 100 100" className="w-14 h-14 text-foreground/70">
-                              {vis?.svg}
-                            </svg>
+                            <svg viewBox="0 0 100 100" className="w-14 h-14 text-foreground/70">{vis?.svg}</svg>
                           </div>
                           <span className="text-sm font-medium">{s.label}</span>
                         </button>
@@ -679,19 +687,15 @@ const LabelEditor = () => {
                 </div>
               )}
 
-              {/* Step 1: Size */}
               {wizardStep === 1 && (
                 <div>
                   <div className="flex items-center gap-2 mb-4">
-                    <Button variant="ghost" size="sm" onClick={() => setWizardStep(0)}>
-                      <ArrowLeft className="h-4 w-4 mr-1" />Voltar
-                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => setWizardStep(0)}><ArrowLeft className="h-4 w-4 mr-1" />Voltar</Button>
                     <h2 className="text-lg font-semibold">Escolha o tamanho</h2>
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                     {availableFormats.map(f => {
                       const isSquare = f.widthMm === f.heightMm;
-                      // Preview proportional sizing
                       const maxPrev = 60;
                       const prevW = isSquare ? maxPrev : maxPrev;
                       const prevH = isSquare ? maxPrev : (f.heightMm / f.widthMm) * maxPrev;
@@ -700,13 +704,10 @@ const LabelEditor = () => {
                         borderRadius: f.shape === 'round' ? '50%' : (f.shape === 'rounded-square' || f.shape === 'rounded-rectangle') ? 8 : 2,
                       };
                       return (
-                        <button
-                          key={f.id}
-                          onClick={() => { setSelectedFormat(f); setWizardStep(2); }}
+                        <button key={f.id} onClick={() => { setSelectedFormat(f); setWizardStep(2); }}
                           className={`group flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all hover:shadow-md hover:border-primary/50 ${
                             selectedFormat?.id === f.id ? 'border-primary bg-primary/5 shadow-md' : 'border-border'
-                          }`}
-                        >
+                          }`}>
                           <div className="flex items-center justify-center h-16">
                             <div style={shapeStyle} className="border-2 border-foreground/20 bg-muted/50 transition-transform group-hover:scale-110" />
                           </div>
@@ -719,21 +720,16 @@ const LabelEditor = () => {
                 </div>
               )}
 
-              {/* Step 2: Name & Create */}
               {wizardStep === 2 && (
                 <div className="max-w-md mx-auto">
                   <div className="flex items-center gap-2 mb-4">
-                    <Button variant="ghost" size="sm" onClick={() => setWizardStep(1)}>
-                      <ArrowLeft className="h-4 w-4 mr-1" />Voltar
-                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => setWizardStep(1)}><ArrowLeft className="h-4 w-4 mr-1" />Voltar</Button>
                     <h2 className="text-lg font-semibold">Dê um nome ao projeto</h2>
                   </div>
                   <div className="space-y-4">
                     <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/50">
                       <div className="w-14 h-14 rounded-lg bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center shrink-0">
-                        <svg viewBox="0 0 100 100" className="w-10 h-10 text-primary">
-                          {SHAPE_VISUALS[selectedShape]?.svg}
-                        </svg>
+                        <svg viewBox="0 0 100 100" className="w-10 h-10 text-primary">{SHAPE_VISUALS[selectedShape]?.svg}</svg>
                       </div>
                       <div>
                         <p className="text-sm font-medium">{LABEL_SHAPES.find(s => s.id === selectedShape)?.label}</p>
@@ -742,13 +738,7 @@ const LabelEditor = () => {
                     </div>
                     <div>
                       <Label className="text-sm font-medium">Nome do projeto</Label>
-                      <Input
-                        value={projectName}
-                        onChange={e => setProjectName(e.target.value)}
-                        placeholder="Ex: Etiqueta Natal 2025"
-                        className="mt-1"
-                        autoFocus
-                      />
+                      <Input value={projectName} onChange={e => setProjectName(e.target.value)} placeholder="Ex: Etiqueta Natal 2025" className="mt-1" autoFocus />
                     </div>
                     <Button className="w-full" size="lg" onClick={handleNewProject} disabled={!selectedFormat}>
                       <Sparkles className="h-4 w-4 mr-2" />Criar Etiqueta
@@ -759,7 +749,6 @@ const LabelEditor = () => {
             </CardContent>
           </Card>
 
-          {/* ── EXISTING PROJECTS ── */}
           {projects.length > 0 && (
             <div>
               <h2 className="text-lg font-semibold mb-3">Meus Projetos</h2>
@@ -789,23 +778,13 @@ const LabelEditor = () => {
               </div>
             </div>
           )}
-
-          {/* Hidden canvas for initialization */}
-          <canvas ref={canvasRef} className="hidden" />
-          <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
         </div>
-      </TooltipProvider>
-    );
-  }
+      )}
 
-  // ══════════════════════════════════════
-  // ── EDITOR VIEW (project open) ──
-  // ══════════════════════════════════════
-  return (
-    <TooltipProvider>
-      <div className="flex flex-col h-[calc(100vh-140px)]">
-        <PrintPreviewDialog open={showPrintPreview} onOpenChange={setShowPrintPreview} canvasRef={fabricRef} format={selectedFormat} />
-        <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+      {/* ── EDITOR VIEW (project open) ── */}
+      {currentProject && (
+        <div className="flex flex-col h-[calc(100vh-140px)]">
+          <PrintPreviewDialog open={showPrintPreview} onOpenChange={setShowPrintPreview} canvasRef={fabricRef} format={selectedFormat} />
 
         {/* ── TOP BAR ── */}
         <div className="flex items-center gap-2 px-2 py-2 border-b bg-card rounded-t-lg flex-wrap">
@@ -1108,8 +1087,7 @@ const LabelEditor = () => {
 
             {/* Canvas area */}
             <div className="flex-1 flex items-center justify-center bg-muted/10 p-4 overflow-auto" ref={containerRef}>
-              <div className="relative border border-dashed border-muted-foreground/30 rounded-lg p-2 bg-white shadow-sm">
-                <canvas ref={canvasRef} />
+              <div className="relative border border-dashed border-muted-foreground/30 rounded-lg p-2 bg-white shadow-sm" id="canvas-wrapper">
                 {showGrid && <div className="absolute inset-2 rounded" style={gridOverlayStyle} />}
               </div>
             </div>
@@ -1310,7 +1288,11 @@ const LabelEditor = () => {
             </div>
           </DialogContent>
         </Dialog>
-      </div>
+        </div>
+      )}
+
+      {/* Persistent canvas element - always in DOM */}
+      <canvas ref={canvasRef} style={currentProject ? undefined : { position: 'absolute', left: -9999, top: -9999, pointerEvents: 'none' }} />
     </TooltipProvider>
   );
 };
