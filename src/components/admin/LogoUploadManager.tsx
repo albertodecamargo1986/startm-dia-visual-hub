@@ -2,7 +2,6 @@ import { useState, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ImageUploadWithEditor } from '@/components/ui/image-upload-with-editor';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
@@ -26,7 +25,8 @@ const VARIATIONS: Variation[] = [
   { key: 'site_logo_favicon', label: 'Favicon', width: 32, height: 32, note: 'Recorte quadrado', square: true },
 ];
 
-type BgOption = 'transparent' | 'white' | 'dark';
+const checkerboardBackground = 'repeating-conic-gradient(#d4d4d4 0% 25%, #fff 0% 50%) 0 0 / 16px 16px';
+const footerPreviewBackground = '#1a1a2e';
 
 interface LogoUploadManagerProps {
   currentUrls: Record<string, string>;
@@ -37,7 +37,6 @@ function resizeImage(
   img: HTMLImageElement,
   targetW: number,
   targetH: number,
-  bg: BgOption,
   square?: boolean,
 ): Promise<Blob> {
   return new Promise((resolve) => {
@@ -46,22 +45,12 @@ function resizeImage(
     canvas.height = targetH;
     const ctx = canvas.getContext('2d')!;
 
-    if (bg === 'white') {
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, targetW, targetH);
-    } else if (bg === 'dark') {
-      ctx.fillStyle = '#1a1a2e';
-      ctx.fillRect(0, 0, targetW, targetH);
-    }
-
     if (square) {
-      // center crop to square then resize
       const side = Math.min(img.naturalWidth, img.naturalHeight);
       const sx = (img.naturalWidth - side) / 2;
       const sy = (img.naturalHeight - side) / 2;
       ctx.drawImage(img, sx, sy, side, side, 0, 0, targetW, targetH);
     } else {
-      // contain
       const scale = Math.min(targetW / img.naturalWidth, targetH / img.naturalHeight);
       const w = img.naturalWidth * scale;
       const h = img.naturalHeight * scale;
@@ -77,7 +66,6 @@ function resizeImage(
 export const LogoUploadManager = ({ currentUrls, onSaved }: LogoUploadManagerProps) => {
   const queryClient = useQueryClient();
   const [sourceFile, setSourceFile] = useState<File | null>(null);
-  const [bgOption, setBgOption] = useState<BgOption>('transparent');
   const [previews, setPreviews] = useState<Record<string, string>>({});
   const [blobs, setBlobs] = useState<Record<string, Blob>>({});
   const [saving, setSaving] = useState(false);
@@ -94,7 +82,7 @@ export const LogoUploadManager = ({ currentUrls, onSaved }: LogoUploadManagerPro
     const newBlobs: Record<string, Blob> = {};
 
     for (const v of VARIATIONS) {
-      const blob = await resizeImage(img, v.width, v.height, bgOption, v.square);
+      const blob = await resizeImage(img, v.width, v.height, v.square);
       newBlobs[v.key] = blob;
       newPreviews[v.key] = URL.createObjectURL(blob);
     }
@@ -103,7 +91,7 @@ export const LogoUploadManager = ({ currentUrls, onSaved }: LogoUploadManagerPro
     setPreviews(newPreviews);
     setBlobs(newBlobs);
     setGenerated(true);
-  }, [bgOption]);
+  }, []);
 
   const handleImageReady = useCallback((file: File) => {
     setSourceFile(file);
@@ -131,7 +119,6 @@ export const LogoUploadManager = ({ currentUrls, onSaved }: LogoUploadManagerPro
         const { data: { publicUrl } } = supabase.storage.from('banners').getPublicUrl(path);
         urls[key] = publicUrl;
 
-        // Upsert directly into site_settings
         const { data: existing } = await supabase.from('site_settings').select('id').eq('key', key).maybeSingle();
         if (existing) {
           await supabase.from('site_settings').update({ value: publicUrl }).eq('key', key);
@@ -154,7 +141,6 @@ export const LogoUploadManager = ({ currentUrls, onSaved }: LogoUploadManagerPro
 
   return (
     <div className="space-y-4">
-      {/* Info table */}
       <Card className="p-4 bg-muted/30 border-border">
         <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
           <ImagePlus className="h-4 w-4 text-primary" />
@@ -182,7 +168,6 @@ export const LogoUploadManager = ({ currentUrls, onSaved }: LogoUploadManagerPro
         </Table>
       </Card>
 
-      {/* Upload */}
       <div>
         <label className="text-sm text-muted-foreground block mb-1">Enviar logo original (alta resolução)</label>
         <ImageUploadWithEditor
@@ -194,25 +179,15 @@ export const LogoUploadManager = ({ currentUrls, onSaved }: LogoUploadManagerPro
         />
       </div>
 
-      {/* Background option */}
       {sourceFile && (
-        <div className="flex items-center gap-3">
-          <label className="text-sm text-muted-foreground">Fundo das variações:</label>
-          <Select value={bgOption} onValueChange={(v) => { setBgOption(v as BgOption); }}>
-            <SelectTrigger className="w-48">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="transparent">Transparente (PNG)</SelectItem>
-              <SelectItem value="white">Fundo Branco</SelectItem>
-              <SelectItem value="dark">Fundo Escuro</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="flex flex-wrap items-center gap-3 rounded-md border border-border bg-muted/30 p-3">
+          <p className="text-sm text-muted-foreground">
+            As variações da logo são sempre geradas em PNG com fundo transparente.
+          </p>
           <Button type="button" variant="outline" size="sm" onClick={regenerate}>Regenerar</Button>
         </div>
       )}
 
-      {/* Previews */}
       {generated && Object.keys(previews).length > 0 && (
         <Card className="p-4 border-border space-y-3">
           <h4 className="text-sm font-medium">Pré-visualização das variações</h4>
@@ -223,9 +198,7 @@ export const LogoUploadManager = ({ currentUrls, onSaved }: LogoUploadManagerPro
                 <div
                   className="rounded border border-border flex items-center justify-center p-2"
                   style={{
-                    background: v.key.includes('footer')
-                      ? '#1a1a2e'
-                      : 'repeating-conic-gradient(#d4d4d4 0% 25%, #fff 0% 50%) 0 0 / 16px 16px',
+                    background: v.key.includes('footer') ? footerPreviewBackground : checkerboardBackground,
                     minHeight: 60,
                   }}
                 >
@@ -255,13 +228,18 @@ export const LogoUploadManager = ({ currentUrls, onSaved }: LogoUploadManagerPro
         </Card>
       )}
 
-      {/* Current logos */}
       {!generated && Object.values(currentUrls).some(Boolean) && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {VARIATIONS.map(v => currentUrls[v.key] ? (
             <div key={v.key} className="space-y-1">
               <p className="text-xs text-muted-foreground">{v.label} atual</p>
-              <div className="rounded border border-border flex items-center justify-center p-2 bg-muted/30" style={{ minHeight: 50 }}>
+              <div
+                className="rounded border border-border flex items-center justify-center p-2"
+                style={{
+                  background: v.key.includes('footer') ? footerPreviewBackground : checkerboardBackground,
+                  minHeight: 50,
+                }}
+              >
                 <img src={currentUrls[v.key]} alt={v.label} className="max-h-10" />
               </div>
             </div>
