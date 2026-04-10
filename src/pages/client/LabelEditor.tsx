@@ -11,6 +11,9 @@ import {
   TEMPLATE_CATEGORIES, getTemplatesByCategory,
 } from '@/lib/label-templates';
 import { format } from 'date-fns';
+import { useLabelFilters } from '@/hooks/use-label-filters';
+import { FormatFiltersBar } from '@/components/label-editor/filters/FormatFiltersBar';
+import { TemplateFiltersBar } from '@/components/label-editor/filters/TemplateFiltersBar';
 
 import {
   LabelToolbar, LabelLeftPanel, LabelPropertiesPanel,
