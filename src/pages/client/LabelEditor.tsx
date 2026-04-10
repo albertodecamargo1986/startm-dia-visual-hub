@@ -21,7 +21,7 @@ import {
   AlignStartHorizontal, AlignEndHorizontal, AlignStartVertical, AlignEndVertical,
   GripVertical, ShoppingCart, Printer, CopyPlus, Sparkles,
   ChevronLeft, ChevronRight, X, Grid3X3, Keyboard, FileText,
-  ArrowLeft, Check, Pencil
+  ArrowLeft, Check, Pencil, Bold, Italic, AlignLeft, AlignCenter, AlignRight
 } from 'lucide-react';
 import { LABEL_SHAPES, getFormatsForShape, mmToPx, type LabelFormat } from '@/lib/label-formats';
 
