@@ -1,6 +1,6 @@
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Package, FileText, User, LayoutDashboard, LogOut } from 'lucide-react';
+import { Package, FileText, User, LayoutDashboard, LogOut, Tag } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 
@@ -8,6 +8,7 @@ const clientLinks = [
   { to: '/cliente', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/cliente/pedidos', label: 'Meus Pedidos', icon: Package },
   { to: '/cliente/arquivos', label: 'Meus Arquivos', icon: FileText },
+  { to: '/cliente/etiquetas', label: 'Etiquetas', icon: Tag },
   { to: '/cliente/perfil', label: 'Meu Perfil', icon: User },
 ];
 
