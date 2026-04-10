@@ -79,6 +79,7 @@ const App = () => (
                   <Route path="/verificar-email" element={<EmailVerification />} />
                   <Route path="/email-verificado" element={<EmailVerified />} />
                   <Route path="/privacidade" element={<Privacy />} />
+                  <Route path="/p/:slug" element={<CmsPage />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
 
                   <Route element={<RequireAuth />}>
