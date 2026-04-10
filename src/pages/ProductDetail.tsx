@@ -88,6 +88,7 @@ const ProductDetail = () => {
       <Helmet>
         <title>{product.meta_title || product.name} | StartMídia Limeira/SP</title>
         <meta name="description" content={product.meta_description || product.short_description || ''} />
+        <link rel="canonical" href={`https://startmidialimeira.com.br/produto/${productSlug}`} />
       </Helmet>
 
       <div className="container py-8">

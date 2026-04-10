@@ -3,5 +3,8 @@ Allow: /
 Disallow: /admin/
 Disallow: /cliente/
 Disallow: /checkout/
+Disallow: /login
+Disallow: /verificar-email
+Disallow: /email-verificado
 
-Sitemap: https://startmidialimeira.com.br/sitemap.xml
+Sitemap: https://wzdxseimfqarknttabbu.supabase.co/functions/v1/generate-sitemap

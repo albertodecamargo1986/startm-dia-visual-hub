@@ -137,6 +137,7 @@ const Shop = () => {
       <Helmet>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDesc} />
+        <link rel="canonical" href={`https://startmidialimeira.com.br/produtos${categorySlug ? `/${categorySlug}` : ''}`} />
       </Helmet>
 
       <div className="container py-8">

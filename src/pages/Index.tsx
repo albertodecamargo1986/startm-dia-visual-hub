@@ -502,6 +502,7 @@ const Index = () => (
     <Helmet>
       <title>StartMídia Comunicação Visual | Banners, Adesivos, Placas em Limeira/SP</title>
       <meta name="description" content="Gráfica e comunicação visual em Limeira/SP. Banners, lonas, adesivos, placas de sinalização, etiquetas, rótulos, envelopamento e fachadas com altíssima qualidade. Orçamento rápido!" />
+      <link rel="canonical" href="https://startmidialimeira.com.br/" />
       <meta name="keywords" content="gráfica Limeira, comunicação visual Limeira, banner Limeira, adesivo Limeira, placa sinalização Limeira, etiqueta rótulo Limeira, envelopamento veículo Limeira, fachada ACM Limeira" />
       <meta property="og:title" content="StartMídia Comunicação Visual — Limeira/SP" />
       <meta property="og:description" content="Sua mensagem com impacto visual. Banners, lonas, adesivos, placas, etiquetas e muito mais." />

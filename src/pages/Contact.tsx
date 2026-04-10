@@ -82,6 +82,7 @@ const Contact = () => {
       <Helmet>
         <title>Contato StartMídia — Orçamento Comunicação Visual Limeira/SP</title>
         <meta name="description" content="Solicite um orçamento de comunicação visual em Limeira/SP. Banners, adesivos, placas, fachadas e mais. Atendimento rápido via WhatsApp." />
+        <link rel="canonical" href="https://startmidialimeira.com.br/contato" />
       </Helmet>
 
       <div className="container py-12">
