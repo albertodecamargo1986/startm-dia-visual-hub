@@ -292,6 +292,22 @@ const LabelEditor = () => {
     return () => { fc.dispose(); fabricRef.current = null; };
   }, []);
 
+  // Move canvas element into the correct container when project opens/closes
+  useEffect(() => {
+    const canvasEl = canvasRef.current;
+    if (!canvasEl) return;
+    // Fabric wraps the canvas in a container div
+    const fabricWrapper = canvasEl.parentElement;
+    if (!fabricWrapper) return;
+    
+    if (currentProject) {
+      const wrapper = document.getElementById('canvas-wrapper');
+      if (wrapper && fabricWrapper.parentElement !== wrapper) {
+        wrapper.insertBefore(fabricWrapper, wrapper.firstChild);
+      }
+    }
+  }, [currentProject]);
+
   // ── Keyboard shortcuts ──
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
