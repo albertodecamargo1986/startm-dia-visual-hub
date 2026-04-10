@@ -36,8 +36,7 @@ const actionLabels: Record<string, string> = {
 const CmsPageList = () => {
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const { role } = useAuth();
-  const isSuperAdmin = role === 'super_admin';
+  const { isSuperAdmin } = useAuth();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [deleteId, setDeleteId] = useState<string | null>(null);
