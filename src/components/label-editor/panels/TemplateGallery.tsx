@@ -1,6 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { Input } from '@/components/ui/input';
-import { LABEL_TEMPLATES, TEMPLATE_CATEGORIES, type LabelTemplate } from '@/lib/label-templates';
+import React, { useState } from 'react';
+import { LABEL_TEMPLATES, type LabelTemplate } from '@/lib/label-templates';
 import { useTemplateThumbnails } from '@/lib/template-thumbnail-generator';
 import { mmToPx } from '@/lib/label-formats';
 
@@ -8,75 +7,24 @@ interface TemplateGalleryProps {
   onSelectTemplate: (template: LabelTemplate) => void;
   widthMm: number;
   heightMm: number;
+  templates?: LabelTemplate[];
 }
 
-export function TemplateGallery({ onSelectTemplate, widthMm, heightMm }: TemplateGalleryProps) {
-  const [search, setSearch] = useState('');
-  const [category, setCategory] = useState('todos');
+export function TemplateGallery({ onSelectTemplate, widthMm, heightMm, templates }: TemplateGalleryProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   const widthPx = mmToPx(widthMm);
   const heightPx = mmToPx(heightMm);
 
+  const displayTemplates = templates ?? LABEL_TEMPLATES;
   const thumbnails = useTemplateThumbnails(LABEL_TEMPLATES, widthPx, heightPx);
-
-  const filtered = useMemo(() => {
-    return LABEL_TEMPLATES.filter((t) => {
-      const matchCat = category === 'todos' || t.category === category;
-      const q = search.toLowerCase();
-      const matchSearch =
-        !search ||
-        t.name.toLowerCase().includes(q) ||
-        (t.tags && t.tags.some((tag) => tag.includes(q)));
-      return matchCat && matchSearch;
-    });
-  }, [search, category]);
-
-  const allCategories = [
-    { id: 'todos', label: 'Todos', emoji: '🎨' },
-    ...TEMPLATE_CATEGORIES,
-  ];
 
   return (
     <div className="flex flex-col h-full">
-      {/* Search */}
-      <div className="p-2 border-b border-border">
-        <Input
-          type="text"
-          placeholder="Buscar template..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="h-8 text-xs"
-        />
-      </div>
-
-      {/* Category filters */}
-      <div className="flex gap-1.5 p-2 overflow-x-auto border-b border-border">
-        {allCategories.map((cat) => (
-          <button
-            key={cat.id}
-            onClick={() => setCategory(cat.id)}
-            className={`flex-shrink-0 flex items-center gap-1 px-2.5 py-1
-                       text-[10px] rounded-full transition-all duration-150 font-medium
-                       ${category === cat.id
-                         ? 'bg-primary text-primary-foreground shadow-sm'
-                         : 'bg-muted text-muted-foreground hover:bg-accent'}`}
-          >
-            <span>{cat.emoji}</span>
-            <span>{cat.label}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* Counter */}
-      <div className="px-3 py-1.5 text-[10px] text-muted-foreground">
-        {filtered.length} template{filtered.length !== 1 ? 's' : ''}
-      </div>
-
       {/* Grid */}
       <div className="flex-1 overflow-y-auto px-2 pb-2">
         <div className="grid grid-cols-2 gap-2">
-          {filtered.map((tpl) => (
+          {displayTemplates.map((tpl) => (
             <button
               key={tpl.id}
               onClick={() => onSelectTemplate(tpl)}
@@ -103,7 +51,7 @@ export function TemplateGallery({ onSelectTemplate, widthMm, heightMm }: Templat
               )}
 
               {tpl.premium && (
-                <span className="absolute top-1 right-1 bg-yellow-500 text-black
+                <span className="absolute top-1 right-1 bg-primary text-primary-foreground
                                 text-[9px] font-bold px-1.5 py-0.5 rounded-full">
                   PRO
                 </span>
@@ -123,7 +71,7 @@ export function TemplateGallery({ onSelectTemplate, widthMm, heightMm }: Templat
           ))}
         </div>
 
-        {filtered.length === 0 && (
+        {displayTemplates.length === 0 && (
           <div className="text-center py-8">
             <span className="text-2xl block mb-2">🎨</span>
             <span className="text-xs text-muted-foreground">Nenhum template encontrado</span>
