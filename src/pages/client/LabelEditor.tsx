@@ -1266,8 +1266,9 @@ const LabelEditor = () => {
                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setShowLeftPanel(false)}><X className="h-3.5 w-3.5" /></Button>
               </div>
               <Tabs defaultValue="design" className="flex flex-col flex-1 min-h-0">
-                <TabsList className="w-full grid grid-cols-2 mx-2 mt-2 shrink-0">
+                <TabsList className="w-full grid grid-cols-3 mx-2 mt-2 shrink-0">
                   <TabsTrigger value="design" className="text-xs"><Palette className="h-3 w-3 mr-1" />Design</TabsTrigger>
+                  <TabsTrigger value="elements" className="text-xs"><Shapes className="h-3 w-3 mr-1" />Elementos</TabsTrigger>
                   <TabsTrigger value="layers" className="text-xs"><Layers className="h-3 w-3 mr-1" />Camadas</TabsTrigger>
                 </TabsList>
 
