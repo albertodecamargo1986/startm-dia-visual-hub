@@ -1277,7 +1277,11 @@ const LabelEditor = () => {
             </div>
           </DialogContent>
         </Dialog>
-      </div>
+        </div>
+      )}
+
+      {/* Persistent canvas element - always in DOM */}
+      <canvas ref={canvasRef} style={currentProject ? undefined : { position: 'absolute', left: -9999, top: -9999, pointerEvents: 'none' }} />
     </TooltipProvider>
   );
 };
