@@ -188,7 +188,7 @@ const PrintPreviewDialog = ({ open, onOpenChange, canvasRef, format: fmt }: {
 // ── MAIN COMPONENT ──
 // ══════════════════════════════════════════
 const LabelEditor = () => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasHostRef = useRef<HTMLDivElement>(null);
   const fabricRef = useRef<FabricCanvas | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
