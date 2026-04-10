@@ -1,65 +1,31 @@
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from '@/integrations/supabase/client';
 
-const CMS_FUNCTION = "cms-api";
+const FUNCTION_NAME = 'cms-api';
 
-async function callCms<T = unknown>(
-  action: string,
-  body: Record<string, unknown>,
-): Promise<{ success: boolean; data?: T; error?: string }> {
-  const { data, error } = await supabase.functions.invoke(`${CMS_FUNCTION}/${action}`, {
-    method: "POST",
+interface CmsResponse<T = unknown> {
+  success: boolean;
+  data?: T;
+  error?: string;
+}
+
+async function callCms<T = unknown>(action: string, body: Record<string, unknown>): Promise<CmsResponse<T>> {
+  const { data, error } = await supabase.functions.invoke(`${FUNCTION_NAME}/${action}`, {
     body,
   });
-
-  if (error) {
-    return { success: false, error: error.message };
-  }
-
-  return data as { success: boolean; data?: T; error?: string };
+  if (error) return { success: false, error: error.message };
+  return data as CmsResponse<T>;
 }
 
-export interface CmsPageInput {
-  id?: string;
-  slug: string;
-  title: string;
-  seo_title?: string;
-  seo_description?: string;
-  og_image_url?: string;
-  is_home?: boolean;
-}
+export const cmsApi = {
+  saveDraft: (page: Record<string, unknown>, sections: Record<string, unknown>[]) =>
+    callCms('save-page-draft', { page, sections }),
 
-export interface CmsSectionInput {
-  id?: string;
-  type: string;
-  name?: string;
-  enabled?: boolean;
-  data: Record<string, unknown>;
-}
+  publish: (pageId: string) =>
+    callCms('publish-page', { pageId }),
 
-export async function publishPage(pageId: string) {
-  return callCms<{ pageId: string; version: number; status: string }>(
-    "publish-page",
-    { pageId },
-  );
-}
+  unpublish: (pageId: string) =>
+    callCms('unpublish-page', { pageId }),
 
-export async function unpublishPage(pageId: string, status: "draft" | "archived" = "draft") {
-  return callCms<{ pageId: string; status: string }>(
-    "unpublish-page",
-    { pageId, status },
-  );
-}
-
-export async function savePageDraft(page: CmsPageInput, sections: CmsSectionInput[]) {
-  return callCms<{ pageId: string }>(
-    "save-page-draft",
-    { page, sections },
-  );
-}
-
-export async function duplicatePage(pageId: string, newSlug: string, newTitle: string) {
-  return callCms<{ pageId: string; slug: string }>(
-    "duplicate-page",
-    { pageId, newSlug, newTitle },
-  );
-}
+  duplicate: (pageId: string, newSlug: string, newTitle: string) =>
+    callCms('duplicate-page', { pageId, newSlug, newTitle }),
+};
