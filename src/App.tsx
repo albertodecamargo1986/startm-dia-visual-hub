@@ -110,6 +110,7 @@ const App = () => (
                       <Route path="/admin/cms/nova" element={<CmsPageCreate />} />
                       <Route path="/admin/cms/:id" element={<CmsPageEditorPage />} />
                       <Route path="/admin/cms/:id/revisoes" element={<CmsPageRevisions />} />
+                      <Route path="/admin/midia" element={<CmsMediaLibrary />} />
                       <Route path="/admin/aparencia" element={<AdminTheme />} />
                       <Route path="/admin/analytics" element={<AdminAnalytics />} />
                       <Route path="/admin/operacional" element={<AdminBackups />} />
