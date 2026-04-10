@@ -126,7 +126,7 @@ const Checkout = () => {
       };
 
       const { data, error } = await supabase.rpc('create_order_transactional', {
-        payload: payload as unknown as Record<string, unknown>,
+        payload: JSON.parse(JSON.stringify(payload)),
       });
 
       if (error) {
