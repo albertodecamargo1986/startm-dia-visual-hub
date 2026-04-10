@@ -361,8 +361,11 @@ const LabelEditor = () => {
     const fc = fabricRef.current; const container = containerRef.current;
     if (!fc || !container) return;
     const cw = container.clientWidth - 40; const ch = container.clientHeight - 40;
+    if (cw <= 0 || ch <= 0) return;
     const canvasW = fc.getWidth(); const canvasH = fc.getHeight();
+    if (canvasW <= 0 || canvasH <= 0) return;
     const scale = Math.min(cw / canvasW, ch / canvasH, 1);
+    if (!Number.isFinite(scale) || scale <= 0) return;
     setZoom(scale); fc.setZoom(scale);
     fc.setDimensions({ width: canvasW * scale, height: canvasH * scale }, { cssOnly: true });
   }, []);
@@ -371,6 +374,18 @@ const LabelEditor = () => {
     window.addEventListener('resize', fitToContainer);
     return () => window.removeEventListener('resize', fitToContainer);
   }, [fitToContainer]);
+
+  useEffect(() => {
+    if (!currentProject || !selectedFormat) return;
+    const frame = window.requestAnimationFrame(() => fitToContainer());
+    return () => window.cancelAnimationFrame(frame);
+  }, [currentProject?.id, selectedFormat?.id, fitToContainer]);
+
+  useEffect(() => {
+    if (currentProject) return;
+    setSelectedObject(null);
+    setLayers([]);
+  }, [currentProject]);
 
   const handleBgColorChange = useCallback((color: string) => {
     setBgColor(color);
@@ -384,15 +399,37 @@ const LabelEditor = () => {
     await generateAndUploadThumbnail(fc, currentProject.id, user.id, selectedFormat);
   }, [currentProject, selectedFormat, user]);
 
+  const resetCanvas = useCallback((background = '#ffffff') => {
+    const fc = fabricRef.current;
+    if (!fc) return;
+    isRestoring.current = true;
+    fc.clear();
+    fc.backgroundColor = background;
+    fc.clipPath = undefined;
+    fc.discardActiveObject();
+    fc.renderAll();
+    isRestoring.current = false;
+    setSelectedObject(null);
+    setLayers([]);
+    setBgColor(background);
+  }, []);
+
   // ── Project CRUD ──
   const handleNewProject = async () => {
     if (!selectedFormat) { toast.error('Selecione um formato'); return; }
     const proj = await createProject({ name: projectName, label_shape: selectedFormat.shape, width_mm: selectedFormat.widthMm, height_mm: selectedFormat.heightMm });
-    if (proj) { setCurrentProject(proj); applyFormat(selectedFormat); pushHistory(); }
+    if (proj) {
+      resetCanvas();
+      setCurrentProject(proj);
+      setProjectName(proj.name);
+      applyFormat(selectedFormat);
+      pushHistory();
+    }
   };
 
   const loadProject = useCallback(async (proj: LabelProject) => {
     const fc = fabricRef.current; if (!fc) return;
+    resetCanvas();
     setCurrentProject(proj); setProjectName(proj.name);
     const fmt: LabelFormat = { id: `${proj.label_shape}-${proj.width_mm}x${proj.height_mm}`, shape: proj.label_shape as any, label: `${proj.width_mm / 10}×${proj.height_mm / 10} cm`, widthMm: proj.width_mm, heightMm: proj.height_mm };
     setSelectedFormat(fmt); setSelectedShape(proj.label_shape); applyFormat(fmt);
@@ -403,7 +440,7 @@ const LabelEditor = () => {
       setBgColor((fc.backgroundColor as string) || '#ffffff');
     }
     pushHistory(); syncLayers();
-  }, [applyFormat, pushHistory, syncLayers]);
+  }, [applyFormat, pushHistory, resetCanvas, syncLayers]);
 
   // ── Add elements ──
   const addText = () => {
@@ -456,8 +493,8 @@ const LabelEditor = () => {
   const applyTemplate = (template: LabelTemplate) => {
     const fc = fabricRef.current;
     if (!fc || !selectedFormat) return;
-    fc.clear(); fc.backgroundColor = '#ffffff'; setBgColor('#ffffff');
-    if (selectedFormat) applyFormat(selectedFormat);
+    resetCanvas();
+    applyFormat(selectedFormat);
     const objs = template.getObjects(selectedFormat.widthMm, selectedFormat.heightMm);
     objs.forEach(obj => { loadGoogleFont(obj.fontFamily || 'Arial'); addObjectFromJson(fc, obj); });
     fc.renderAll(); markDirty(); syncLayers();
@@ -608,6 +645,13 @@ const LabelEditor = () => {
     const colors = objs.map(o => o.fill).filter((c: any) => c && c !== 'transparent' && c !== 'none');
     return colors.length > 0 ? colors.slice(0, 4) : ['#f0f0f0'];
   };
+
+  const currentShapeLabel = currentProject
+    ? LABEL_SHAPES.find(s => s.id === currentProject.label_shape)?.label || currentProject.label_shape
+    : '';
+  const currentSizeLabel = currentProject
+    ? `${currentProject.width_mm / 10}×${currentProject.height_mm / 10}cm`
+    : '';
 
   // ══════════════════════════════════════
   // ── RENDER (single return to keep canvas mounted) ──
@@ -777,7 +821,7 @@ const LabelEditor = () => {
         {/* ── TOP BAR ── */}
         <div className="flex items-center gap-2 px-2 py-2 border-b bg-card rounded-t-lg flex-wrap">
           {/* Back button */}
-          <Button variant="ghost" size="sm" onClick={() => { setCurrentProject(null); setWizardStep(0); setSelectedShape(''); setSelectedFormat(null); }} className="shrink-0">
+          <Button variant="ghost" size="sm" onClick={() => { setCurrentProject(null); setSelectedObject(null); setLayers([]); setWizardStep(0); setSelectedShape(''); setSelectedFormat(null); }} className="shrink-0">
             <ArrowLeft className="h-4 w-4 mr-1" />Voltar
           </Button>
           <Separator orientation="vertical" className="h-6" />
@@ -790,7 +834,7 @@ const LabelEditor = () => {
             className="w-40 h-8 text-sm"
           />
           <Badge variant="secondary" className="text-xs shrink-0">
-            {LABEL_SHAPES.find(s => s.id === currentProject.label_shape)?.label} • {currentProject.width_mm / 10}×{currentProject.height_mm / 10}cm
+            {currentShapeLabel} • {currentSizeLabel}
           </Badge>
 
           <div className="flex-1" />
@@ -1084,7 +1128,7 @@ const LabelEditor = () => {
             {/* Status bar */}
             <div className="flex items-center justify-between px-3 py-1 border-t bg-muted/20 text-xs text-muted-foreground">
               <div className="flex items-center gap-3">
-                <span>{LABEL_SHAPES.find(s => s.id === currentProject.label_shape)?.label} — {currentProject.width_mm / 10}×{currentProject.height_mm / 10}cm</span>
+                <span>{currentShapeLabel} — {currentSizeLabel}</span>
                 <span>{layers.length} elementos</span>
                 {snapEnabled && <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-primary" />Snap</span>}
               </div>
@@ -1277,7 +1321,6 @@ const LabelEditor = () => {
             </div>
           </DialogContent>
         </Dialog>
-        </div>
       </div>
     </TooltipProvider>
   );
