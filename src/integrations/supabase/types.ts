@@ -176,6 +176,65 @@ export type Database = {
           },
         ]
       }
+      notifications_queue: {
+        Row: {
+          attempts: number | null
+          channel: string
+          created_at: string | null
+          event_type: string
+          id: string
+          last_error: string | null
+          max_attempts: number | null
+          next_retry_at: string | null
+          order_id: string
+          payload: Json | null
+          processed_at: string | null
+          recipient_email: string | null
+          recipient_type: string
+          status: string
+        }
+        Insert: {
+          attempts?: number | null
+          channel?: string
+          created_at?: string | null
+          event_type: string
+          id?: string
+          last_error?: string | null
+          max_attempts?: number | null
+          next_retry_at?: string | null
+          order_id: string
+          payload?: Json | null
+          processed_at?: string | null
+          recipient_email?: string | null
+          recipient_type: string
+          status?: string
+        }
+        Update: {
+          attempts?: number | null
+          channel?: string
+          created_at?: string | null
+          event_type?: string
+          id?: string
+          last_error?: string | null
+          max_attempts?: number | null
+          next_retry_at?: string | null
+          order_id?: string
+          payload?: Json | null
+          processed_at?: string | null
+          recipient_email?: string | null
+          recipient_type?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_queue_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           artwork_status: string | null
