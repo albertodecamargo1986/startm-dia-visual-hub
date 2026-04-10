@@ -354,8 +354,9 @@ const LabelEditor = () => {
     fc.clipPath = undefined;
     if (fmt.shape === 'round') fc.clipPath = new Circle({ radius: w / 2, originX: 'center', originY: 'center', left: w / 2, top: h / 2 });
     else if (fmt.shape === 'rounded-square' || fmt.shape === 'rounded-rectangle') fc.clipPath = new Rect({ width: w, height: h, rx: mmToPx(3), ry: mmToPx(3), originX: 'center', originY: 'center', left: w / 2, top: h / 2 });
+    addShapeDelimiter(fc, fmt);
     fc.renderAll(); fitToContainer();
-  }, []);
+  }, [addShapeDelimiter]);
 
   const fitToContainer = useCallback(() => {
     const fc = fabricRef.current; const container = containerRef.current;
@@ -442,10 +443,54 @@ const LabelEditor = () => {
     pushHistory(); syncLayers();
   }, [applyFormat, pushHistory, resetCanvas, syncLayers]);
 
+  // ── Add shape delimiter to canvas ──
+  const addShapeDelimiter = useCallback((fc: FabricCanvas, fmt: LabelFormat) => {
+    // Remove existing delimiter
+    const existing = fc.getObjects().filter((o: any) => o.__isDelimiter);
+    existing.forEach(o => fc.remove(o));
+
+    const w = mmToPx(fmt.widthMm);
+    const h = mmToPx(fmt.heightMm);
+    let delimiter: FabricObject;
+
+    if (fmt.shape === 'round') {
+      delimiter = new Circle({
+        left: w / 2, top: h / 2,
+        radius: w / 2 - 2,
+        originX: 'center', originY: 'center',
+        fill: 'transparent', stroke: '#cbd5e1', strokeWidth: 2,
+        strokeDashArray: [8, 6],
+        selectable: false, evented: false,
+      });
+    } else {
+      const rx = (fmt.shape === 'rounded-square' || fmt.shape === 'rounded-rectangle') ? mmToPx(3) : 0;
+      delimiter = new Rect({
+        left: 1, top: 1, width: w - 2, height: h - 2,
+        rx, ry: rx,
+        fill: 'transparent', stroke: '#cbd5e1', strokeWidth: 2,
+        strokeDashArray: [8, 6],
+        selectable: false, evented: false,
+      });
+    }
+    (delimiter as any).__isDelimiter = true;
+    (delimiter as any).__layerName = '— Limite —';
+    fc.add(delimiter);
+    fc.sendObjectToBack(delimiter);
+  }, []);
+
   // ── Add elements ──
   const addText = () => {
     const fc = fabricRef.current; if (!fc) return;
-    const text = new IText('Texto', { left: fc.getWidth() / (2 * (zoom || 1)) - 30, top: fc.getHeight() / (2 * (zoom || 1)) - 10, fontSize: 24, fontFamily: 'Arial', fill: '#333333' });
+    const canvasW = fc.getWidth() / (fc.getZoom() || 1);
+    const canvasH = fc.getHeight() / (fc.getZoom() || 1);
+    const minDim = Math.min(canvasW, canvasH);
+    const fontSize = Math.max(16, Math.round(minDim * 0.12));
+    const text = new IText('Seu Texto', {
+      left: canvasW / 2, top: canvasH / 2,
+      originX: 'center', originY: 'center',
+      fontSize, fontFamily: 'Montserrat', fill: '#333333', textAlign: 'center',
+    });
+    loadGoogleFont('Montserrat');
     fc.add(text); fc.setActiveObject(text); fc.renderAll();
   };
 
