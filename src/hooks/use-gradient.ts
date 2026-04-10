@@ -125,6 +125,3 @@ export function useGradient({ canvas, onHistoryCapture }: UseGradientProps) {
     updateStop,
   };
 }
-
-// Legacy helper re-exported for backward compatibility
-export { applyGradient } from '@/hooks/label-editor/use-gradient-legacy';
