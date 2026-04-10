@@ -242,6 +242,27 @@ export type Database = {
           },
         ]
       }
+      health_checks: {
+        Row: {
+          created_at: string | null
+          details: Json | null
+          id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          status: string
+        }
+        Update: {
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          status?: string
+        }
+        Relationships: []
+      }
       notifications_queue: {
         Row: {
           attempts: number | null
