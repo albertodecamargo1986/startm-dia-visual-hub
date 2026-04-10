@@ -494,6 +494,62 @@ const LabelEditor = () => {
     fc.add(text); fc.setActiveObject(text); fc.renderAll();
   };
 
+  const addCurvedText = () => {
+    const fc = fabricRef.current; if (!fc) return;
+    const canvasW = fc.getWidth() / (fc.getZoom() || 1);
+    const canvasH = fc.getHeight() / (fc.getZoom() || 1);
+    const minDim = Math.min(canvasW, canvasH);
+    const radius = minDim * 0.3;
+    const fontSize = Math.max(14, Math.round(minDim * 0.08));
+    const textStr = 'TEXTO EM ARCO';
+    const charAngle = 360 / (textStr.length * 2.5);
+    const startAngle = -90 - (textStr.length - 1) * charAngle / 2;
+    const centerX = canvasW / 2;
+    const centerY = canvasH / 2;
+
+    const groupObjects: FabricObject[] = [];
+    for (let i = 0; i < textStr.length; i++) {
+      const angleDeg = startAngle + i * charAngle;
+      const angleRad = (angleDeg * Math.PI) / 180;
+      const x = centerX + radius * Math.cos(angleRad);
+      const y = centerY + radius * Math.sin(angleRad);
+      const charText = new IText(textStr[i], {
+        left: x, top: y,
+        originX: 'center', originY: 'center',
+        fontSize, fontFamily: 'Montserrat', fill: '#333333',
+        angle: angleDeg + 90,
+        selectable: false, evented: false,
+      });
+      (charText as any).__isCurvedChar = true;
+      groupObjects.push(charText);
+    }
+
+    // Add a control circle (invisible, acts as group anchor)
+    const controlCircle = new Circle({
+      left: centerX, top: centerY,
+      originX: 'center', originY: 'center',
+      radius: radius,
+      fill: 'transparent', stroke: 'transparent',
+      strokeWidth: 0,
+      selectable: true, evented: true,
+    });
+    (controlCircle as any).__isCurvedTextController = true;
+    (controlCircle as any).__curvedText = textStr;
+    (controlCircle as any).__curvedRadius = radius;
+    (controlCircle as any).__curvedFontSize = fontSize;
+    (controlCircle as any).__curvedFontFamily = 'Montserrat';
+    (controlCircle as any).__curvedFill = '#333333';
+    (controlCircle as any).__curvedCharIds = groupObjects.map((_, idx) => idx);
+    (controlCircle as any).__layerName = 'Texto em Arco';
+
+    groupObjects.forEach(obj => fc.add(obj));
+    fc.add(controlCircle);
+    fc.setActiveObject(controlCircle);
+    fc.renderAll();
+    loadGoogleFont('Montserrat');
+    toast.success('Texto em arco adicionado! Selecione o círculo de controle para mover.');
+  };
+
   const addShape = (type: string) => {
     const fc = fabricRef.current; if (!fc) return;
     const centerX = fc.getWidth() / (2 * (zoom || 1));
