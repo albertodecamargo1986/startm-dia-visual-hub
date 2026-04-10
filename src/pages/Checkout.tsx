@@ -96,56 +96,59 @@ const Checkout = () => {
     if (!profile || !user) return;
     setLoading(true);
 
-    const { data: orderNumber } = await supabase.rpc('generate_order_number');
-    const { data: order, error } = await supabase.from('orders').insert({
-      order_number: orderNumber || `SM-${Date.now()}`,
-      customer_id: profile.id,
-      subtotal: total,
-      total: total,
-      shipping_address: {
-        street: form.street, number: form.number, complement: form.complement,
-        neighborhood: form.neighborhood, city: form.city, state: form.state, zip: form.zip,
-      },
-      notes,
-      status: 'pending_payment',
-      payment_status: 'pending',
-    }).select().single();
+    try {
+      const payload = {
+        customer_id: profile.id,
+        subtotal: total,
+        total: total,
+        shipping_address: {
+          street: form.street, number: form.number, complement: form.complement,
+          neighborhood: form.neighborhood, city: form.city, state: form.state, zip: form.zip,
+        },
+        notes,
+        items: items.map(item => ({
+          product_id: item.productId || null,
+          product_name: item.productName,
+          product_snapshot: {
+            thumbnail: item.thumbnail,
+            priceUnit: item.priceUnit,
+            needsArtwork: item.needsArtwork,
+            unitPrice: item.unitPrice,
+          },
+          quantity: item.quantity,
+          unit_price: item.unitPrice,
+          total_price: item.unitPrice * item.quantity,
+          custom_width: item.customWidth || null,
+          custom_height: item.customHeight || null,
+          notes: item.notes || '',
+          artwork_status: item.needsArtwork ? 'pending' : 'not_required',
+        })),
+      };
 
-    if (error || !order) {
-      toast.error('Erro ao criar pedido.');
+      const { data, error } = await supabase.rpc('create_order_transactional', {
+        payload: payload as unknown as Record<string, unknown>,
+      });
+
+      if (error) {
+        console.error('Checkout RPC error:', error);
+        toast.error('Erro ao criar pedido. Tente novamente.');
+        setLoading(false);
+        return;
+      }
+
+      const result = data as unknown as { order_id: string; order_number: string };
+      setOrderId(result.order_id);
       setLoading(false);
-      return;
-    }
 
-    const orderItems = items.map(item => ({
-      order_id: order.id,
-      product_id: item.productId,
-      product_name: item.productName,
-      product_snapshot: {
-        thumbnail: item.thumbnail,
-        priceUnit: item.priceUnit,
-        needsArtwork: item.needsArtwork,
-        unitPrice: item.unitPrice,
-      },
-      quantity: item.quantity,
-      unit_price: item.unitPrice,
-      total_price: item.unitPrice * item.quantity,
-      custom_width: item.customWidth || null,
-      custom_height: item.customHeight || null,
-      notes: item.notes || '',
-      artwork_status: item.needsArtwork ? 'pending' : 'not_required',
-    }));
-
-    await supabase.from('order_items').insert(orderItems);
-    await supabase.from('order_timeline').insert({ order_id: order.id, status: 'pending_payment', message: 'Pedido criado.' });
-
-    setOrderId(order.id);
-    setLoading(false);
-
-    if (needsArtworkStep) {
-      setStep(1);
-    } else {
-      setStep(2);
+      if (needsArtworkStep) {
+        setStep(1);
+      } else {
+        setStep(2);
+      }
+    } catch (err) {
+      console.error('Checkout error:', err);
+      toast.error('Erro inesperado ao criar pedido.');
+      setLoading(false);
     }
   };
 
