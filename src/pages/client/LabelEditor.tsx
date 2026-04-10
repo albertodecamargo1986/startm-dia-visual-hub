@@ -590,6 +590,7 @@ const LabelEditor = () => {
   }, [markDirty]);
 
 
+  const addShape = (type: string) => {
     const fc = fabricRef.current; if (!fc) return;
     const centerX = fc.getWidth() / (2 * (zoom || 1));
     const centerY = fc.getHeight() / (2 * (zoom || 1));
