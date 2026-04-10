@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { SettingsProvider } from "@/contexts/SettingsContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import { PublicLayout } from "@/components/layout/PublicLayout";
 import { RequireAuth, RequireAdmin } from "@/components/layout/RouteGuards";
 import Index from "./pages/Index";
@@ -40,6 +41,7 @@ import AdminFiles from "./pages/admin/AdminFiles";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminPortfolio from "./pages/admin/AdminPortfolio";
 import AdminPageEditor from "./pages/admin/AdminPageEditor";
+import AdminTheme from "./pages/admin/AdminTheme";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -53,6 +55,7 @@ const App = () => (
         <AuthProvider>
           <CartProvider>
             <SettingsProvider>
+              <ThemeProvider>
               <Routes>
                 <Route element={<PublicLayout />}>
                   <Route path="/" element={<Index />} />
@@ -94,12 +97,14 @@ const App = () => (
                       <Route path="/admin/portfolio" element={<AdminPortfolio />} />
                       <Route path="/admin/arquivos" element={<AdminFiles />} />
                       <Route path="/admin/paginas" element={<AdminPageEditor />} />
+                      <Route path="/admin/aparencia" element={<AdminTheme />} />
                       <Route path="/admin/configuracoes" element={<AdminSettings />} />
                     </Route>
                   </Route>
                 </Route>
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              </ThemeProvider>
             </SettingsProvider>
           </CartProvider>
         </AuthProvider>
