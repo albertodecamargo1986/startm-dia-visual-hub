@@ -1,86 +1,51 @@
 
 
-# Plano: Redesign do Editor de Etiquetas — Layout estilo Photoshop
-
-## Problemas atuais
-1. Layout confuso — painel esquerdo largo, canvas deslocado, painel direito aparece/desaparece
-2. Toolbar central com poucos controles, sem acesso rápido às ferramentas
-3. Canvas não fica centralizado de forma estável
-4. Área de pintura (canvas) não tem tamanho visualmente proporcional à etiqueta
-5. Falta de uma toolbar vertical de ferramentas como no Photoshop
+# Plano: Desenho Livre, Elementos Prontos e Melhorias de Interação
 
 ## Mudanças planejadas
 
-### 1. Layout Photoshop: Toolbar vertical à esquerda
-Substituir o botão "Painel de design" por uma **barra de ferramentas vertical fina** (48px) no lado esquerdo com ícones:
-- Seleção (cursor)
-- Texto (T)
-- Retângulo, Círculo, Triângulo, Linha
-- Imagem
-- Mão (pan) — futuro
+### 1. Ferramenta de Desenho Livre (Freehand Drawing)
+Adicionar botão "Desenho livre" na toolbar vertical. Usa o modo de desenho nativo do Fabric.js (`canvas.isDrawingMode = true`) com controles de:
+- Espessura do traço (1-20px)
+- Cor do traço
+- Borracha (apaga último traço)
 
-Ao clicar numa ferramenta, a ação é executada diretamente (addText, addShape, etc). Sem painel colapsável.
+Ao ativar, o cursor muda para pincel. Ao clicar em "Seleção", volta ao modo normal.
 
-### 2. Painel lateral esquerdo simplificado
-O painel de "Design" (templates, fundo, molduras) vira um **drawer/painel togglável** que abre por cima do canvas quando necessário, em vez de ocupar espaço fixo. Ou fica como uma aba fina colapsada.
+### 2. Nova aba "Elementos" no painel overlay esquerdo
+Adicionar uma terceira aba no painel (Design | Camadas | **Elementos**) com uma biblioteca de formas SVG prontas organizadas por categoria:
 
-Alternativa mais simples: manter o painel mas reduzir para **w-48** (192px) e colapsar por padrão. Abrir apenas via ícone na toolbar.
+**Setas** (8 variações): seta simples, seta dupla, seta curva, seta grossa, chevron
+**Símbolos** (8 variações): estrela, coração, raio/relâmpago, diamante, coroa, medalha, check, xis
+**Decorativos** (6 variações): onda, espiral, folha, flor, sol, gota
+**Ícones** (6 variações): telefone, email, instagram, facebook, localização, carrinho
 
-### 3. Canvas centralizado com fundo de "mesa de trabalho"
-- Container do canvas usa `bg-neutral-800` (cinza escuro, como Photoshop) com checkerboard pattern sutil
-- Canvas com `margin: auto` e sombra para parecer um "papel" na mesa
-- `fitToContainer` limita a 70% do container (não 80%) para dar mais respiro
-- Remover `rounded` do canvas-wrapper (etiqueta não é arredondada no editor, o clipPath já cuida do formato)
+Cada elemento é inserido ao clicar, centralizado no canvas, e totalmente editável (cor, tamanho, rotação).
 
-### 4. Barra superior (top bar) mais limpa
-- Manter: Voltar, nome do projeto, badge de formato, Save, Versão, Pedir
-- Mover undo/redo e zoom para a **barra inferior (status bar)** — como no Photoshop
-- Remover toolbar central duplicada (a que tem Grid, Delete, etc.)
+Implementação: os SVG paths serão definidos inline como constantes (sem dependências externas). Inseridos via `fabric.Path`.
 
-### 5. Painel de propriedades (direita) — sempre visível
-Em vez de aparecer/desaparecer quando seleciona objeto, o painel direito fica **sempre visível** com conteúdo contextual:
-- Sem seleção: mostra propriedades do canvas (fundo, tamanho, grid)
-- Com seleção: mostra propriedades do objeto (como já faz)
+### 3. Melhorias de escala e interação com mouse
+- Habilitar `uniformScaling` por padrão para que imagens/objetos mantenham proporção ao redimensionar pelos cantos
+- Adicionar controles de rotação mais visíveis (custom corner style)
+- Configurar `cornerSize: 10`, `cornerColor`, `borderColor` para feedback visual melhor
+- Lock aspect ratio toggle no painel de propriedades
 
-### 6. Status bar inferior melhorada
-Mover para a barra inferior:
-- Undo/Redo
-- Zoom slider (ou +/- com %)
-- Snap toggle
-- Info do formato
-- Grid toggle
-
-## Estrutura visual final
-
-```text
-┌─────────────────────────────────────────────────────────┐
-│ ← Voltar │ Nome do projeto │ Badge │ Save │ Versão │Pedir│  ← Top bar
-├──┬──────────────────────────────────────────────┬───────┤
-│  │                                              │Props  │
-│T │                                              │───────│
-│🔲│         ████████████████████                 │Cor    │
-│⭕│         █   CANVAS/LABEL   █                 │Fonte  │
-│△ │         █                  █                 │Tam.   │
-│— │         ████████████████████                 │B I    │
-│🖼│              Mesa escura                      │Align  │
-│  │                                              │...    │
-├──┴──────────────────────────────────────────────┴───────┤
-│ ↩ ↪ │ 🔍- 68% 🔍+ │ Snap ✓ │ Grid │ Redondo 4×4cm    │  ← Status bar
-└─────────────────────────────────────────────────────────┘
-```
+### 4. Estado ativo na toolbar
+Destacar visualmente a ferramenta ativa (seleção, texto, desenho, etc.) com `variant="secondary"` para indicar qual modo está ativo.
 
 ## Arquivos modificados
-- `src/pages/client/LabelEditor.tsx` — Reestruturação do layout (~150 linhas alteradas):
-  - Nova toolbar vertical à esquerda (ferramentas)
-  - Remover toolbar central horizontal
-  - Painel direito sempre visível com conteúdo contextual
-  - Status bar com undo/redo/zoom/grid/snap
-  - Canvas wrapper com fundo escuro (estilo Photoshop)
-  - Painel esquerdo (Design/Camadas) acessível via ícone na toolbar, colapsado por padrão
-  - fitToContainer ajustado para 70%
+- `src/pages/client/LabelEditor.tsx`:
+  - Novo estado `activeTool` para rastrear ferramenta selecionada
+  - Função `toggleDrawingMode` para ativar/desativar desenho livre
+  - Controles de pincel no painel direito quando modo desenho ativo
+  - Nova aba "Elementos" no painel overlay com grid de SVG clicáveis
+  - Configuração de `cornerSize`, `uniformScaling` nos objetos
+  - Highlight da ferramenta ativa na toolbar
+  - ~120 linhas de elementos SVG paths como constantes
+  - ~40 linhas para drawing mode
+  - ~20 linhas para melhorias de interação
 
 ## Sem mudanças
 - Banco de dados, RLS, edge functions
-- Lógica de Fabric.js, salvamento, templates
-- Funcionalidades existentes (apenas reposicionadas)
+- Lógica de salvamento, templates existentes, exportação
 
