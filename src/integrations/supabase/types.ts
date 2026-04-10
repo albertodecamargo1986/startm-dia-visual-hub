@@ -465,6 +465,45 @@ export type Database = {
         }
         Relationships: []
       }
+      label_custom_formats: {
+        Row: {
+          corner_radius_mm: number | null
+          created_at: string
+          height_mm: number
+          height_px: number | null
+          id: string
+          name: string
+          shape: string
+          user_id: string
+          width_mm: number
+          width_px: number | null
+        }
+        Insert: {
+          corner_radius_mm?: number | null
+          created_at?: string
+          height_mm: number
+          height_px?: number | null
+          id?: string
+          name: string
+          shape?: string
+          user_id: string
+          width_mm: number
+          width_px?: number | null
+        }
+        Update: {
+          corner_radius_mm?: number | null
+          created_at?: string
+          height_mm?: number
+          height_px?: number | null
+          id?: string
+          name?: string
+          shape?: string
+          user_id?: string
+          width_mm?: number
+          width_px?: number | null
+        }
+        Relationships: []
+      }
       label_project_versions: {
         Row: {
           created_at: string
