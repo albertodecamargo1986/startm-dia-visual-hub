@@ -86,6 +86,45 @@ export type Database = {
         }
         Relationships: []
       }
+      cleanup_reports: {
+        Row: {
+          bucket: string
+          bytes_freed: number | null
+          created_at: string | null
+          details: Json | null
+          errors: number | null
+          finished_at: string | null
+          id: string
+          mode: string
+          started_at: string | null
+          total_orphans: number | null
+        }
+        Insert: {
+          bucket: string
+          bytes_freed?: number | null
+          created_at?: string | null
+          details?: Json | null
+          errors?: number | null
+          finished_at?: string | null
+          id?: string
+          mode: string
+          started_at?: string | null
+          total_orphans?: number | null
+        }
+        Update: {
+          bucket?: string
+          bytes_freed?: number | null
+          created_at?: string | null
+          details?: Json | null
+          errors?: number | null
+          finished_at?: string | null
+          id?: string
+          mode?: string
+          started_at?: string | null
+          total_orphans?: number | null
+        }
+        Relationships: []
+      }
       contact_requests: {
         Row: {
           created_at: string | null
