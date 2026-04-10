@@ -528,6 +528,36 @@ export type Database = {
         }
         Relationships: []
       }
+      label_gradient_favorites: {
+        Row: {
+          created_at: string | null
+          direction: string
+          id: string
+          name: string
+          stops: Json
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          direction: string
+          id?: string
+          name: string
+          stops: Json
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          direction?: string
+          id?: string
+          name?: string
+          stops?: Json
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       label_project_versions: {
         Row: {
           created_at: string
