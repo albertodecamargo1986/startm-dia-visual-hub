@@ -625,10 +625,6 @@ const LabelEditor = () => {
   // ══════════════════════════════════════
   return (
     <TooltipProvider delayDuration={300}>
-      {/* Persistent canvas - always in DOM */}
-      <div className={currentProject ? 'hidden' : 'hidden'} style={{ position: 'absolute', left: -9999, top: -9999, pointerEvents: 'none' }}>
-        {/* This is a dummy container; the real canvas is rendered below inside the editor */}
-      </div>
       <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
 
       {/* ── WIZARD VIEW (no project open) ── */}
