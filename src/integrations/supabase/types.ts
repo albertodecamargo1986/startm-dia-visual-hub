@@ -550,6 +550,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_order_transactional: { Args: { payload: Json }; Returns: Json }
       generate_order_number: { Args: never; Returns: string }
       has_role: {
         Args: {
