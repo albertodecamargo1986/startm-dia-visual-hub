@@ -1077,7 +1077,7 @@ const LabelEditor = () => {
             <div className="flex-1 flex items-center justify-center bg-muted/10 p-4 overflow-auto" ref={containerRef}>
               <div className="relative border border-dashed border-muted-foreground/30 rounded-lg p-2 bg-white shadow-sm" id="canvas-wrapper">
                 {showGrid && <div className="absolute inset-2 rounded" style={gridOverlayStyle} />}
-                <canvas ref={canvasRef} />
+                <div ref={canvasHostRef} />
               </div>
             </div>
 
