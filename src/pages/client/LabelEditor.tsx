@@ -803,7 +803,7 @@ const LabelEditor = () => {
   // ── EDITOR VIEW (project open) ──
   // ══════════════════════════════════════
   return (
-    <TooltipProvider>
+    <TooltipProvider delayDuration={300}>
       <div className="flex flex-col h-[calc(100vh-140px)]">
         <PrintPreviewDialog open={showPrintPreview} onOpenChange={setShowPrintPreview} canvasRef={fabricRef} format={selectedFormat} />
         <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
