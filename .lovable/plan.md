@@ -1,52 +1,74 @@
 
 
-# Prompt 9 — Recuperação de Senha + Prompt 10 — Pipeline CI
+# Observabilidade de Checkout e Pagamento
 
-## Prompt 9: Fluxo de Reset de Senha
+## Plano
 
-### Situação Atual
-- `Login.tsx` já tem `handleForgotPassword` com `redirectTo: /reset-password`
-- A página `/reset-password` **não existe** — usuário é redirecionado mas não há nada lá
-- Rota não está registrada em `App.tsx`
+### 1. Criar tabela `analytics_events`
 
-### Plano
+Migration SQL:
+```sql
+CREATE TABLE public.analytics_events (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_name text NOT NULL,
+  user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  order_id uuid,
+  metadata jsonb DEFAULT '{}'::jsonb,
+  created_at timestamptz DEFAULT now()
+);
 
-**1. Criar `src/pages/ResetPassword.tsx`**
-- Detectar token de recuperação via `supabase.auth.onAuthStateChange` (evento `PASSWORD_RECOVERY`)
-- Formulário com "Nova senha" + "Confirmar senha" com validação zod
-- Chamar `supabase.auth.updateUser({ password })` ao submeter
-- Estados visuais: carregando, token inválido/expirado, sucesso com redirect para `/login`
-- Canonical tag e Helmet
+ALTER TABLE public.analytics_events ENABLE ROW LEVEL SECURITY;
 
-**2. Atualizar `App.tsx`**
-- Adicionar rota pública `/reset-password` → `<ResetPassword />`
+CREATE POLICY "Analytics: admin read"
+  ON public.analytics_events FOR SELECT TO authenticated
+  USING (has_role(auth.uid(), 'admin'::app_role) OR has_role(auth.uid(), 'super_admin'::app_role));
 
-**3. Testes básicos**
-- Criar `src/pages/__tests__/ResetPassword.test.tsx`
-- Testar renderização do formulário, validação de senhas diferentes, validação de senha curta
+CREATE POLICY "Analytics: authenticated insert"
+  ON public.analytics_events FOR INSERT TO authenticated
+  WITH CHECK (auth.uid() = user_id);
 
----
+CREATE INDEX idx_analytics_event_name ON public.analytics_events(event_name);
+CREATE INDEX idx_analytics_created_at ON public.analytics_events(created_at);
+```
 
-## Prompt 10: Pipeline CI
+LGPD: `user_id` is nullable (SET NULL on delete). No PII stored in metadata — only IDs, amounts, counts.
 
-### Contexto
-Lovable gerencia deploys internamente. Não temos acesso a criar GitHub Actions ou CI pipelines externos. O projeto já tem vitest configurado.
+### 2. Criar helper `src/lib/analytics.ts`
 
-### O que podemos fazer
-- Garantir que `npm run lint`, `npm test`, e `npm run build` funcionam corretamente
-- Adicionar script `ci` no `package.json` que encadeia lint → test → build
-- Isso não substitui um CI externo, mas prepara o projeto para quando o usuário exportar para GitHub
+Utility function `trackEvent(eventName, metadata?)` that inserts into `analytics_events` using the current auth user. Silent on error (never blocks UX).
 
-**Nota:** Lovable não suporta configuração de pipelines CI (GitHub Actions, etc.) diretamente. Se o usuário exportar o projeto, poderá usar o script `ci` como base para seu workflow.
+### 3. Instrumentar eventos no frontend
 
----
+| Evento | Onde | Metadata |
+|---|---|---|
+| `checkout_started` | `Checkout.tsx` — mount | `{ itemCount, total }` |
+| `order_created` | `Checkout.tsx` — após RPC sucesso | `{ orderId, orderNumber, total }` |
+| `artwork_uploaded` | `Checkout.tsx` — após upload sucesso | `{ orderId, itemId }` |
+| `payment_redirected` | `Checkout.tsx` — `handlePayment` antes do redirect | `{ orderId, method: 'pagseguro' }` |
+| `payment_confirmed` | `CheckoutSuccess.tsx` — mount com order válido | `{ orderId }` |
+
+### 4. Criar página admin `AdminAnalytics.tsx`
+
+Nova rota `/admin/analytics` com:
+- Filtro de período (7d, 30d, custom)
+- KPIs de funil: checkout_started → order_created → payment_redirected → payment_confirmed
+- Taxa de conversão entre etapas (%)
+- Gráfico de barras do funil (recharts)
+- Tabela com contagem diária por evento
+
+### 5. Registrar no AdminLayout
+
+Adicionar link "Analytics" no menu lateral com ícone `BarChart3`.
 
 ## Arquivos
 
 | Arquivo | Alteração |
 |---|---|
-| `src/pages/ResetPassword.tsx` | **Novo** — página de redefinição de senha |
-| `src/App.tsx` | Adicionar rota `/reset-password` |
-| `src/pages/__tests__/ResetPassword.test.tsx` | **Novo** — testes do fluxo |
-| `package.json` | Adicionar script `"ci"` |
+| Migration SQL | Nova tabela `analytics_events` |
+| `src/lib/analytics.ts` | Novo — helper trackEvent |
+| `src/pages/Checkout.tsx` | Adicionar chamadas trackEvent |
+| `src/pages/CheckoutSuccess.tsx` | Adicionar trackEvent payment_confirmed |
+| `src/pages/admin/AdminAnalytics.tsx` | Nova página com funil e KPIs |
+| `src/pages/admin/AdminLayout.tsx` | Adicionar link Analytics |
+| `src/App.tsx` | Adicionar rota /admin/analytics |
 
