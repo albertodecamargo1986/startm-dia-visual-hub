@@ -46,6 +46,7 @@ import AdminPageEditor from "./pages/admin/AdminPageEditor";
 import AdminTheme from "./pages/admin/AdminTheme";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminBackups from "./pages/admin/AdminBackups";
+import AdminLabelProjects from "./pages/admin/AdminLabelProjects";
 import CmsPageList from "./pages/admin/cms/CmsPageList";
 import CmsPageCreate from "./pages/admin/cms/CmsPageCreate";
 import CmsPageEditorPage from "./pages/admin/cms/CmsPageEditor";
@@ -109,6 +110,7 @@ const App = () => (
                       <Route path="/admin/clientes" element={<AdminClients />} />
                       <Route path="/admin/portfolio" element={<AdminPortfolio />} />
                       <Route path="/admin/arquivos" element={<AdminFiles />} />
+                      <Route path="/admin/etiquetas" element={<AdminLabelProjects />} />
                       <Route path="/admin/paginas" element={<AdminPageEditor />} />
                       <Route path="/admin/cms" element={<CmsPageList />} />
                       <Route path="/admin/cms/nova" element={<CmsPageCreate />} />

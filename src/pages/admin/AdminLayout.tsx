@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
-import { LayoutDashboard, Package, ShoppingBag, Layers, Image, Users, FileText, Settings, Menu, ExternalLink, Palette, FileEdit, Paintbrush, BarChart3, Shield, Newspaper, ImagePlus } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingBag, Layers, Image, Users, FileText, Settings, Menu, ExternalLink, Palette, FileEdit, Paintbrush, BarChart3, Shield, Newspaper, ImagePlus, Tag } from 'lucide-react';
 import { useState } from 'react';
 
 const adminLinks = [
@@ -16,6 +16,7 @@ const adminLinks = [
   { to: '/admin/banners', label: 'Banners', icon: Image },
   { to: '/admin/clientes', label: 'Clientes', icon: Users },
   { to: '/admin/portfolio', label: 'Portfólio', icon: Palette },
+  { to: '/admin/etiquetas', label: 'Etiquetas', icon: Tag },
   { to: '/admin/arquivos', label: 'Arquivos', icon: FileText },
   { to: '/admin/paginas', label: 'Páginas', icon: FileEdit },
   { to: '/admin/cms', label: 'CMS', icon: Newspaper },
@@ -35,6 +36,7 @@ const breadcrumbMap: Record<string, string> = {
   clientes: 'Clientes',
   portfolio: 'Portfólio',
   arquivos: 'Arquivos',
+  etiquetas: 'Etiquetas',
   paginas: 'Páginas',
   cms: 'CMS',
   midia: 'Mídia',
