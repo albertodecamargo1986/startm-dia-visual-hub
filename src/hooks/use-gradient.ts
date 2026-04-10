@@ -44,12 +44,8 @@ export function useGradient({ canvas, onHistoryCapture }: UseGradientProps) {
     (target: 'fill' | 'background' = 'fill') => {
       if (!canvas) return;
       const customPreset: GradientPreset = {
-        id: 'custom',
-        name: 'Personalizado',
-        category: 'personalizado',
-        type: customType,
-        direction: customDirection,
-        stops: customStops,
+        id: 'custom', name: 'Personalizado', category: 'personalizado',
+        type: customType, direction: customDirection, stops: customStops,
       };
       if (target === 'background') {
         applyGradientToBackground(canvas, customPreset);
@@ -78,8 +74,7 @@ export function useGradient({ canvas, onHistoryCapture }: UseGradientProps) {
   const addStop = useCallback(() => {
     if (customStops.length >= 5) return;
     const lastOffset = customStops[customStops.length - 1].offset;
-    const newOffset = Math.min(lastOffset + 0.2, 1);
-    setCustomStops((prev) => [...prev, { offset: newOffset, color: '#FFFFFF' }]);
+    setCustomStops((prev) => [...prev, { offset: Math.min(lastOffset + 0.2, 1), color: '#FFFFFF' }]);
   }, [customStops]);
 
   const removeStop = useCallback(
@@ -100,28 +95,14 @@ export function useGradient({ canvas, onHistoryCapture }: UseGradientProps) {
   );
 
   const customGradientCSS = gradientToCSS({
-    id: 'custom',
-    name: '',
-    category: 'personalizado',
-    type: customType,
-    direction: customDirection,
-    stops: customStops,
+    id: 'custom', name: '', category: 'personalizado',
+    type: customType, direction: customDirection, stops: customStops,
   });
 
   return {
-    customStops,
-    customType,
-    customDirection,
-    gradientTarget,
-    customGradientCSS,
-    setCustomType,
-    setCustomDirection,
-    setGradientTarget,
-    applyPreset,
-    applyCustomGradient,
-    removeGradient,
-    addStop,
-    removeStop,
-    updateStop,
+    customStops, customType, customDirection, gradientTarget, customGradientCSS,
+    setCustomType, setCustomDirection, setGradientTarget,
+    applyPreset, applyCustomGradient, removeGradient,
+    addStop, removeStop, updateStop,
   };
 }
