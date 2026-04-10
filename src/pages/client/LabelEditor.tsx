@@ -266,6 +266,62 @@ const LabelEditor = () => {
     fc.renderAll();
   };
 
+  // Apply template to canvas
+  const applyTemplate = (template: LabelTemplate) => {
+    const fc = fabricRef.current;
+    if (!fc || !selectedFormat) return;
+    // Clear canvas first
+    fc.clear();
+    fc.backgroundColor = '#ffffff';
+    // Re-apply clip path
+    if (selectedFormat) applyFormat(selectedFormat);
+    // Add template objects
+    const objs = template.getObjects(selectedFormat.widthMm, selectedFormat.heightMm);
+    objs.forEach(obj => {
+      loadGoogleFont(obj.fontFamily || 'Arial');
+      addObjectFromJson(fc, obj);
+    });
+    fc.renderAll();
+    markDirty();
+    toast.success(`Template "${template.name}" aplicado`);
+  };
+
+  // Add decorative element
+  const addDecorative = (element: DecorativeElement) => {
+    const fc = fabricRef.current;
+    if (!fc || !selectedFormat) return;
+    const objs = element.getObjects(selectedFormat.widthMm, selectedFormat.heightMm);
+    objs.forEach(obj => addObjectFromJson(fc, obj));
+    fc.renderAll();
+    markDirty();
+  };
+
+  // Helper to create fabric objects from JSON-like specs
+  const addObjectFromJson = (fc: FabricCanvas, obj: any) => {
+    let fabricObj: FabricObject | null = null;
+    switch (obj.type) {
+      case 'rect':
+        fabricObj = new Rect({ left: obj.left, top: obj.top, width: obj.width, height: obj.height, fill: obj.fill, stroke: obj.stroke, strokeWidth: obj.strokeWidth, rx: obj.rx, ry: obj.ry, strokeDashArray: obj.strokeDashArray });
+        break;
+      case 'circle':
+        fabricObj = new Circle({ left: obj.left, top: obj.top, radius: obj.radius, fill: obj.fill, stroke: obj.stroke, strokeWidth: obj.strokeWidth });
+        break;
+      case 'i-text':
+        fabricObj = new IText(obj.text || '', { left: obj.left, top: obj.top, fontSize: obj.fontSize, fontFamily: obj.fontFamily, fill: obj.fill, textAlign: obj.textAlign, fontWeight: obj.fontWeight, fontStyle: obj.fontStyle, charSpacing: obj.charSpacing });
+        break;
+      case 'line':
+        fabricObj = new Line([obj.x1, obj.y1, obj.x2, obj.y2], { stroke: obj.stroke, strokeWidth: obj.strokeWidth });
+        break;
+      case 'triangle':
+        fabricObj = new Triangle({ left: obj.left, top: obj.top, width: obj.width, height: obj.height, fill: obj.fill, stroke: obj.stroke, strokeWidth: obj.strokeWidth });
+        break;
+      case 'ellipse':
+        fabricObj = new Ellipse({ left: obj.left, top: obj.top, rx: obj.rx, ry: obj.ry, fill: obj.fill, stroke: obj.stroke, strokeWidth: obj.strokeWidth });
+        break;
+    }
+    if (fabricObj) fc.add(fabricObj);
+  };
+
   // Object properties
   const updateObjectProp = (prop: string, value: any) => {
     if (!selectedObject || !fabricRef.current) return;
