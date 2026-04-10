@@ -22,7 +22,7 @@ import {
   GripVertical, ShoppingCart, Printer, CopyPlus, Sparkles,
   ChevronLeft, ChevronRight, X, Grid3X3, Keyboard, FileText,
   ArrowLeft, Check, Pencil, Bold, Italic, AlignLeft, AlignCenter, AlignRight,
-  MousePointer2
+  MousePointer2, WrapText
 } from 'lucide-react';
 import { LABEL_SHAPES, getFormatsForShape, mmToPx, type LabelFormat } from '@/lib/label-formats';
 
@@ -494,6 +494,102 @@ const LabelEditor = () => {
     fc.add(text); fc.setActiveObject(text); fc.renderAll();
   };
 
+  const addCurvedText = () => {
+    const fc = fabricRef.current; if (!fc) return;
+    const canvasW = fc.getWidth() / (fc.getZoom() || 1);
+    const canvasH = fc.getHeight() / (fc.getZoom() || 1);
+    const minDim = Math.min(canvasW, canvasH);
+    const radius = minDim * 0.3;
+    const fontSize = Math.max(14, Math.round(minDim * 0.08));
+    const textStr = 'TEXTO EM ARCO';
+    const charAngle = 360 / (textStr.length * 2.5);
+    const startAngle = -90 - (textStr.length - 1) * charAngle / 2;
+    const centerX = canvasW / 2;
+    const centerY = canvasH / 2;
+
+    const groupObjects: FabricObject[] = [];
+    for (let i = 0; i < textStr.length; i++) {
+      const angleDeg = startAngle + i * charAngle;
+      const angleRad = (angleDeg * Math.PI) / 180;
+      const x = centerX + radius * Math.cos(angleRad);
+      const y = centerY + radius * Math.sin(angleRad);
+      const charText = new IText(textStr[i], {
+        left: x, top: y,
+        originX: 'center', originY: 'center',
+        fontSize, fontFamily: 'Montserrat', fill: '#333333',
+        angle: angleDeg + 90,
+        selectable: false, evented: false,
+      });
+      (charText as any).__isCurvedChar = true;
+      groupObjects.push(charText);
+    }
+
+    // Add a control circle (invisible, acts as group anchor)
+    const controlCircle = new Circle({
+      left: centerX, top: centerY,
+      originX: 'center', originY: 'center',
+      radius: radius,
+      fill: 'transparent', stroke: 'transparent',
+      strokeWidth: 0,
+      selectable: true, evented: true,
+    });
+    (controlCircle as any).__isCurvedTextController = true;
+    (controlCircle as any).__curvedText = textStr;
+    (controlCircle as any).__curvedRadius = radius;
+    (controlCircle as any).__curvedFontSize = fontSize;
+    (controlCircle as any).__curvedFontFamily = 'Montserrat';
+    (controlCircle as any).__curvedFill = '#333333';
+    (controlCircle as any).__curvedCharIds = groupObjects.map((_, idx) => idx);
+    (controlCircle as any).__layerName = 'Texto em Arco';
+
+    groupObjects.forEach(obj => fc.add(obj));
+    fc.add(controlCircle);
+    fc.setActiveObject(controlCircle);
+    fc.renderAll();
+    loadGoogleFont('Montserrat');
+    toast.success('Texto em arco adicionado! Selecione o círculo de controle para mover.');
+  };
+
+  const rebuildCurvedText = useCallback((controller: any) => {
+    const fc = fabricRef.current; if (!fc) return;
+    // Remove old curved chars
+    const allObjs = fc.getObjects();
+    const oldChars = allObjs.filter((o: any) => o.__isCurvedChar);
+    oldChars.forEach(o => fc.remove(o));
+
+    const textStr = controller.__curvedText || 'TEXTO';
+    const radius = controller.__curvedRadius || 100;
+    const fontSize = controller.__curvedFontSize || 16;
+    const fontFamily = controller.__curvedFontFamily || 'Montserrat';
+    const fill = controller.__curvedFill || '#333333';
+    const centerX = controller.left || 0;
+    const centerY = controller.top || 0;
+    const charAngle = 360 / (textStr.length * 2.5);
+    const startAngle = -90 - (textStr.length - 1) * charAngle / 2;
+
+    for (let i = 0; i < textStr.length; i++) {
+      const angleDeg = startAngle + i * charAngle;
+      const angleRad = (angleDeg * Math.PI) / 180;
+      const x = centerX + radius * Math.cos(angleRad);
+      const y = centerY + radius * Math.sin(angleRad);
+      const charText = new IText(textStr[i], {
+        left: x, top: y,
+        originX: 'center', originY: 'center',
+        fontSize, fontFamily, fill,
+        angle: angleDeg + 90,
+        selectable: false, evented: false,
+      });
+      (charText as any).__isCurvedChar = true;
+      fc.add(charText);
+    }
+
+    // Update controller radius
+    controller.set('radius', radius);
+    fc.renderAll();
+    markDirty();
+  }, [markDirty]);
+
+
   const addShape = (type: string) => {
     const fc = fabricRef.current; if (!fc) return;
     const centerX = fc.getWidth() / (2 * (zoom || 1));
@@ -955,7 +1051,7 @@ const LabelEditor = () => {
         </div>
 
         {/* ── MAIN AREA: Toolbar + Canvas + Properties ── */}
-        <div className="flex flex-1 min-h-0">
+        <div className="flex flex-1 min-h-0 relative">
 
           {/* ── VERTICAL TOOLBAR (Photoshop style) ── */}
           <div className="w-12 shrink-0 border-r bg-card flex flex-col items-center py-2 gap-1">
@@ -970,6 +1066,12 @@ const LabelEditor = () => {
                 <Type className="h-4 w-4" />
               </Button>
             </TooltipTrigger><TooltipContent side="right">Texto</TooltipContent></Tooltip>
+
+            <Tooltip><TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={addCurvedText}>
+                <WrapText className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger><TooltipContent side="right">Texto em Arco</TooltipContent></Tooltip>
 
             <Separator className="w-6 my-1" />
 
@@ -1020,9 +1122,13 @@ const LabelEditor = () => {
             </TooltipTrigger><TooltipContent side="right">Atalhos</TooltipContent></Tooltip>
           </div>
 
-          {/* ── LEFT PANEL (collapsible design/layers) ── */}
+          {/* ── LEFT PANEL (floating overlay on canvas) ── */}
           {showLeftPanel && (
-            <div className="w-52 lg:w-60 shrink-0 border-r bg-card overflow-hidden flex flex-col">
+            <div className="absolute left-12 top-0 bottom-0 z-30 w-56 lg:w-64 bg-card border-r shadow-xl flex flex-col" style={{ maxHeight: '100%' }}>
+              <div className="flex items-center justify-between px-3 py-2 border-b shrink-0">
+                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Painel</span>
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setShowLeftPanel(false)}><X className="h-3.5 w-3.5" /></Button>
+              </div>
               <Tabs defaultValue="design" className="flex flex-col flex-1 min-h-0">
                 <TabsList className="w-full grid grid-cols-2 mx-2 mt-2 shrink-0">
                   <TabsTrigger value="design" className="text-xs"><Palette className="h-3 w-3 mr-1" />Design</TabsTrigger>
@@ -1259,6 +1365,80 @@ const LabelEditor = () => {
                       <Input value={selectedObject.fill || ''} onChange={e => updateObjectProp('fill', e.target.value)} className="h-8 text-xs flex-1" />
                     </div>
                   </div>
+
+                  {/* Curved text controller properties */}
+                  {(selectedObject as any)?.__isCurvedTextController && (
+                    <>
+                      <div>
+                        <Label className="text-xs">Texto do arco</Label>
+                        <Input
+                          value={(selectedObject as any).__curvedText || ''}
+                          onChange={e => {
+                            const newText = e.target.value;
+                            (selectedObject as any).__curvedText = newText;
+                            rebuildCurvedText(selectedObject);
+                          }}
+                          className="h-8 text-xs mt-1"
+                          placeholder="Texto em arco"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Raio do arco</Label>
+                        <Input
+                          type="range" min={30} max={300} step={5}
+                          value={(selectedObject as any).__curvedRadius || 100}
+                          onChange={e => {
+                            (selectedObject as any).__curvedRadius = Number(e.target.value);
+                            rebuildCurvedText(selectedObject);
+                          }}
+                          className="h-8 mt-1"
+                        />
+                        <span className="text-[10px] text-muted-foreground">{(selectedObject as any).__curvedRadius || 100}px</span>
+                      </div>
+                      <div>
+                        <Label className="text-xs">Tamanho da fonte</Label>
+                        <Input
+                          type="number" min={8} max={72}
+                          value={(selectedObject as any).__curvedFontSize || 16}
+                          onChange={e => {
+                            (selectedObject as any).__curvedFontSize = Math.max(8, Number(e.target.value));
+                            rebuildCurvedText(selectedObject);
+                          }}
+                          className="h-8 text-xs mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Cor do texto</Label>
+                        <div className="flex gap-2 items-center mt-1">
+                          <input
+                            type="color"
+                            value={(selectedObject as any).__curvedFill || '#333333'}
+                            onChange={e => {
+                              (selectedObject as any).__curvedFill = e.target.value;
+                              rebuildCurvedText(selectedObject);
+                            }}
+                            className="h-8 w-8 rounded border cursor-pointer"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-xs">Fonte</Label>
+                        <Select
+                          value={(selectedObject as any).__curvedFontFamily || 'Montserrat'}
+                          onValueChange={v => {
+                            loadGoogleFont(v);
+                            (selectedObject as any).__curvedFontFamily = v;
+                            rebuildCurvedText(selectedObject);
+                          }}
+                        >
+                          <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {GOOGLE_FONTS.map(f => (<SelectItem key={f} value={f} style={{ fontFamily: f }}>{f}</SelectItem>))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </>
+                  )}
 
                   {selectedObject.type === 'i-text' && (
                     <>
