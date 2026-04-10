@@ -677,7 +677,7 @@ const LabelEditor = () => {
               <Button size="sm" variant="outline" onClick={handleSaveVersion}><FileText className="h-4 w-4 mr-1" />Versão</Button>
               <Button size="sm" variant="outline" onClick={() => setShowPrintPreview(true)}><Printer className="h-4 w-4 mr-1" />Prévia</Button>
               <Button size="sm" variant="outline" onClick={handleExportPDF}><Download className="h-4 w-4 mr-1" />PDF</Button>
-              <Button size="sm" variant="default" onClick={() => setShowAddToCart(true)} className="bg-green-600 hover:bg-green-700">
+              <Button size="sm" variant="default" onClick={() => setShowAddToCart(true)}>
                 <ShoppingCart className="h-4 w-4 mr-1" />Pedir
               </Button>
             </>
