@@ -632,11 +632,12 @@ const LabelEditor = () => {
   const cartUnitPrice = 0.15 + (selectedFinishing?.price || 0);
   const cartTotal = cartUnitPrice * cartQuantity;
 
-  const gridOverlayStyle = showGrid && currentProject ? {
+  const gridOverlayStyle = {
     backgroundImage: `linear-gradient(rgba(0,0,0,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.06) 1px, transparent 1px)`,
     backgroundSize: `${20 * zoom}px ${20 * zoom}px`,
     pointerEvents: 'none' as const,
-  } : {};
+    opacity: showGrid && currentProject ? 1 : 0,
+  };
 
   // ── Template color preview helper ──
   const getTemplateColors = (t: LabelTemplate): string[] => {
@@ -1120,7 +1121,7 @@ const LabelEditor = () => {
             {/* Canvas area */}
             <div className="flex-1 flex items-center justify-center bg-muted/10 p-4 overflow-auto" ref={containerRef}>
               <div className="relative border border-dashed border-muted-foreground/30 rounded-lg p-2 bg-white shadow-sm" id="canvas-wrapper">
-                {showGrid && <div className="absolute inset-2 rounded" style={gridOverlayStyle} />}
+                <div className="absolute inset-2 rounded" style={gridOverlayStyle} />
                 <div ref={canvasHostRef} />
               </div>
             </div>
