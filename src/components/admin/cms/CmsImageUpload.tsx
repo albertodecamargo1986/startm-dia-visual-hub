@@ -3,8 +3,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Upload, X, Loader2, ImageIcon } from 'lucide-react';
+import { Upload, X, Loader2, ImageIcon, FolderOpen } from 'lucide-react';
 import { toast } from 'sonner';
+import { MediaPickerDialog } from './MediaPickerDialog';
 
 interface CmsImageUploadProps {
   value: string;
@@ -15,26 +16,48 @@ interface CmsImageUploadProps {
   label?: string;
 }
 
-const BUCKET = 'banners'; // reuse public bucket
+const BUCKET = 'cms-media';
+const MAX_SIZE = 5 * 1024 * 1024;
+const ACCEPTED = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'];
 
 export const CmsImageUpload = ({ value, alt = '', onChange, onAltChange, showAlt = true, label = 'Imagem' }: CmsImageUploadProps) => {
   const [uploading, setUploading] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) { toast.error('Apenas imagens são permitidas'); return; }
-    if (file.size > 5 * 1024 * 1024) { toast.error('Imagem deve ter no máximo 5MB'); return; }
+    if (!ACCEPTED.includes(file.type)) { toast.error('Formato não suportado (jpg, png, webp, svg)'); return; }
+    if (file.size > MAX_SIZE) { toast.error('Imagem deve ter no máximo 5MB'); return; }
 
     setUploading(true);
     try {
       const ext = file.name.split('.').pop();
-      const path = `cms/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
       const { error } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: true });
       if (error) throw error;
       const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(path);
       onChange(urlData.publicUrl);
+
+      // Also register in cms_media
+      let width: number | null = null;
+      let height: number | null = null;
+      try {
+        const img = new Image();
+        await new Promise<void>((resolve, reject) => { img.onload = () => { width = img.naturalWidth; height = img.naturalHeight; resolve(); }; img.onerror = reject; img.src = urlData.publicUrl; });
+      } catch { /* ignore */ }
+
+      await supabase.from('cms_media').insert({
+        path,
+        url: urlData.publicUrl,
+        alt: file.name.replace(/\.[^.]+$/, ''),
+        width,
+        height,
+        size_bytes: file.size,
+        mime_type: file.type,
+      });
+
       toast.success('Imagem enviada!');
     } catch {
       toast.error('Erro ao enviar imagem');
@@ -42,6 +65,11 @@ export const CmsImageUpload = ({ value, alt = '', onChange, onAltChange, showAlt
       setUploading(false);
       if (inputRef.current) inputRef.current.value = '';
     }
+  };
+
+  const handlePickerSelect = (url: string, altText: string) => {
+    onChange(url);
+    if (onAltChange && altText) onAltChange(altText);
   };
 
   return (
@@ -61,9 +89,12 @@ export const CmsImageUpload = ({ value, alt = '', onChange, onAltChange, showAlt
           </div>
         )}
         <div className="flex-1 space-y-2">
-          <div className="flex gap-2">
+          <div className="flex gap-1">
             <Input placeholder="URL da imagem" value={value} onChange={e => onChange(e.target.value)} className="text-sm h-8" />
-            <Button type="button" variant="outline" size="sm" className="h-8 flex-shrink-0" onClick={() => inputRef.current?.click()} disabled={uploading}>
+            <Button type="button" variant="outline" size="sm" className="h-8 flex-shrink-0" onClick={() => setPickerOpen(true)} title="Selecionar da biblioteca">
+              <FolderOpen className="h-3 w-3" />
+            </Button>
+            <Button type="button" variant="outline" size="sm" className="h-8 flex-shrink-0" onClick={() => inputRef.current?.click()} disabled={uploading} title="Upload">
               {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
             </Button>
           </div>
@@ -72,7 +103,8 @@ export const CmsImageUpload = ({ value, alt = '', onChange, onAltChange, showAlt
           )}
         </div>
       </div>
-      <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
+      <input ref={inputRef} type="file" accept={ACCEPTED.join(',')} className="hidden" onChange={handleUpload} />
+      <MediaPickerDialog open={pickerOpen} onOpenChange={setPickerOpen} onSelect={handlePickerSelect} />
     </div>
   );
 };
