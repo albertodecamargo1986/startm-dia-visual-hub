@@ -77,8 +77,8 @@ const ClientProfile = () => {
 
     const { error } = await supabase.from('profiles').update({
       ...form,
-      default_address: address as any,
-    } as any).eq('id', profile.id);
+      default_address: address as unknown as Record<string, string>,
+    }).eq('id', profile.id);
 
     if (error) toast.error('Erro ao salvar.');
     else toast.success('Perfil atualizado!');
