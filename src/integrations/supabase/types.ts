@@ -504,6 +504,30 @@ export type Database = {
         }
         Relationships: []
       }
+      label_filter_preferences: {
+        Row: {
+          format_filters: Json | null
+          id: string
+          template_filters: Json | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          format_filters?: Json | null
+          id?: string
+          template_filters?: Json | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          format_filters?: Json | null
+          id?: string
+          template_filters?: Json | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       label_project_versions: {
         Row: {
           created_at: string
