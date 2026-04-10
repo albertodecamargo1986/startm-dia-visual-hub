@@ -281,7 +281,10 @@ const LabelEditor = () => {
   const [showGrid, setShowGrid] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showLeftPanel, setShowLeftPanel] = useState(true);
-  
+  const [activeTool, setActiveTool] = useState<string>('select');
+  const [drawingMode, setDrawingMode] = useState(false);
+  const [brushWidth, setBrushWidth] = useState(3);
+  const [brushColor, setBrushColor] = useState('#333333');
 
   // Undo/redo
   const [history, setHistory] = useState<string[]>([]);
