@@ -21,7 +21,8 @@ import {
   AlignStartHorizontal, AlignEndHorizontal, AlignStartVertical, AlignEndVertical,
   GripVertical, ShoppingCart, Printer, CopyPlus, Sparkles,
   ChevronLeft, ChevronRight, X, Grid3X3, Keyboard, FileText,
-  ArrowLeft, Check, Pencil, Bold, Italic, AlignLeft, AlignCenter, AlignRight
+  ArrowLeft, Check, Pencil, Bold, Italic, AlignLeft, AlignCenter, AlignRight,
+  MousePointer2
 } from 'lucide-react';
 import { LABEL_SHAPES, getFormatsForShape, mmToPx, type LabelFormat } from '@/lib/label-formats';
 
@@ -398,8 +399,8 @@ const LabelEditor = () => {
     if (cw <= 0 || ch <= 0) return;
     const canvasW = fc.getWidth(); const canvasH = fc.getHeight();
     if (canvasW <= 0 || canvasH <= 0) return;
-    // Limit to 80% of container so canvas doesn't fill the whole area
-    const scale = Math.min((cw * 0.8) / canvasW, (ch * 0.8) / canvasH, 1);
+    // Limit to 70% of container for breathing room (Photoshop style)
+    const scale = Math.min((cw * 0.7) / canvasW, (ch * 0.7) / canvasH, 1);
     if (!Number.isFinite(scale) || scale <= 0) return;
     setZoom(scale); fc.setZoom(scale);
     fc.setDimensions({ width: canvasW * scale, height: canvasH * scale }, { cssOnly: true });
@@ -917,14 +918,11 @@ const LabelEditor = () => {
           <PrintPreviewDialog open={showPrintPreview} onOpenChange={setShowPrintPreview} canvasRef={fabricRef} format={selectedFormat} />
 
         {/* ── TOP BAR ── */}
-        <div className="flex items-center gap-2 px-2 py-2 border-b bg-card rounded-t-lg flex-wrap">
-          {/* Back button */}
+        <div className="flex items-center gap-2 px-2 py-2 border-b bg-card flex-wrap shrink-0">
           <Button variant="ghost" size="sm" onClick={() => { setCurrentProject(null); setSelectedObject(null); setLayers([]); setWizardStep(0); setSelectedShape(''); setSelectedFormat(null); }} className="shrink-0">
             <ArrowLeft className="h-4 w-4 mr-1" />Voltar
           </Button>
           <Separator orientation="vertical" className="h-6" />
-
-          {/* Project name */}
           <Input
             value={projectName}
             onChange={e => setProjectName(e.target.value)}
@@ -934,41 +932,97 @@ const LabelEditor = () => {
           <Badge variant="secondary" className="text-xs shrink-0">
             {currentShapeLabel} • {currentSizeLabel}
           </Badge>
-
           <div className="flex-1" />
-
-          {/* Actions */}
           <div className="flex items-center gap-1">
             <Tooltip><TooltipTrigger asChild>
               <Button variant="ghost" size="sm" className="h-8 gap-1" onClick={handleSave}>
                 <Save className="h-4 w-4" /><span className="hidden lg:inline text-xs">Salvar rascunho</span>
               </Button>
             </TooltipTrigger><TooltipContent>Salvar rascunho (Ctrl+S)</TooltipContent></Tooltip>
-
             <Tooltip><TooltipTrigger asChild>
               <Button variant="ghost" size="sm" className="h-8 gap-1" onClick={handleSaveVersion}>
                 <FileText className="h-4 w-4" /><span className="hidden lg:inline text-xs">Salvar versão</span>
               </Button>
             </TooltipTrigger><TooltipContent>Salvar versão</TooltipContent></Tooltip>
-
             <Tooltip><TooltipTrigger asChild>
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowPrintPreview(true)}><Printer className="h-4 w-4" /></Button>
             </TooltipTrigger><TooltipContent>Prévia de impressão</TooltipContent></Tooltip>
-
-
             <Separator orientation="vertical" className="h-6 mx-1" />
-
             <Button size="sm" onClick={() => setShowAddToCart(true)} className="h-8">
               <ShoppingCart className="h-4 w-4 mr-1" />Pedir
             </Button>
           </div>
         </div>
 
-        {/* ── MAIN AREA ── */}
+        {/* ── MAIN AREA: Toolbar + Canvas + Properties ── */}
         <div className="flex flex-1 min-h-0">
-          {/* ── LEFT PANEL ── */}
+
+          {/* ── VERTICAL TOOLBAR (Photoshop style) ── */}
+          <div className="w-12 shrink-0 border-r bg-card flex flex-col items-center py-2 gap-1">
+            <Tooltip><TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => { fabricRef.current?.discardActiveObject(); fabricRef.current?.renderAll(); setSelectedObject(null); }}>
+                <MousePointer2 className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger><TooltipContent side="right">Seleção</TooltipContent></Tooltip>
+
+            <Tooltip><TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={addText}>
+                <Type className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger><TooltipContent side="right">Texto</TooltipContent></Tooltip>
+
+            <Separator className="w-6 my-1" />
+
+            <Tooltip><TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => addShape('rect')}>
+                <Square className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger><TooltipContent side="right">Retângulo</TooltipContent></Tooltip>
+
+            <Tooltip><TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => addShape('circle')}>
+                <CircleIcon className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger><TooltipContent side="right">Círculo</TooltipContent></Tooltip>
+
+            <Tooltip><TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => addShape('triangle')}>
+                <TriangleIcon className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger><TooltipContent side="right">Triângulo</TooltipContent></Tooltip>
+
+            <Tooltip><TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => addShape('line')}>
+                <Minus className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger><TooltipContent side="right">Linha</TooltipContent></Tooltip>
+
+            <Separator className="w-6 my-1" />
+
+            <Tooltip><TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => imageInputRef.current?.click()}>
+                <ImageIcon className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger><TooltipContent side="right">Imagem</TooltipContent></Tooltip>
+
+            <Separator className="w-6 my-1" />
+
+            <Tooltip><TooltipTrigger asChild>
+              <Button variant={showLeftPanel ? 'secondary' : 'ghost'} size="icon" className="h-9 w-9" onClick={() => setShowLeftPanel(!showLeftPanel)}>
+                <Palette className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger><TooltipContent side="right">Templates & Camadas</TooltipContent></Tooltip>
+
+            <Tooltip><TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setShowShortcuts(true)}>
+                <Keyboard className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger><TooltipContent side="right">Atalhos</TooltipContent></Tooltip>
+          </div>
+
+          {/* ── LEFT PANEL (collapsible design/layers) ── */}
           {showLeftPanel && (
-            <div className="w-56 lg:w-64 shrink-0 border-r bg-card overflow-hidden flex flex-col">
+            <div className="w-52 lg:w-60 shrink-0 border-r bg-card overflow-hidden flex flex-col">
               <Tabs defaultValue="design" className="flex flex-col flex-1 min-h-0">
                 <TabsList className="w-full grid grid-cols-2 mx-2 mt-2 shrink-0">
                   <TabsTrigger value="design" className="text-xs"><Palette className="h-3 w-3 mr-1" />Design</TabsTrigger>
@@ -978,36 +1032,6 @@ const LabelEditor = () => {
                 <TabsContent value="design" className="flex-1 min-h-0 mt-0">
                   <ScrollArea className="h-full">
                     <div className="p-3 space-y-4">
-                      {/* Quick add */}
-                      <div>
-                        <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Adicionar</p>
-                        <div className="grid grid-cols-2 gap-1.5">
-                          <Button variant="outline" size="sm" className="h-10 text-xs justify-start" onClick={addText}>
-                            <Type className="h-4 w-4 mr-1.5" />Texto
-                          </Button>
-                          <Button variant="outline" size="sm" className="h-10 text-xs justify-start" onClick={() => imageInputRef.current?.click()}>
-                            <ImageIcon className="h-4 w-4 mr-1.5" />Imagem
-                          </Button>
-                        </div>
-                        <div className="flex gap-1 mt-1.5">
-                          {[
-                            { type: 'rect', icon: <Square className="h-4 w-4" />, label: 'Ret.' },
-                            { type: 'circle', icon: <CircleIcon className="h-4 w-4" />, label: 'Círc.' },
-                            { type: 'triangle', icon: <TriangleIcon className="h-4 w-4" />, label: 'Tri.' },
-                            { type: 'line', icon: <Minus className="h-4 w-4" />, label: 'Linha' },
-                            { type: 'ellipse', icon: <CircleIcon className="h-3.5 w-3.5" />, label: 'Elip.' },
-                          ].map(s => (
-                            <Tooltip key={s.type}><TooltipTrigger asChild>
-                              <Button variant="outline" size="icon" className="h-8 w-8 flex-1" onClick={() => addShape(s.type)}>
-                                {s.icon}
-                              </Button>
-                            </TooltipTrigger><TooltipContent>{s.label}</TooltipContent></Tooltip>
-                          ))}
-                        </div>
-                      </div>
-
-                      <Separator />
-
                       {/* Background */}
                       <div>
                         <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Fundo</p>
@@ -1041,7 +1065,6 @@ const LabelEditor = () => {
                                         onClick={() => applyTemplate(t)}
                                         className="flex flex-col items-center gap-1 p-2 rounded-lg border hover:border-primary/50 hover:bg-muted/50 transition-all text-left"
                                       >
-                                        {/* Color preview */}
                                         <div className="w-full h-8 rounded flex gap-0.5 overflow-hidden">
                                           {colors.map((c, i) => (
                                             <div key={i} className="flex-1 rounded-sm" style={{ backgroundColor: c }} />
@@ -1086,10 +1109,6 @@ const LabelEditor = () => {
                           })}
                         </div>
                       </div>
-
-                      <Separator />
-
-                      {/* Design actions removed — available in top bar */}
                     </div>
                   </ScrollArea>
                 </TabsContent>
@@ -1144,206 +1163,218 @@ const LabelEditor = () => {
             </div>
           )}
 
-          {/* ── CENTER: CANVAS ── */}
+          {/* ── CENTER: CANVAS WORKSPACE ── */}
           <div className="flex-1 min-w-0 flex flex-col">
-            {/* Simplified toolbar */}
-            <div className="flex items-center justify-center gap-1 py-1.5 px-2 border-b bg-muted/30">
-              <Tooltip><TooltipTrigger asChild>
-                <Button variant={showLeftPanel ? 'secondary' : 'ghost'} size="icon" className="h-8 w-8" onClick={() => setShowLeftPanel(!showLeftPanel)}>
-                  <Palette className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger><TooltipContent>Painel de design</TooltipContent></Tooltip>
-
-              <Separator orientation="vertical" className="h-5 mx-1" />
-
-              <Tooltip><TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={undo}><Undo2 className="h-4 w-4" /></Button>
-              </TooltipTrigger><TooltipContent>Desfazer (Ctrl+Z)</TooltipContent></Tooltip>
-
-              <Tooltip><TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={redo}><Redo2 className="h-4 w-4" /></Button>
-              </TooltipTrigger><TooltipContent>Refazer (Ctrl+Y)</TooltipContent></Tooltip>
-
-              <Separator orientation="vertical" className="h-5 mx-1" />
-
-              <Tooltip><TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={zoomOut}><ZoomOut className="h-4 w-4" /></Button>
-              </TooltipTrigger><TooltipContent>Zoom -</TooltipContent></Tooltip>
-              <span className="text-xs text-muted-foreground w-10 text-center">{Math.round(zoom * 100)}%</span>
-              <Tooltip><TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={zoomIn}><ZoomIn className="h-4 w-4" /></Button>
-              </TooltipTrigger><TooltipContent>Zoom +</TooltipContent></Tooltip>
-
-              <Separator orientation="vertical" className="h-5 mx-1" />
-
-              <Tooltip><TooltipTrigger asChild>
-                <Button variant={showGrid ? 'secondary' : 'ghost'} size="icon" className="h-8 w-8" onClick={() => setShowGrid(!showGrid)}>
-                  <Grid3X3 className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger><TooltipContent>Grid (Ctrl+G)</TooltipContent></Tooltip>
-
-              <Tooltip><TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={deleteSelected}><Trash2 className="h-4 w-4" /></Button>
-              </TooltipTrigger><TooltipContent>Excluir (Delete)</TooltipContent></Tooltip>
-            </div>
-
-            {/* Canvas area — neutral worktable background, label centered */}
-            <div className="flex-1 flex items-center justify-center bg-muted/30 overflow-auto" ref={containerRef}>
-              <div className="relative bg-white shadow-lg rounded" id="canvas-wrapper" style={{ margin: 'auto' }}>
-                <div className="absolute inset-0 rounded" style={gridOverlayStyle} />
+            {/* Canvas area — dark worktable background (Photoshop style) */}
+            <div className="flex-1 flex items-center justify-center overflow-auto" ref={containerRef} style={{ backgroundColor: '#3a3a3a' }}>
+              <div className="relative shadow-2xl" id="canvas-wrapper" style={{ margin: 'auto' }}>
+                <div className="absolute inset-0" style={gridOverlayStyle} />
                 <div ref={canvasHostRef} />
               </div>
             </div>
 
-            {/* Status bar */}
-            <div className="flex items-center justify-between px-3 py-1 border-t bg-muted/20 text-xs text-muted-foreground">
+            {/* ── STATUS BAR (bottom) ── */}
+            <div className="flex items-center justify-between px-3 py-1.5 border-t bg-card text-xs text-muted-foreground shrink-0">
+              <div className="flex items-center gap-1">
+                <Tooltip><TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={undo} disabled={historyIdx <= 0}>
+                    <Undo2 className="h-3.5 w-3.5" />
+                  </Button>
+                </TooltipTrigger><TooltipContent>Desfazer (Ctrl+Z)</TooltipContent></Tooltip>
+                <Tooltip><TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={redo} disabled={historyIdx >= history.length - 1}>
+                    <Redo2 className="h-3.5 w-3.5" />
+                  </Button>
+                </TooltipTrigger><TooltipContent>Refazer (Ctrl+Y)</TooltipContent></Tooltip>
+
+                <Separator orientation="vertical" className="h-4 mx-1" />
+
+                <Tooltip><TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={zoomOut}><ZoomOut className="h-3.5 w-3.5" /></Button>
+                </TooltipTrigger><TooltipContent>Zoom -</TooltipContent></Tooltip>
+                <span className="w-10 text-center font-mono">{Math.round(zoom * 100)}%</span>
+                <Tooltip><TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={zoomIn}><ZoomIn className="h-3.5 w-3.5" /></Button>
+                </TooltipTrigger><TooltipContent>Zoom +</TooltipContent></Tooltip>
+
+                <Separator orientation="vertical" className="h-4 mx-1" />
+
+                <Tooltip><TooltipTrigger asChild>
+                  <Button variant={snapEnabled ? 'secondary' : 'ghost'} size="icon" className="h-7 w-7" onClick={() => setSnapEnabled(!snapEnabled)}>
+                    <span className="text-[10px] font-bold">S</span>
+                  </Button>
+                </TooltipTrigger><TooltipContent>Snap {snapEnabled ? 'ON' : 'OFF'}</TooltipContent></Tooltip>
+
+                <Tooltip><TooltipTrigger asChild>
+                  <Button variant={showGrid ? 'secondary' : 'ghost'} size="icon" className="h-7 w-7" onClick={() => setShowGrid(!showGrid)}>
+                    <Grid3X3 className="h-3.5 w-3.5" />
+                  </Button>
+                </TooltipTrigger><TooltipContent>Grid (Ctrl+G)</TooltipContent></Tooltip>
+              </div>
+
               <div className="flex items-center gap-3">
                 <span>{currentShapeLabel} — {currentSizeLabel}</span>
                 <span>{layers.length} elementos</span>
-                {snapEnabled && <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-primary" />Snap</span>}
-              </div>
-              <div className="flex items-center gap-2">
-                <label className="flex items-center gap-1 cursor-pointer">
-                  <Switch checked={snapEnabled} onCheckedChange={setSnapEnabled} className="scale-75" />
-                  <span>Snap</span>
-                </label>
               </div>
             </div>
           </div>
 
-          {/* ── RIGHT PANEL: Properties (contextual) ── */}
-          {selectedObject && (
-            <div className="w-56 lg:w-60 shrink-0 border-l bg-card overflow-auto">
-              <div className="p-3 space-y-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Propriedades</p>
-                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { fabricRef.current?.discardActiveObject(); fabricRef.current?.renderAll(); setSelectedObject(null); }}>
-                    <X className="h-3 w-3" />
-                  </Button>
-                </div>
+          {/* ── RIGHT PANEL: Properties (always visible, contextual) ── */}
+          <div className="w-56 lg:w-60 shrink-0 border-l bg-card overflow-auto">
+            <div className="p-3 space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {selectedObject ? 'Propriedades' : 'Canvas'}
+              </p>
 
-                <div>
-                  <Label className="text-xs">Cor</Label>
-                  <div className="flex gap-2 items-center mt-1">
-                    <input type="color" value={selectedObject.fill || '#000000'} onChange={e => updateObjectProp('fill', e.target.value)} className="h-8 w-8 rounded border cursor-pointer" />
-                    <Input value={selectedObject.fill || ''} onChange={e => updateObjectProp('fill', e.target.value)} className="h-8 text-xs flex-1" />
+              {/* ── When NO object selected: show canvas properties ── */}
+              {!selectedObject && (
+                <>
+                  <div>
+                    <Label className="text-xs">Cor de fundo</Label>
+                    <div className="flex gap-2 items-center mt-1">
+                      <input type="color" value={bgColor} onChange={e => handleBgColorChange(e.target.value)} className="h-8 w-8 rounded border cursor-pointer" />
+                      <Input value={bgColor} onChange={e => handleBgColorChange(e.target.value)} className="h-8 text-xs flex-1" />
+                    </div>
                   </div>
-                </div>
-
-                {selectedObject.type === 'i-text' && (
-                  <>
-                    <div>
-                      <Label className="text-xs">Fonte</Label>
-                      <Select value={selectedObject.fontFamily || 'Arial'} onValueChange={v => { loadGoogleFont(v); updateObjectProp('fontFamily', v); }}>
-                        <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {GOOGLE_FONTS.map(f => (<SelectItem key={f} value={f} style={{ fontFamily: f }}>{f}</SelectItem>))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label className="text-xs">Tamanho</Label>
-                      <div className="flex items-center gap-1 mt-1">
-                        <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => updateObjectProp('fontSize', Math.max(6, (selectedObject.fontSize || 24) - 1))}>
-                          <Minus className="h-3 w-3" />
-                        </Button>
-                        <Input type="number" value={selectedObject.fontSize || 24} onChange={e => updateObjectProp('fontSize', Math.max(6, Number(e.target.value)))} className="h-8 text-xs text-center flex-1" min={6} />
-                        <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => updateObjectProp('fontSize', (selectedObject.fontSize || 24) + 1)}>
-                          <Plus className="h-3 w-3" />
-                        </Button>
-                      </div>
-                      <div className="flex gap-1 mt-1.5 flex-wrap">
-                        {[12, 16, 20, 24, 32, 48].map(sz => (
-                          <Button key={sz} variant={(selectedObject.fontSize || 24) === sz ? 'default' : 'outline'} size="sm"
-                            className="h-6 px-2 text-[10px]" onClick={() => updateObjectProp('fontSize', sz)}>{sz}</Button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Bold / Italic */}
-                    <div>
-                      <Label className="text-xs">Estilo</Label>
-                      <div className="flex gap-1 mt-1">
-                        <Button variant={selectedObject.fontWeight === 'bold' ? 'default' : 'outline'} size="icon" className="h-8 w-8"
-                          onClick={() => updateObjectProp('fontWeight', selectedObject.fontWeight === 'bold' ? 'normal' : 'bold')}>
-                          <Bold className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button variant={selectedObject.fontStyle === 'italic' ? 'default' : 'outline'} size="icon" className="h-8 w-8"
-                          onClick={() => updateObjectProp('fontStyle', selectedObject.fontStyle === 'italic' ? 'normal' : 'italic')}>
-                          <Italic className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Text Align */}
-                    <div>
-                      <Label className="text-xs">Alinhamento do texto</Label>
-                      <div className="flex gap-1 mt-1">
-                        <Button variant={(selectedObject.textAlign || 'left') === 'left' ? 'default' : 'outline'} size="icon" className="h-8 w-8"
-                          onClick={() => updateObjectProp('textAlign', 'left')}><AlignLeft className="h-3.5 w-3.5" /></Button>
-                        <Button variant={selectedObject.textAlign === 'center' ? 'default' : 'outline'} size="icon" className="h-8 w-8"
-                          onClick={() => updateObjectProp('textAlign', 'center')}><AlignCenter className="h-3.5 w-3.5" /></Button>
-                        <Button variant={selectedObject.textAlign === 'right' ? 'default' : 'outline'} size="icon" className="h-8 w-8"
-                          onClick={() => updateObjectProp('textAlign', 'right')}><AlignRight className="h-3.5 w-3.5" /></Button>
-                      </div>
-                    </div>
-
-                    {/* Char Spacing */}
-                    <div>
-                      <Label className="text-xs">Espaçamento entre letras</Label>
-                      <Input type="range" min={-200} max={800} step={10} value={selectedObject.charSpacing || 0}
-                        onChange={e => updateObjectProp('charSpacing', Number(e.target.value))} className="h-8 mt-1" />
-                      <span className="text-[10px] text-muted-foreground">{selectedObject.charSpacing || 0}</span>
-                    </div>
-
-                    {/* Line Height */}
-                    <div>
-                      <Label className="text-xs">Altura da linha</Label>
-                      <Input type="range" min={0.5} max={3} step={0.1} value={selectedObject.lineHeight || 1.16}
-                        onChange={e => updateObjectProp('lineHeight', Number(e.target.value))} className="h-8 mt-1" />
-                      <span className="text-[10px] text-muted-foreground">{(selectedObject.lineHeight || 1.16).toFixed(1)}</span>
-                    </div>
-                  </>
-                )}
-
-                <div>
-                  <Label className="text-xs">Contorno</Label>
-                  <div className="flex gap-2 items-center mt-1">
-                    <input type="color" value={selectedObject.stroke || '#000000'} onChange={e => updateObjectProp('stroke', e.target.value)} className="h-8 w-8 rounded border cursor-pointer" />
-                    <Input type="number" value={selectedObject.strokeWidth || 0} min={0} onChange={e => updateObjectProp('strokeWidth', Number(e.target.value))} className="h-8 text-xs flex-1" placeholder="Esp." />
+                  <Separator />
+                  <div>
+                    <Label className="text-xs">Formato</Label>
+                    <p className="text-sm mt-1">{currentShapeLabel}</p>
+                    <p className="text-xs text-muted-foreground">{currentSizeLabel}</p>
                   </div>
-                </div>
+                  <Separator />
+                  <div>
+                    <Label className="text-xs">Camadas: {layers.length}</Label>
+                  </div>
+                </>
+              )}
 
-                <div>
-                  <Label className="text-xs">Opacidade</Label>
-                  <Input type="range" min={0} max={1} step={0.05} value={selectedObject.opacity ?? 1} onChange={e => updateObjectProp('opacity', Number(e.target.value))} className="h-8" />
-                </div>
+              {/* ── When object selected: show object properties ── */}
+              {selectedObject && (
+                <>
+                  <div>
+                    <Label className="text-xs">Cor</Label>
+                    <div className="flex gap-2 items-center mt-1">
+                      <input type="color" value={selectedObject.fill || '#000000'} onChange={e => updateObjectProp('fill', e.target.value)} className="h-8 w-8 rounded border cursor-pointer" />
+                      <Input value={selectedObject.fill || ''} onChange={e => updateObjectProp('fill', e.target.value)} className="h-8 text-xs flex-1" />
+                    </div>
+                  </div>
 
-                <Separator />
+                  {selectedObject.type === 'i-text' && (
+                    <>
+                      <div>
+                        <Label className="text-xs">Fonte</Label>
+                        <Select value={selectedObject.fontFamily || 'Arial'} onValueChange={v => { loadGoogleFont(v); updateObjectProp('fontFamily', v); }}>
+                          <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {GOOGLE_FONTS.map(f => (<SelectItem key={f} value={f} style={{ fontFamily: f }}>{f}</SelectItem>))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-xs">Tamanho</Label>
+                        <div className="flex items-center gap-1 mt-1">
+                          <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => updateObjectProp('fontSize', Math.max(6, (selectedObject.fontSize || 24) - 1))}>
+                            <Minus className="h-3 w-3" />
+                          </Button>
+                          <Input type="number" value={selectedObject.fontSize || 24} onChange={e => updateObjectProp('fontSize', Math.max(6, Number(e.target.value)))} className="h-8 text-xs text-center flex-1" min={6} />
+                          <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => updateObjectProp('fontSize', (selectedObject.fontSize || 24) + 1)}>
+                            <Plus className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        <div className="flex gap-1 mt-1.5 flex-wrap">
+                          {[12, 16, 20, 24, 32, 48].map(sz => (
+                            <Button key={sz} variant={(selectedObject.fontSize || 24) === sz ? 'default' : 'outline'} size="sm"
+                              className="h-6 px-2 text-[10px]" onClick={() => updateObjectProp('fontSize', sz)}>{sz}</Button>
+                          ))}
+                        </div>
+                      </div>
 
-                <div>
-                  <Label className="text-xs mb-1 block">Alinhar</Label>
+                      {/* Bold / Italic */}
+                      <div>
+                        <Label className="text-xs">Estilo</Label>
+                        <div className="flex gap-1 mt-1">
+                          <Button variant={selectedObject.fontWeight === 'bold' ? 'default' : 'outline'} size="icon" className="h-8 w-8"
+                            onClick={() => updateObjectProp('fontWeight', selectedObject.fontWeight === 'bold' ? 'normal' : 'bold')}>
+                            <Bold className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button variant={selectedObject.fontStyle === 'italic' ? 'default' : 'outline'} size="icon" className="h-8 w-8"
+                            onClick={() => updateObjectProp('fontStyle', selectedObject.fontStyle === 'italic' ? 'normal' : 'italic')}>
+                            <Italic className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Text Align */}
+                      <div>
+                        <Label className="text-xs">Alinhamento do texto</Label>
+                        <div className="flex gap-1 mt-1">
+                          <Button variant={(selectedObject.textAlign || 'left') === 'left' ? 'default' : 'outline'} size="icon" className="h-8 w-8"
+                            onClick={() => updateObjectProp('textAlign', 'left')}><AlignLeft className="h-3.5 w-3.5" /></Button>
+                          <Button variant={selectedObject.textAlign === 'center' ? 'default' : 'outline'} size="icon" className="h-8 w-8"
+                            onClick={() => updateObjectProp('textAlign', 'center')}><AlignCenter className="h-3.5 w-3.5" /></Button>
+                          <Button variant={selectedObject.textAlign === 'right' ? 'default' : 'outline'} size="icon" className="h-8 w-8"
+                            onClick={() => updateObjectProp('textAlign', 'right')}><AlignRight className="h-3.5 w-3.5" /></Button>
+                        </div>
+                      </div>
+
+                      {/* Char Spacing */}
+                      <div>
+                        <Label className="text-xs">Espaçamento entre letras</Label>
+                        <Input type="range" min={-200} max={800} step={10} value={selectedObject.charSpacing || 0}
+                          onChange={e => updateObjectProp('charSpacing', Number(e.target.value))} className="h-8 mt-1" />
+                        <span className="text-[10px] text-muted-foreground">{selectedObject.charSpacing || 0}</span>
+                      </div>
+
+                      {/* Line Height */}
+                      <div>
+                        <Label className="text-xs">Altura da linha</Label>
+                        <Input type="range" min={0.5} max={3} step={0.1} value={selectedObject.lineHeight || 1.16}
+                          onChange={e => updateObjectProp('lineHeight', Number(e.target.value))} className="h-8 mt-1" />
+                        <span className="text-[10px] text-muted-foreground">{(selectedObject.lineHeight || 1.16).toFixed(1)}</span>
+                      </div>
+                    </>
+                  )}
+
+                  <div>
+                    <Label className="text-xs">Contorno</Label>
+                    <div className="flex gap-2 items-center mt-1">
+                      <input type="color" value={selectedObject.stroke || '#000000'} onChange={e => updateObjectProp('stroke', e.target.value)} className="h-8 w-8 rounded border cursor-pointer" />
+                      <Input type="number" value={selectedObject.strokeWidth || 0} min={0} onChange={e => updateObjectProp('strokeWidth', Number(e.target.value))} className="h-8 text-xs flex-1" placeholder="Esp." />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label className="text-xs">Opacidade</Label>
+                    <Input type="range" min={0} max={1} step={0.05} value={selectedObject.opacity ?? 1} onChange={e => updateObjectProp('opacity', Number(e.target.value))} className="h-8" />
+                  </div>
+
+                  <Separator />
+
+                  <div>
+                    <Label className="text-xs mb-1 block">Alinhar no canvas</Label>
+                    <div className="flex gap-1 flex-wrap">
+                      <Tooltip><TooltipTrigger asChild><Button variant="outline" size="icon" className="h-7 w-7" onClick={() => alignObject('left')}><AlignStartHorizontal className="h-3 w-3" /></Button></TooltipTrigger><TooltipContent>Esquerda</TooltipContent></Tooltip>
+                      <Tooltip><TooltipTrigger asChild><Button variant="outline" size="icon" className="h-7 w-7" onClick={() => alignObject('center-h')}><AlignHorizontalJustifyCenter className="h-3 w-3" /></Button></TooltipTrigger><TooltipContent>Centro H</TooltipContent></Tooltip>
+                      <Tooltip><TooltipTrigger asChild><Button variant="outline" size="icon" className="h-7 w-7" onClick={() => alignObject('right')}><AlignEndHorizontal className="h-3 w-3" /></Button></TooltipTrigger><TooltipContent>Direita</TooltipContent></Tooltip>
+                      <Tooltip><TooltipTrigger asChild><Button variant="outline" size="icon" className="h-7 w-7" onClick={() => alignObject('top')}><AlignStartVertical className="h-3 w-3" /></Button></TooltipTrigger><TooltipContent>Topo</TooltipContent></Tooltip>
+                      <Tooltip><TooltipTrigger asChild><Button variant="outline" size="icon" className="h-7 w-7" onClick={() => alignObject('center-v')}><AlignVerticalJustifyCenter className="h-3 w-3" /></Button></TooltipTrigger><TooltipContent>Centro V</TooltipContent></Tooltip>
+                      <Tooltip><TooltipTrigger asChild><Button variant="outline" size="icon" className="h-7 w-7" onClick={() => alignObject('bottom')}><AlignEndVertical className="h-3 w-3" /></Button></TooltipTrigger><TooltipContent>Fundo</TooltipContent></Tooltip>
+                    </div>
+                  </div>
+
+                  <Separator />
+
                   <div className="flex gap-1 flex-wrap">
-                    <Tooltip><TooltipTrigger asChild><Button variant="outline" size="icon" className="h-7 w-7" onClick={() => alignObject('left')}><AlignStartHorizontal className="h-3 w-3" /></Button></TooltipTrigger><TooltipContent>Esquerda</TooltipContent></Tooltip>
-                    <Tooltip><TooltipTrigger asChild><Button variant="outline" size="icon" className="h-7 w-7" onClick={() => alignObject('center-h')}><AlignHorizontalJustifyCenter className="h-3 w-3" /></Button></TooltipTrigger><TooltipContent>Centro H</TooltipContent></Tooltip>
-                    <Tooltip><TooltipTrigger asChild><Button variant="outline" size="icon" className="h-7 w-7" onClick={() => alignObject('right')}><AlignEndHorizontal className="h-3 w-3" /></Button></TooltipTrigger><TooltipContent>Direita</TooltipContent></Tooltip>
-                    <Tooltip><TooltipTrigger asChild><Button variant="outline" size="icon" className="h-7 w-7" onClick={() => alignObject('top')}><AlignStartVertical className="h-3 w-3" /></Button></TooltipTrigger><TooltipContent>Topo</TooltipContent></Tooltip>
-                    <Tooltip><TooltipTrigger asChild><Button variant="outline" size="icon" className="h-7 w-7" onClick={() => alignObject('center-v')}><AlignVerticalJustifyCenter className="h-3 w-3" /></Button></TooltipTrigger><TooltipContent>Centro V</TooltipContent></Tooltip>
-                    <Tooltip><TooltipTrigger asChild><Button variant="outline" size="icon" className="h-7 w-7" onClick={() => alignObject('bottom')}><AlignEndVertical className="h-3 w-3" /></Button></TooltipTrigger><TooltipContent>Fundo</TooltipContent></Tooltip>
+                    <Tooltip><TooltipTrigger asChild><Button variant="outline" size="icon" className="h-8 w-8" onClick={bringForward}><ArrowUp className="h-3 w-3" /></Button></TooltipTrigger><TooltipContent>Para frente</TooltipContent></Tooltip>
+                    <Tooltip><TooltipTrigger asChild><Button variant="outline" size="icon" className="h-8 w-8" onClick={sendBackward}><ArrowDown className="h-3 w-3" /></Button></TooltipTrigger><TooltipContent>Para trás</TooltipContent></Tooltip>
+                    <Tooltip><TooltipTrigger asChild><Button variant="outline" size="icon" className="h-8 w-8" onClick={duplicateObj}><Copy className="h-3 w-3" /></Button></TooltipTrigger><TooltipContent>Duplicar</TooltipContent></Tooltip>
+                    <Tooltip><TooltipTrigger asChild><Button variant="outline" size="icon" className="h-8 w-8" onClick={deleteSelected}><Trash2 className="h-3 w-3" /></Button></TooltipTrigger><TooltipContent>Excluir</TooltipContent></Tooltip>
                   </div>
-                </div>
-
-                <Separator />
-
-                <div className="flex gap-1 flex-wrap">
-                  <Tooltip><TooltipTrigger asChild><Button variant="outline" size="icon" className="h-8 w-8" onClick={bringForward}><ArrowUp className="h-3 w-3" /></Button></TooltipTrigger><TooltipContent>Para frente</TooltipContent></Tooltip>
-                  <Tooltip><TooltipTrigger asChild><Button variant="outline" size="icon" className="h-8 w-8" onClick={sendBackward}><ArrowDown className="h-3 w-3" /></Button></TooltipTrigger><TooltipContent>Para trás</TooltipContent></Tooltip>
-                  <Tooltip><TooltipTrigger asChild><Button variant="outline" size="icon" className="h-8 w-8" onClick={duplicateObj}><Copy className="h-3 w-3" /></Button></TooltipTrigger><TooltipContent>Duplicar</TooltipContent></Tooltip>
-                  <Tooltip><TooltipTrigger asChild><Button variant="outline" size="icon" className="h-8 w-8" onClick={deleteSelected}><Trash2 className="h-3 w-3" /></Button></TooltipTrigger><TooltipContent>Excluir</TooltipContent></Tooltip>
-                </div>
-              </div>
+                </>
+              )}
             </div>
-          )}
+          </div>
         </div>
 
         {/* ── DIALOGS ── */}
