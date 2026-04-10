@@ -1,54 +1,62 @@
 
 
-# Sitemap Dinâmico e Canonical por Rota
+# Otimização da Home — Componentização + Performance
+
+## Situação Atual
+
+O `Index.tsx` tem 535 linhas com 7 seções já definidas como componentes internos (`HeroBanner`, `CategoriesSection`, `FeaturedProducts`, `DifferentialsSection`, `PortfolioPreviewSection`, `TestimonialsSection`, `CTASection`). As queries estão inline nos componentes. Não há lazy loading.
 
 ## Plano
 
-### 1. Edge Function `generate-sitemap`
+### 1. Extrair seções para arquivos individuais
 
-Criar `supabase/functions/generate-sitemap/index.ts` que:
-- Consulta `products` (ativos) e `categories` (ativas) no banco
-- Gera XML do sitemap com todas as rotas públicas:
-  - `/` (priority 1.0)
-  - `/produtos` (0.9)
-  - `/produtos/{categorySlug}` para cada categoria (0.8)
-  - `/produto/{productSlug}` para cada produto (0.7)
-  - `/sobre`, `/portfolio`, `/contato`, `/privacidade` (0.6-0.7)
-- Exclui rotas privadas (admin, cliente, checkout, login)
-- Retorna `Content-Type: application/xml`
-- Sem autenticação (público)
+Mover cada componente para `src/components/home/`:
 
-### 2. Atualizar `robots.txt`
+| Componente | Arquivo |
+|---|---|
+| `HeroBanner` | `src/components/home/HeroBanner.tsx` |
+| `CategoriesSection` | `src/components/home/CategoriesSection.tsx` |
+| `FeaturedProducts` | `src/components/home/FeaturedProducts.tsx` |
+| `DifferentialsSection` | `src/components/home/DifferentialsSection.tsx` |
+| `PortfolioPreviewSection` | `src/components/home/PortfolioPreviewSection.tsx` |
+| `TestimonialsSection` | `src/components/home/TestimonialsSection.tsx` |
+| `CTASection` | `src/components/home/CTASection.tsx` |
 
-Mudar a linha do Sitemap para apontar para a Edge Function:
-```
-Sitemap: https://wzdxseimfqarknttabbu.supabase.co/functions/v1/generate-sitemap
-```
+### 2. Extrair queries para hooks reutilizáveis
 
-### 3. Canonical nas Páginas Dinâmicas
+Criar `src/hooks/use-home-data.ts` com hooks:
+- `useBanners()` — query de banners ativos
+- `useCategories()` — query de categorias ativas
+- `useFeaturedProducts()` — query de produtos em destaque
 
-Adicionar `<link rel="canonical">` via `react-helmet-async` em:
-- `ProductDetail.tsx` → `https://startmidialimeira.com.br/produto/{slug}`
-- `Shop.tsx` → `https://startmidialimeira.com.br/produtos` ou `.../produtos/{categorySlug}`
-- Páginas estáticas (Index, About, Portfolio, Contact) → canonical fixo
+Esses hooks podem ser reutilizados em outras páginas (Shop, admin, etc.).
 
-Atualizar o componente `SEO.tsx` para sempre renderizar o canonical quando fornecido (já suporta a prop).
+### 3. Lazy loading para seções abaixo do fold
 
-### 4. Remover `public/sitemap.xml` Estático
+Usar `React.lazy` + `Suspense` para carregar sob demanda:
+- **Eager (above fold):** `HeroBanner`, `CategoriesSection`
+- **Lazy:** `FeaturedProducts`, `DifferentialsSection`, `PortfolioPreviewSection`, `TestimonialsSection`, `CTASection`
 
-O arquivo estático será substituído pela edge function dinâmica.
+### 4. Otimizações de imagens
+
+- Confirmar `loading="lazy"` em todas as `<img>` (já presente em FeaturedProducts)
+- Adicionar `loading="lazy"` nas imagens do hero banner (exceto o primeiro slide)
+- Adicionar `decoding="async"` nas imagens de produto
+
+### 5. Index.tsx final
+
+Ficará com ~40 linhas: imports, Helmet/SEO, e composição dos componentes com Suspense.
 
 ## Arquivos
 
 | Arquivo | Alteração |
 |---|---|
-| `supabase/functions/generate-sitemap/index.ts` | Nova edge function |
-| `public/robots.txt` | Atualizar URL do sitemap |
-| `public/sitemap.xml` | Remover |
-| `src/pages/ProductDetail.tsx` | Adicionar canonical |
-| `src/pages/Shop.tsx` | Adicionar canonical |
-| `src/pages/Index.tsx` | Adicionar canonical |
-| `src/pages/About.tsx` | Adicionar canonical |
-| `src/pages/Portfolio.tsx` | Adicionar canonical |
-| `src/pages/Contact.tsx` | Adicionar canonical |
+| `src/components/home/*.tsx` (7 arquivos) | Novos — seções extraídas |
+| `src/hooks/use-home-data.ts` | Novo — hooks de query |
+| `src/pages/Index.tsx` | Refatorado — composição com lazy loading |
+
+## Critérios
+- Layout visual idêntico ao atual
+- Index.tsx enxuto e legível
+- Seções abaixo do fold carregam sob demanda
 
