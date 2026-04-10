@@ -223,7 +223,9 @@ export const LogoUploadManager = ({ currentUrls, onSaved }: LogoUploadManagerPro
                 <div
                   className="rounded border border-border flex items-center justify-center p-2"
                   style={{
-                    background: v.key.includes('footer') ? '#1a1a2e' : '#f5f5f5',
+                    background: v.key.includes('footer')
+                      ? '#1a1a2e'
+                      : 'repeating-conic-gradient(#d4d4d4 0% 25%, #fff 0% 50%) 0 0 / 16px 16px',
                     minHeight: 60,
                   }}
                 >
