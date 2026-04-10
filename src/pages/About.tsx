@@ -34,6 +34,7 @@ const About = () => {
       <Helmet>
         <title>Sobre a StartMídia | Gráfica em Limeira/SP</title>
         <meta name="description" content="Conheça a StartMídia, empresa de comunicação visual em Limeira/SP. Especialistas em banners, adesivos, placas, fachadas e muito mais." />
+        <link rel="canonical" href="https://startmidialimeira.com.br/sobre" />
       </Helmet>
 
       <div className="container py-12 space-y-20">

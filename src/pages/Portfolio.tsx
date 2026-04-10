@@ -53,6 +53,7 @@ const Portfolio = () => {
       <Helmet>
         <title>Portfólio StartMídia — Trabalhos de Comunicação Visual em Limeira/SP</title>
         <meta name="description" content="Veja nossos trabalhos de comunicação visual: fachadas, banners, adesivos, envelopamento veicular e muito mais. Gráfica em Limeira/SP." />
+        <link rel="canonical" href="https://startmidialimeira.com.br/portfolio" />
       </Helmet>
 
       <div className="container py-12">
