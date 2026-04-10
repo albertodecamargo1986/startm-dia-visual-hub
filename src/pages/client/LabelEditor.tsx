@@ -1173,21 +1173,24 @@ const LabelEditor = () => {
 
               <Separator orientation="vertical" className="h-5 mx-1" />
 
-              <Tooltip><TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={addText}><Type className="h-4 w-4" /></Button>
-              </TooltipTrigger><TooltipContent>Texto</TooltipContent></Tooltip>
+              <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs" onClick={addText}>
+                <Type className="h-4 w-4" />
+                <span className="hidden lg:inline">Texto</span>
+              </Button>
 
-              <Tooltip><TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => addShape('rect')}><Square className="h-4 w-4" /></Button>
-              </TooltipTrigger><TooltipContent>Retângulo</TooltipContent></Tooltip>
+              <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs" onClick={() => addShape('rect')}>
+                <Square className="h-4 w-4" />
+                <span className="hidden lg:inline">Forma</span>
+              </Button>
 
-              <Tooltip><TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => addShape('circle')}><CircleIcon className="h-4 w-4" /></Button>
-              </TooltipTrigger><TooltipContent>Círculo</TooltipContent></Tooltip>
+              <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs" onClick={() => addShape('circle')}>
+                <CircleIcon className="h-4 w-4" />
+              </Button>
 
-              <Tooltip><TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => imageInputRef.current?.click()}><ImageIcon className="h-4 w-4" /></Button>
-              </TooltipTrigger><TooltipContent>Imagem</TooltipContent></Tooltip>
+              <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs" onClick={() => imageInputRef.current?.click()}>
+                <ImageIcon className="h-4 w-4" />
+                <span className="hidden lg:inline">Imagem</span>
+              </Button>
 
               <Separator orientation="vertical" className="h-5 mx-1" />
 
