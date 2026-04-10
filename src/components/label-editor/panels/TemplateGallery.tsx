@@ -16,13 +16,15 @@ export function TemplateGallery({ onSelectTemplate, widthMm, heightMm, templates
   const widthPx = mmToPx(widthMm);
   const heightPx = mmToPx(heightMm);
 
-  const allTemplates = templates ?? LABEL_TEMPLATES;
+  const displayTemplates = templates ?? LABEL_TEMPLATES;
   const thumbnails = useTemplateThumbnails(LABEL_TEMPLATES, widthPx, heightPx);
 
+  return (
+    <div className="flex flex-col h-full">
       {/* Grid */}
       <div className="flex-1 overflow-y-auto px-2 pb-2">
         <div className="grid grid-cols-2 gap-2">
-          {filtered.map((tpl) => (
+          {displayTemplates.map((tpl) => (
             <button
               key={tpl.id}
               onClick={() => onSelectTemplate(tpl)}
@@ -49,7 +51,7 @@ export function TemplateGallery({ onSelectTemplate, widthMm, heightMm, templates
               )}
 
               {tpl.premium && (
-                <span className="absolute top-1 right-1 bg-yellow-500 text-black
+                <span className="absolute top-1 right-1 bg-primary text-primary-foreground
                                 text-[9px] font-bold px-1.5 py-0.5 rounded-full">
                   PRO
                 </span>
@@ -69,7 +71,7 @@ export function TemplateGallery({ onSelectTemplate, widthMm, heightMm, templates
           ))}
         </div>
 
-        {filtered.length === 0 && (
+        {displayTemplates.length === 0 && (
           <div className="text-center py-8">
             <span className="text-2xl block mb-2">🎨</span>
             <span className="text-xs text-muted-foreground">Nenhum template encontrado</span>
