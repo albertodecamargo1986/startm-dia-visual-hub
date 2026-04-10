@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { cmsApi } from '@/lib/cms-api';
+import { BLOCK_TYPES, defaultBlockData, validateBlock } from '@/lib/cms-block-schemas';
+import { BlockEditor } from '@/components/admin/cms/BlockEditor';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -10,20 +12,10 @@ import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Save, Globe, Eye, History, Loader2, Plus, Trash2, GripVertical, ChevronUp, ChevronDown } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { ArrowLeft, Save, Globe, Eye, History, Loader2, Plus, Trash2, Copy, GripVertical, ChevronUp, ChevronDown, ChevronRight, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import type { Json } from '@/integrations/supabase/types';
-
-const SECTION_TYPES = [
-  { value: 'hero', label: 'Hero Banner' },
-  { value: 'rich_text', label: 'Texto Rico' },
-  { value: 'cards', label: 'Cards' },
-  { value: 'gallery', label: 'Galeria' },
-  { value: 'faq', label: 'FAQ' },
-  { value: 'cta', label: 'Call to Action' },
-];
 
 interface Section {
   id?: string;
@@ -32,25 +24,17 @@ interface Section {
   sort_order: number;
   enabled: boolean;
   data: Record<string, unknown>;
+  _open?: boolean;
 }
-
-const defaultData: Record<string, Record<string, unknown>> = {
-  hero: { title: '', subtitle: '', image_url: '', button_text: '', button_url: '' },
-  rich_text: { content: '' },
-  cards: { items: [{ title: '', description: '', image_url: '' }] },
-  gallery: { images: [{ url: '', alt: '' }] },
-  faq: { items: [{ question: '', answer: '' }] },
-  cta: { title: '', description: '', button_text: '', button_url: '', bg_color: '' },
-};
 
 const CmsPageEditor = () => {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const qc = useQueryClient();
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [page, setPage] = useState({ title: '', slug: '', seo_title: '', seo_description: '', is_home: false, status: 'draft' });
   const [sections, setSections] = useState<Section[]>([]);
+  const [errors, setErrors] = useState<Record<number, string[]>>({});
 
   const { data: pageData, isLoading } = useQuery({
     queryKey: ['cms-page', id],
@@ -94,24 +78,36 @@ const CmsPageEditor = () => {
         sort_order: s.sort_order,
         enabled: s.enabled,
         data: (s.data as Record<string, unknown>) || {},
+        _open: true,
       })));
     }
   }, [sectionsData]);
 
+  const validateAll = useCallback((): boolean => {
+    const errs: Record<number, string[]> = {};
+    let valid = true;
+    sections.forEach((s, i) => {
+      const result = validateBlock(s.type, s.data);
+      if (!result.valid) { errs[i] = result.errors; valid = false; }
+    });
+    setErrors(errs);
+    return valid;
+  }, [sections]);
+
+  const buildPayload = () => sections.map((s, i) => ({
+    ...(s.id ? { id: s.id } : {}),
+    type: s.type,
+    name: s.name,
+    sort_order: i,
+    enabled: s.enabled,
+    data: s.data,
+  }));
+
   const handleSave = useCallback(async () => {
+    if (!validateAll()) { toast.error('Corrija os erros de validação antes de salvar'); return; }
     setSaving(true);
     try {
-      const res = await cmsApi.saveDraft(
-        { id, ...page },
-        sections.map((s, i) => ({
-          ...(s.id ? { id: s.id } : {}),
-          type: s.type,
-          name: s.name,
-          sort_order: i,
-          enabled: s.enabled,
-          data: s.data,
-        }))
-      );
+      const res = await cmsApi.saveDraft({ id, ...page }, buildPayload());
       if (res.success) {
         toast.success('Rascunho salvo!');
         qc.invalidateQueries({ queryKey: ['cms-page', id] });
@@ -124,35 +120,55 @@ const CmsPageEditor = () => {
     } finally {
       setSaving(false);
     }
-  }, [id, page, sections, qc]);
+  }, [id, page, sections, qc, validateAll]);
 
   const handlePublish = async () => {
+    if (!validateAll()) { toast.error('Corrija os erros antes de publicar'); return; }
     setPublishing(true);
-    await handleSave();
-    const res = await cmsApi.publish(id!);
-    if (res.success) {
-      toast.success('Página publicada!');
-      setPage(p => ({ ...p, status: 'published' }));
-      qc.invalidateQueries({ queryKey: ['cms-page', id] });
-    } else {
-      toast.error(res.error || 'Erro ao publicar');
+    try {
+      // save first
+      const saveRes = await cmsApi.saveDraft({ id, ...page }, buildPayload());
+      if (!saveRes.success) { toast.error(saveRes.error || 'Erro ao salvar'); return; }
+      const res = await cmsApi.publish(id!);
+      if (res.success) {
+        toast.success('Página publicada!');
+        setPage(p => ({ ...p, status: 'published' }));
+        qc.invalidateQueries({ queryKey: ['cms-page', id] });
+      } else {
+        toast.error(res.error || 'Erro ao publicar');
+      }
+    } finally {
+      setPublishing(false);
     }
-    setPublishing(false);
   };
 
   const addSection = (type: string) => {
+    const label = BLOCK_TYPES.find(t => t.value === type)?.label || type;
     setSections(prev => [...prev, {
       type,
-      name: SECTION_TYPES.find(t => t.value === type)?.label || type,
+      name: label,
       sort_order: prev.length,
       enabled: true,
-      data: { ...(defaultData[type] || {}) },
+      data: structuredClone(defaultBlockData[type] || {}),
+      _open: true,
     }]);
   };
 
-  const removeSection = (idx: number) => {
-    setSections(prev => prev.filter((_, i) => i !== idx));
+  const cloneSection = (idx: number) => {
+    const src = sections[idx];
+    setSections(prev => {
+      const copy = [...prev];
+      copy.splice(idx + 1, 0, {
+        ...structuredClone(src),
+        id: undefined,
+        name: `${src.name} (cópia)`,
+        _open: true,
+      });
+      return copy;
+    });
   };
+
+  const removeSection = (idx: number) => setSections(prev => prev.filter((_, i) => i !== idx));
 
   const moveSection = (idx: number, dir: -1 | 1) => {
     const target = idx + dir;
@@ -166,16 +182,18 @@ const CmsPageEditor = () => {
 
   const updateSectionData = (idx: number, key: string, value: unknown) => {
     setSections(prev => prev.map((s, i) => i === idx ? { ...s, data: { ...s.data, [key]: value } } : s));
+    // Clear errors for this section on edit
+    if (errors[idx]) setErrors(prev => { const c = { ...prev }; delete c[idx]; return c; });
   };
 
-  const toggleSection = (idx: number) => {
-    setSections(prev => prev.map((s, i) => i === idx ? { ...s, enabled: !s.enabled } : s));
-  };
+  const toggleSection = (idx: number) => setSections(prev => prev.map((s, i) => i === idx ? { ...s, enabled: !s.enabled } : s));
+  const toggleOpen = (idx: number) => setSections(prev => prev.map((s, i) => i === idx ? { ...s, _open: !s._open } : s));
 
   if (isLoading) return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
 
   return (
     <div>
+      {/* Header */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" asChild><Link to="/admin/cms"><ArrowLeft className="h-4 w-4" /></Link></Button>
@@ -202,16 +220,14 @@ const CmsPageEditor = () => {
 
       <Tabs defaultValue="content">
         <TabsList className="mb-4">
-          <TabsTrigger value="content">Conteúdo</TabsTrigger>
+          <TabsTrigger value="content">Conteúdo ({sections.length} blocos)</TabsTrigger>
           <TabsTrigger value="settings">Configurações</TabsTrigger>
         </TabsList>
 
+        {/* Settings Tab */}
         <TabsContent value="settings">
           <Card className="p-6 border-border max-w-2xl space-y-4">
-            <div>
-              <Label>Título</Label>
-              <Input value={page.title} onChange={e => setPage(p => ({ ...p, title: e.target.value }))} />
-            </div>
+            <div><Label>Título</Label><Input value={page.title} onChange={e => setPage(p => ({ ...p, title: e.target.value }))} /></div>
             <div>
               <Label>Slug</Label>
               <div className="flex items-center gap-1">
@@ -219,14 +235,8 @@ const CmsPageEditor = () => {
                 <Input value={page.slug} onChange={e => setPage(p => ({ ...p, slug: e.target.value }))} />
               </div>
             </div>
-            <div>
-              <Label>SEO Title</Label>
-              <Input value={page.seo_title} onChange={e => setPage(p => ({ ...p, seo_title: e.target.value }))} />
-            </div>
-            <div>
-              <Label>SEO Description</Label>
-              <Textarea value={page.seo_description} onChange={e => setPage(p => ({ ...p, seo_description: e.target.value }))} rows={2} />
-            </div>
+            <div><Label>SEO Title</Label><Input value={page.seo_title} onChange={e => setPage(p => ({ ...p, seo_title: e.target.value }))} /></div>
+            <div><Label>SEO Description</Label><Textarea value={page.seo_description} onChange={e => setPage(p => ({ ...p, seo_description: e.target.value }))} rows={2} /></div>
             <div className="flex items-center gap-2">
               <Switch checked={page.is_home} onCheckedChange={v => setPage(p => ({ ...p, is_home: v }))} />
               <Label>Página inicial (Home)</Label>
@@ -234,38 +244,61 @@ const CmsPageEditor = () => {
           </Card>
         </TabsContent>
 
+        {/* Content Tab */}
         <TabsContent value="content">
-          <div className="space-y-4">
-            {sections.map((section, idx) => (
-              <Card key={section.id || idx} className={`p-4 border-border ${!section.enabled ? 'opacity-50' : ''}`}>
-                <div className="flex items-center gap-2 mb-3">
-                  <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
-                  <Badge variant="outline" className="text-xs">{SECTION_TYPES.find(t => t.value === section.type)?.label || section.type}</Badge>
-                  <Input value={section.name} onChange={e => setSections(prev => prev.map((s, i) => i === idx ? { ...s, name: e.target.value } : s))} className="h-7 text-sm max-w-48" placeholder="Nome da seção" />
-                  <div className="ml-auto flex items-center gap-1">
-                    <Switch checked={section.enabled} onCheckedChange={() => toggleSection(idx)} />
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveSection(idx, -1)} disabled={idx === 0}>
-                      <ChevronUp className="h-3 w-3" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveSection(idx, 1)} disabled={idx === sections.length - 1}>
-                      <ChevronDown className="h-3 w-3" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => removeSection(idx)}>
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
+          <div className="space-y-3">
+            {sections.map((section, idx) => {
+              const blockMeta = BLOCK_TYPES.find(t => t.value === section.type);
+              const sectionErrors = errors[idx];
+
+              return (
+                <Card key={section.id || `new-${idx}`} className={`border-border ${!section.enabled ? 'opacity-50' : ''} ${sectionErrors ? 'border-destructive' : ''}`}>
+                  {/* Section header - always visible */}
+                  <div className="flex items-center gap-2 p-3 cursor-pointer" onClick={() => toggleOpen(idx)}>
+                    <GripVertical className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${section._open ? 'rotate-90' : ''}`} />
+                    <span className="text-sm">{blockMeta?.icon}</span>
+                    <Badge variant="outline" className="text-xs">{blockMeta?.label || section.type}</Badge>
+                    <span className="text-sm font-medium truncate">{section.name}</span>
+                    {sectionErrors && <AlertCircle className="h-4 w-4 text-destructive flex-shrink-0" />}
+
+                    <div className="ml-auto flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                      <Switch checked={section.enabled} onCheckedChange={() => toggleSection(idx)} />
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveSection(idx, -1)} disabled={idx === 0}><ChevronUp className="h-3 w-3" /></Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveSection(idx, 1)} disabled={idx === sections.length - 1}><ChevronDown className="h-3 w-3" /></Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => cloneSection(idx)}><Copy className="h-3 w-3" /></Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => removeSection(idx)}><Trash2 className="h-3 w-3" /></Button>
+                    </div>
                   </div>
-                </div>
 
-                <SectionEditor section={section} idx={idx} updateData={updateSectionData} />
-              </Card>
-            ))}
+                  {/* Section body - collapsible */}
+                  {section._open && (
+                    <div className="px-4 pb-4 pt-1 border-t border-border">
+                      <div className="mb-3">
+                        <Label className="text-xs">Nome interno</Label>
+                        <Input value={section.name} onChange={e => setSections(prev => prev.map((s, i) => i === idx ? { ...s, name: e.target.value } : s))} className="h-7 text-sm max-w-64" />
+                      </div>
 
+                      {sectionErrors && (
+                        <div className="mb-3 p-2 rounded bg-destructive/10 text-destructive text-xs space-y-1">
+                          {sectionErrors.map((err, i) => <p key={i}>• {err}</p>)}
+                        </div>
+                      )}
+
+                      <BlockEditor type={section.type} data={section.data} onUpdate={(key, value) => updateSectionData(idx, key, value)} />
+                    </div>
+                  )}
+                </Card>
+              );
+            })}
+
+            {/* Add block */}
             <Card className="p-4 border-dashed border-border">
-              <p className="text-sm text-muted-foreground mb-2">Adicionar seção:</p>
+              <p className="text-sm text-muted-foreground mb-3">Adicionar bloco:</p>
               <div className="flex flex-wrap gap-2">
-                {SECTION_TYPES.map(t => (
+                {BLOCK_TYPES.map(t => (
                   <Button key={t.value} variant="outline" size="sm" onClick={() => addSection(t.value)}>
-                    <Plus className="mr-1 h-3 w-3" />{t.label}
+                    <span className="mr-1">{t.icon}</span>{t.label}
                   </Button>
                 ))}
               </div>
@@ -275,107 +308,6 @@ const CmsPageEditor = () => {
       </Tabs>
     </div>
   );
-};
-
-// Section-type-specific editors
-const SectionEditor = ({ section, idx, updateData }: { section: Section; idx: number; updateData: (idx: number, key: string, value: unknown) => void }) => {
-  const d = section.data;
-
-  switch (section.type) {
-    case 'hero':
-      return (
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div><Label className="text-xs">Título</Label><Input value={(d.title as string) || ''} onChange={e => updateData(idx, 'title', e.target.value)} /></div>
-          <div><Label className="text-xs">Subtítulo</Label><Input value={(d.subtitle as string) || ''} onChange={e => updateData(idx, 'subtitle', e.target.value)} /></div>
-          <div><Label className="text-xs">URL da Imagem</Label><Input value={(d.image_url as string) || ''} onChange={e => updateData(idx, 'image_url', e.target.value)} /></div>
-          <div><Label className="text-xs">Texto do Botão</Label><Input value={(d.button_text as string) || ''} onChange={e => updateData(idx, 'button_text', e.target.value)} /></div>
-          <div><Label className="text-xs">URL do Botão</Label><Input value={(d.button_url as string) || ''} onChange={e => updateData(idx, 'button_url', e.target.value)} /></div>
-        </div>
-      );
-
-    case 'rich_text':
-      return (
-        <div>
-          <Label className="text-xs">Conteúdo (Markdown/HTML)</Label>
-          <Textarea value={(d.content as string) || ''} onChange={e => updateData(idx, 'content', e.target.value)} rows={8} className="font-mono text-sm" />
-        </div>
-      );
-
-    case 'cta':
-      return (
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div><Label className="text-xs">Título</Label><Input value={(d.title as string) || ''} onChange={e => updateData(idx, 'title', e.target.value)} /></div>
-          <div><Label className="text-xs">Descrição</Label><Input value={(d.description as string) || ''} onChange={e => updateData(idx, 'description', e.target.value)} /></div>
-          <div><Label className="text-xs">Texto do Botão</Label><Input value={(d.button_text as string) || ''} onChange={e => updateData(idx, 'button_text', e.target.value)} /></div>
-          <div><Label className="text-xs">URL do Botão</Label><Input value={(d.button_url as string) || ''} onChange={e => updateData(idx, 'button_url', e.target.value)} /></div>
-        </div>
-      );
-
-    case 'faq': {
-      const items = (Array.isArray(d.items) ? d.items : []) as { question: string; answer: string }[];
-      const updateItems = (newItems: { question: string; answer: string }[]) => updateData(idx, 'items', newItems);
-      return (
-        <div className="space-y-3">
-          {items.map((item, i) => (
-            <div key={i} className="grid gap-2 sm:grid-cols-2 p-3 rounded bg-muted/30">
-              <div><Label className="text-xs">Pergunta</Label><Input value={item.question} onChange={e => { const c = [...items]; c[i] = { ...c[i], question: e.target.value }; updateItems(c); }} /></div>
-              <div className="flex gap-2 items-end">
-                <div className="flex-1"><Label className="text-xs">Resposta</Label><Input value={item.answer} onChange={e => { const c = [...items]; c[i] = { ...c[i], answer: e.target.value }; updateItems(c); }} /></div>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => updateItems(items.filter((_, j) => j !== i))}><Trash2 className="h-3 w-3" /></Button>
-              </div>
-            </div>
-          ))}
-          <Button variant="outline" size="sm" onClick={() => updateItems([...items, { question: '', answer: '' }])}>
-            <Plus className="mr-1 h-3 w-3" />Pergunta
-          </Button>
-        </div>
-      );
-    }
-
-    case 'cards': {
-      const items = (Array.isArray(d.items) ? d.items : []) as { title: string; description: string; image_url: string }[];
-      const updateItems = (newItems: typeof items) => updateData(idx, 'items', newItems);
-      return (
-        <div className="space-y-3">
-          {items.map((item, i) => (
-            <div key={i} className="grid gap-2 sm:grid-cols-3 p-3 rounded bg-muted/30">
-              <div><Label className="text-xs">Título</Label><Input value={item.title} onChange={e => { const c = [...items]; c[i] = { ...c[i], title: e.target.value }; updateItems(c); }} /></div>
-              <div><Label className="text-xs">Descrição</Label><Input value={item.description} onChange={e => { const c = [...items]; c[i] = { ...c[i], description: e.target.value }; updateItems(c); }} /></div>
-              <div className="flex gap-2 items-end">
-                <div className="flex-1"><Label className="text-xs">Imagem URL</Label><Input value={item.image_url} onChange={e => { const c = [...items]; c[i] = { ...c[i], image_url: e.target.value }; updateItems(c); }} /></div>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => updateItems(items.filter((_, j) => j !== i))}><Trash2 className="h-3 w-3" /></Button>
-              </div>
-            </div>
-          ))}
-          <Button variant="outline" size="sm" onClick={() => updateItems([...items, { title: '', description: '', image_url: '' }])}>
-            <Plus className="mr-1 h-3 w-3" />Card
-          </Button>
-        </div>
-      );
-    }
-
-    case 'gallery': {
-      const images = (Array.isArray(d.images) ? d.images : []) as { url: string; alt: string }[];
-      const updateImages = (newImages: typeof images) => updateData(idx, 'images', newImages);
-      return (
-        <div className="space-y-3">
-          {images.map((img, i) => (
-            <div key={i} className="flex gap-2 items-end p-3 rounded bg-muted/30">
-              <div className="flex-1"><Label className="text-xs">URL</Label><Input value={img.url} onChange={e => { const c = [...images]; c[i] = { ...c[i], url: e.target.value }; updateImages(c); }} /></div>
-              <div className="flex-1"><Label className="text-xs">Alt</Label><Input value={img.alt} onChange={e => { const c = [...images]; c[i] = { ...c[i], alt: e.target.value }; updateImages(c); }} /></div>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => updateImages(images.filter((_, j) => j !== i))}><Trash2 className="h-3 w-3" /></Button>
-            </div>
-          ))}
-          <Button variant="outline" size="sm" onClick={() => updateImages([...images, { url: '', alt: '' }])}>
-            <Plus className="mr-1 h-3 w-3" />Imagem
-          </Button>
-        </div>
-      );
-    }
-
-    default:
-      return <p className="text-sm text-muted-foreground">Editor não disponível para tipo "{section.type}".</p>;
-  }
 };
 
 export default CmsPageEditor;
