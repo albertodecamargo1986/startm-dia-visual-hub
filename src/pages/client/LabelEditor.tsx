@@ -1733,6 +1733,20 @@ const LabelEditor = () => {
                     <Input type="range" min={0} max={1} step={0.05} value={selectedObject.opacity ?? 1} onChange={e => updateObjectProp('opacity', Number(e.target.value))} className="h-8" />
                   </div>
 
+                  {/* Lock aspect ratio */}
+                  {(selectedObject.type === 'image' || selectedObject.type === 'rect' || selectedObject.type === 'path') && (
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs">Manter proporção</Label>
+                      <Switch
+                        checked={selectedObject.lockUniScaling !== true}
+                        onCheckedChange={checked => {
+                          selectedObject.set('lockUniScaling', !checked);
+                          fabricRef.current?.renderAll();
+                        }}
+                      />
+                    </div>
+                  )}
+
                   <Separator />
 
                   <div>
