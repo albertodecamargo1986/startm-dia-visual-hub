@@ -70,33 +70,15 @@ const LabelLeftPanel = ({
 
             <Separator />
 
-            {/* Templates */}
+            {/* Templates Gallery */}
             <div>
               <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Templates</p>
-              <div className="space-y-2">
-                {TEMPLATE_CATEGORIES.map(cat => {
-                  const templates = getTemplatesByCategory(cat.id);
-                  if (templates.length === 0) return null;
-                  return (
-                    <div key={cat.id}>
-                      <p className="text-xs text-muted-foreground mb-1">{cat.emoji} {cat.label}</p>
-                      <div className="grid grid-cols-2 gap-1.5">
-                        {templates.map(t => {
-                          const colors = getTemplateColors(t);
-                          return (
-                            <button key={t.id} onClick={() => onApplyTemplate(t)}
-                              className="flex flex-col items-center gap-1 p-2 rounded-lg border hover:border-primary/50 hover:bg-muted/50 transition-all text-left">
-                              <div className="w-full h-8 rounded flex gap-0.5 overflow-hidden">
-                                {colors.map((c, i) => (<div key={i} className="flex-1 rounded-sm" style={{ backgroundColor: c }} />))}
-                              </div>
-                              <span className="text-[11px] font-medium truncate w-full">{t.name}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
+              <div className="h-[400px]">
+                <TemplateGallery
+                  onSelectTemplate={onApplyTemplate}
+                  widthMm={widthMm}
+                  heightMm={heightMm}
+                />
               </div>
             </div>
 
