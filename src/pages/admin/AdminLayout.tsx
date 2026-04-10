@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
-import { LayoutDashboard, Package, ShoppingBag, Layers, Image, Users, FileText, Settings, Menu, ExternalLink, Palette, FileEdit, Paintbrush, BarChart3, Shield } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingBag, Layers, Image, Users, FileText, Settings, Menu, ExternalLink, Palette, FileEdit, Paintbrush, BarChart3, Shield, Newspaper } from 'lucide-react';
 import { useState } from 'react';
 
 const adminLinks = [
@@ -18,6 +18,7 @@ const adminLinks = [
   { to: '/admin/portfolio', label: 'Portfólio', icon: Palette },
   { to: '/admin/arquivos', label: 'Arquivos', icon: FileText },
   { to: '/admin/paginas', label: 'Páginas', icon: FileEdit },
+  { to: '/admin/cms', label: 'CMS', icon: Newspaper },
   { to: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
   { to: '/admin/operacional', label: 'Operacional', icon: Shield },
   { to: '/admin/aparencia', label: 'Aparência', icon: Paintbrush },
@@ -34,6 +35,9 @@ const breadcrumbMap: Record<string, string> = {
   portfolio: 'Portfólio',
   arquivos: 'Arquivos',
   paginas: 'Páginas',
+  cms: 'CMS',
+  nova: 'Nova Página',
+  revisoes: 'Revisões',
   analytics: 'Analytics',
   operacional: 'Operacional',
   aparencia: 'Aparência',
