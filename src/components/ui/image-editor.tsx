@@ -88,11 +88,11 @@ export const ImageEditor = ({ open, onOpenChange, imageSrc, onApply, onUseOrigin
 
     canvas.toBlob((blob) => {
       if (blob) {
-        const file = new File([blob], 'edited-image.jpg', { type: 'image/jpeg' });
+        const file = new File([blob], 'edited-image.png', { type: 'image/png' });
         onApply(file);
         onOpenChange(false);
       }
-    }, 'image/jpeg', 0.92);
+    }, 'image/png');
   }, [completedCrop, cssFilter, onApply, onOpenChange]);
 
   return (
