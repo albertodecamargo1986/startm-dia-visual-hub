@@ -30,3 +30,15 @@
 - A infraestrutura de email (Lovable Emails) precisa ser configurada com um domínio verificado
 - Enquanto isso, as notificações são enfileiradas mas o envio falhará (com retry)
 - Assim que o domínio estiver verificado e `send-transactional-email` estiver disponível, os emails começam automaticamente
+
+---
+
+# Limpeza de Arquivos Órfãos no Storage — ✅ Concluído
+
+## Implementado
+- Tabela `cleanup_reports` para relatórios auditáveis
+- Edge Function `cleanup-orphan-files` com modos dry_run e apply
+- Verifica buckets `customer-files` e `artwork-files`
+- Identifica arquivos sem referência ou de pedidos cancelados há mais de X dias
+- Cron job semanal (domingos 3h) em modo dry_run
+- Relatório salvo na tabela para consulta admin
