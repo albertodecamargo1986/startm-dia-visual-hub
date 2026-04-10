@@ -19,7 +19,7 @@ import {
   AlignHorizontalJustifyCenter, AlignVerticalJustifyCenter,
   AlignStartHorizontal, AlignEndHorizontal, AlignStartVertical, AlignEndVertical,
   GripVertical, Pencil, ShoppingCart, Printer, CopyPlus, Sparkles,
-  ChevronRight, ChevronLeft, X
+  ChevronRight, ChevronLeft, X, Grid3X3, Keyboard
 } from 'lucide-react';
 import { LABEL_SHAPES, getFormatsForShape, mmToPx, type LabelFormat } from '@/lib/label-formats';
 import { exportLabelPDF } from '@/lib/label-pdf-export';
@@ -30,6 +30,8 @@ import {
   type LabelTemplate, type DecorativeElement
 } from '@/lib/label-templates';
 import { useCart } from '@/contexts/CartContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
@@ -67,6 +69,15 @@ const FINISHING_OPTIONS = [
   { id: 'matte', label: 'Fosco', price: 0.02 },
   { id: 'transparent', label: 'Transparente', price: 0.05 },
   { id: 'kraft', label: 'Kraft (papel pardo)', price: 0.03 },
+];
+
+const KEYBOARD_SHORTCUTS = [
+  { keys: 'Ctrl+Z', action: 'Desfazer' },
+  { keys: 'Ctrl+Y', action: 'Refazer' },
+  { keys: 'Ctrl+S', action: 'Salvar' },
+  { keys: 'Ctrl+D', action: 'Duplicar objeto' },
+  { keys: 'Delete', action: 'Excluir seleção' },
+  { keys: 'Ctrl+G', action: 'Alternar grid' },
 ];
 
 // --- Onboarding Component ---
@@ -191,6 +202,88 @@ const PrintPreviewDialog = ({ open, onOpenChange, canvasRef, format }: {
   );
 };
 
+// --- Thumbnail generation utility ---
+async function generateAndUploadThumbnail(
+  fc: FabricCanvas,
+  projectId: string,
+  userId: string,
+  format: LabelFormat
+): Promise<string | null> {
+  try {
+    const origZoom = fc.getZoom();
+    fc.setZoom(1);
+    fc.renderAll();
+    const el = fc.toCanvasElement(1);
+    fc.setZoom(origZoom);
+    fc.renderAll();
+
+    // Draw onto a 200x200 canvas with clipping
+    const thumbSize = 200;
+    const thumbCanvas = document.createElement('canvas');
+    thumbCanvas.width = thumbSize;
+    thumbCanvas.height = thumbSize;
+    const ctx = thumbCanvas.getContext('2d')!;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, thumbSize, thumbSize);
+
+    // Apply shape clipping
+    const isRound = format.shape === 'round';
+    const isRounded = format.shape === 'rounded-square' || format.shape === 'rounded-rectangle';
+    ctx.save();
+    if (isRound) {
+      ctx.beginPath();
+      ctx.arc(thumbSize / 2, thumbSize / 2, thumbSize / 2, 0, Math.PI * 2);
+      ctx.clip();
+    } else if (isRounded) {
+      const r = 16;
+      ctx.beginPath();
+      ctx.roundRect(0, 0, thumbSize, thumbSize, r);
+      ctx.clip();
+    }
+
+    // Scale source to fit
+    const scale = Math.min(thumbSize / el.width, thumbSize / el.height);
+    const dx = (thumbSize - el.width * scale) / 2;
+    const dy = (thumbSize - el.height * scale) / 2;
+    ctx.drawImage(el, dx, dy, el.width * scale, el.height * scale);
+    ctx.restore();
+
+    // Convert to blob
+    const blob = await new Promise<Blob | null>((resolve) =>
+      thumbCanvas.toBlob(resolve, 'image/png', 0.85)
+    );
+    if (!blob) return null;
+
+    const path = `${userId}/${projectId}.png`;
+    const { error } = await supabase.storage
+      .from('label-thumbnails')
+      .upload(path, blob, { contentType: 'image/png', upsert: true });
+
+    if (error) {
+      console.error('Thumbnail upload error:', error);
+      return null;
+    }
+
+    const { data: urlData } = supabase.storage
+      .from('label-thumbnails')
+      .getPublicUrl(path);
+
+    // Add cache buster
+    const thumbUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+
+    // Update project with thumbnail URL
+    await supabase
+      .from('label_projects')
+      .update({ thumbnail_url: thumbUrl } as any)
+      .eq('id', projectId);
+
+    return thumbUrl;
+  } catch (e) {
+    console.error('Thumbnail generation error:', e);
+    return null;
+  }
+}
+
 const LabelEditor = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fabricRef = useRef<FabricCanvas | null>(null);
@@ -198,6 +291,7 @@ const LabelEditor = () => {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const { addItem } = useCart();
+  const { user } = useAuth();
 
   // State
   const [selectedShape, setSelectedShape] = useState('round');
@@ -222,6 +316,11 @@ const LabelEditor = () => {
   const [cartFinishing, setCartFinishing] = useState('glossy');
   const [showSaveAsDialog, setShowSaveAsDialog] = useState(false);
   const [saveAsName, setSaveAsName] = useState('');
+
+  // Phase 6 states
+  const [bgColor, setBgColor] = useState('#ffffff');
+  const [showGrid, setShowGrid] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
 
   // Undo/redo
   const [history, setHistory] = useState<string[]>([]);
@@ -294,6 +393,30 @@ const LabelEditor = () => {
     return () => { fc.dispose(); fabricRef.current = null; };
   }, []);
 
+  // --- Keyboard shortcuts ---
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const fc = fabricRef.current;
+      if (!fc || !currentProject) return;
+      // Ignore when typing in inputs
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
+        deleteSelected();
+      } else if (e.ctrlKey || e.metaKey) {
+        if (e.key === 'z') { e.preventDefault(); undo(); }
+        else if (e.key === 'y') { e.preventDefault(); redo(); }
+        else if (e.key === 's') { e.preventDefault(); handleSave(); }
+        else if (e.key === 'd') { e.preventDefault(); duplicateObj(); }
+        else if (e.key === 'g') { e.preventDefault(); setShowGrid(prev => !prev); }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentProject, history, historyIdx]);
+
   const pushHistory = useCallback(() => {
     if (!fabricRef.current || isRestoring.current) return;
     const json = JSON.stringify(fabricRef.current.toJSON());
@@ -365,6 +488,24 @@ const LabelEditor = () => {
     return () => window.removeEventListener('resize', fitToContainer);
   }, [fitToContainer]);
 
+  // --- Background color ---
+  const handleBgColorChange = useCallback((color: string) => {
+    setBgColor(color);
+    const fc = fabricRef.current;
+    if (fc) {
+      fc.backgroundColor = color;
+      fc.renderAll();
+      markDirty();
+    }
+  }, [markDirty]);
+
+  // --- Thumbnail generation on save ---
+  const generateThumbnail = useCallback(async () => {
+    const fc = fabricRef.current;
+    if (!fc || !currentProject || !selectedFormat || !user) return;
+    await generateAndUploadThumbnail(fc, currentProject.id, user.id, selectedFormat);
+  }, [currentProject, selectedFormat, user]);
+
   const handleNewProject = async () => {
     if (!selectedFormat) { toast.error('Selecione um formato'); return; }
     const proj = await createProject({ name: projectName, label_shape: selectedFormat.shape, width_mm: selectedFormat.widthMm, height_mm: selectedFormat.heightMm });
@@ -385,6 +526,8 @@ const LabelEditor = () => {
       await fc.loadFromJSON(proj.canvas_json);
       fc.renderAll();
       isRestoring.current = false;
+      // Sync bg color
+      setBgColor((fc.backgroundColor as string) || '#ffffff');
     }
     pushHistory();
     syncLayers();
@@ -451,6 +594,7 @@ const LabelEditor = () => {
     if (!fc || !selectedFormat) return;
     fc.clear();
     fc.backgroundColor = '#ffffff';
+    setBgColor('#ffffff');
     if (selectedFormat) applyFormat(selectedFormat);
     const objs = template.getObjects(selectedFormat.widthMm, selectedFormat.heightMm);
     objs.forEach(obj => { loadGoogleFont(obj.fontFamily || 'Arial'); addObjectFromJson(fc, obj); });
@@ -541,7 +685,11 @@ const LabelEditor = () => {
   const handleSave = async () => {
     if (!currentProject || !fabricRef.current) return;
     const ok = await saveProject(currentProject.id, fabricRef.current.toJSON());
-    if (ok) toast.success('Projeto salvo');
+    if (ok) {
+      toast.success('Projeto salvo');
+      // Generate thumbnail in background
+      generateThumbnail();
+    }
   };
 
   const handleSaveVersion = async () => {
@@ -549,7 +697,7 @@ const LabelEditor = () => {
     await saveVersion(currentProject.id, fabricRef.current.toJSON());
   };
 
-  // --- Duplicate Design (creates a new project with same canvas) ---
+  // --- Duplicate Design ---
   const handleDuplicateDesign = async () => {
     if (!currentProject || !fabricRef.current || !selectedFormat) return;
     const proj = await createProject({
@@ -588,13 +736,16 @@ const LabelEditor = () => {
   const handleAddToCart = () => {
     if (!currentProject || !selectedFormat) return;
     const finishing = FINISHING_OPTIONS.find(f => f.id === cartFinishing);
-    const basePrice = 0.15; // base price per label
+    const basePrice = 0.15;
     const unitPrice = basePrice + (finishing?.price || 0);
+
+    // Generate thumbnail for the cart
+    generateThumbnail();
 
     addItem({
       productId: `label-${currentProject.id}`,
       productName: `Etiqueta: ${currentProject.name}`,
-      thumbnail: '',
+      thumbnail: currentProject.thumbnail_url || '',
       unitPrice,
       quantity: cartQuantity,
       customWidth: selectedFormat.widthMm,
@@ -639,6 +790,16 @@ const LabelEditor = () => {
   const cartUnitPrice = 0.15 + (selectedFinishing?.price || 0);
   const cartTotal = cartUnitPrice * cartQuantity;
 
+  // Grid overlay style
+  const gridOverlayStyle = showGrid && currentProject ? {
+    backgroundImage: `
+      linear-gradient(rgba(0,0,0,0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,0,0,0.06) 1px, transparent 1px)
+    `,
+    backgroundSize: `${20 * zoom}px ${20 * zoom}px`,
+    pointerEvents: 'none' as const,
+  } : {};
+
   return (
     <div className="space-y-4">
       {/* Onboarding */}
@@ -666,14 +827,12 @@ const LabelEditor = () => {
                 onChange={e => setProjectName(e.target.value)}
                 onBlur={() => {
                   if (currentProject) {
-                    import('@/integrations/supabase/client').then(({ supabase }) => {
-                      supabase.from('label_projects').update({ name: projectName } as any).eq('id', currentProject.id);
-                    });
+                    supabase.from('label_projects').update({ name: projectName } as any).eq('id', currentProject.id);
                   }
                 }}
                 className="w-48 h-9"
               />
-              <Button size="sm" variant="outline" onClick={handleSave}><Save className="h-4 w-4 mr-1" />Salvar</Button>
+              <Button size="sm" variant="outline" onClick={handleSave} title="Ctrl+S"><Save className="h-4 w-4 mr-1" />Salvar</Button>
               <Button size="sm" variant="outline" onClick={handleSaveVersion}><FileText className="h-4 w-4 mr-1" />Versão</Button>
               <Button size="sm" variant="outline" onClick={() => setShowPrintPreview(true)}><Printer className="h-4 w-4 mr-1" />Prévia</Button>
               <Button size="sm" variant="outline" onClick={handleExportPDF}><Download className="h-4 w-4 mr-1" />PDF</Button>
@@ -682,6 +841,9 @@ const LabelEditor = () => {
               </Button>
             </>
           )}
+          <Button size="sm" variant="ghost" onClick={() => setShowShortcuts(true)} title="Atalhos de teclado">
+            <Keyboard className="h-4 w-4" />
+          </Button>
           <Dialog open={showNewDialog} onOpenChange={setShowNewDialog}>
             <DialogTrigger asChild>
               <Button size="sm" variant="default"><Plus className="h-4 w-4 mr-1" />Novo</Button>
@@ -770,17 +932,27 @@ const LabelEditor = () => {
                 <div>
                   <p className="text-xs font-medium text-muted-foreground mb-2">Ações</p>
                   <div className="flex gap-1 flex-wrap">
-                    <Button variant="outline" size="icon" onClick={undo} title="Desfazer"><Undo2 className="h-4 w-4" /></Button>
-                    <Button variant="outline" size="icon" onClick={redo} title="Refazer"><Redo2 className="h-4 w-4" /></Button>
+                    <Button variant="outline" size="icon" onClick={undo} title="Desfazer (Ctrl+Z)"><Undo2 className="h-4 w-4" /></Button>
+                    <Button variant="outline" size="icon" onClick={redo} title="Refazer (Ctrl+Y)"><Redo2 className="h-4 w-4" /></Button>
                     <Button variant="outline" size="icon" onClick={zoomIn} title="Zoom +"><ZoomIn className="h-4 w-4" /></Button>
                     <Button variant="outline" size="icon" onClick={zoomOut} title="Zoom -"><ZoomOut className="h-4 w-4" /></Button>
-                    <Button variant="outline" size="icon" onClick={deleteSelected} title="Excluir"><Trash2 className="h-4 w-4" /></Button>
+                    <Button variant="outline" size="icon" onClick={deleteSelected} title="Excluir (Delete)"><Trash2 className="h-4 w-4" /></Button>
+                    <Button variant={showGrid ? 'default' : 'outline'} size="icon" onClick={() => setShowGrid(!showGrid)} title="Grid (Ctrl+G)"><Grid3X3 className="h-4 w-4" /></Button>
                   </div>
                 </div>
                 <Separator />
                 <div className="flex items-center justify-between">
                   <Label className="text-xs">Snap ao centro</Label>
                   <Switch checked={snapEnabled} onCheckedChange={setSnapEnabled} />
+                </div>
+                <Separator />
+                <div>
+                  <Label className="text-xs">Cor de fundo</Label>
+                  <div className="flex gap-2 items-center mt-1">
+                    <input type="color" value={bgColor} onChange={e => handleBgColorChange(e.target.value)} className="h-7 w-7 rounded border cursor-pointer" />
+                    <Input value={bgColor} onChange={e => handleBgColorChange(e.target.value)} className="h-7 text-xs flex-1" />
+                    <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={() => handleBgColorChange('#ffffff')}>Reset</Button>
+                  </div>
                 </div>
                 {currentProject && (
                   <>
@@ -864,9 +1036,20 @@ const LabelEditor = () => {
                       projects.map(p => (
                         <div key={p.id} className={`p-2 rounded-md border cursor-pointer transition-colors hover:bg-muted ${currentProject?.id === p.id ? 'bg-primary/10 border-primary' : ''}`}
                           onClick={() => loadProject(p)}>
-                          <p className="text-sm font-medium truncate">{p.name}</p>
-                          <p className="text-xs text-muted-foreground">{p.label_shape} • {p.width_mm/10}×{p.height_mm/10}cm</p>
-                          <p className="text-xs text-muted-foreground">{format(new Date(p.updated_at), 'dd/MM/yy HH:mm')}</p>
+                          <div className="flex gap-2">
+                            {p.thumbnail_url ? (
+                              <img src={p.thumbnail_url} alt={p.name} className="w-10 h-10 rounded object-cover shrink-0 border" />
+                            ) : (
+                              <div className="w-10 h-10 rounded bg-muted flex items-center justify-center shrink-0 border">
+                                <Palette className="h-4 w-4 text-muted-foreground" />
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{p.name}</p>
+                              <p className="text-xs text-muted-foreground">{p.label_shape} • {p.width_mm/10}×{p.height_mm/10}cm</p>
+                              <p className="text-xs text-muted-foreground">{format(new Date(p.updated_at), 'dd/MM/yy HH:mm')}</p>
+                            </div>
+                          </div>
                           <Button variant="ghost" size="sm" className="h-6 mt-1 text-destructive" onClick={(e) => {
                             e.stopPropagation();
                             if (confirm('Excluir projeto?')) deleteProject(p.id);
@@ -885,8 +1068,12 @@ const LabelEditor = () => {
           <Card className="h-full">
             <CardContent className="p-4 h-full flex items-center justify-center" ref={containerRef}>
               {currentProject ? (
-                <div className="border border-dashed border-muted-foreground/30 rounded-lg p-4 bg-muted/20">
+                <div className="relative border border-dashed border-muted-foreground/30 rounded-lg p-4 bg-muted/20">
                   <canvas ref={canvasRef} />
+                  {/* Grid overlay */}
+                  {showGrid && (
+                    <div className="absolute inset-4 rounded" style={gridOverlayStyle} />
+                  )}
                 </div>
               ) : (
                 <div className="text-center space-y-4">
@@ -969,8 +1156,8 @@ const LabelEditor = () => {
                       <div className="flex gap-1 flex-wrap">
                         <Button variant="outline" size="icon" className="h-8 w-8" onClick={bringForward} title="Trazer para frente"><ArrowUp className="h-3 w-3" /></Button>
                         <Button variant="outline" size="icon" className="h-8 w-8" onClick={sendBackward} title="Enviar para trás"><ArrowDown className="h-3 w-3" /></Button>
-                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={duplicateObj} title="Duplicar"><Copy className="h-3 w-3" /></Button>
-                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={deleteSelected} title="Excluir"><Trash2 className="h-3 w-3" /></Button>
+                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={duplicateObj} title="Duplicar (Ctrl+D)"><Copy className="h-3 w-3" /></Button>
+                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={deleteSelected} title="Excluir (Delete)"><Trash2 className="h-3 w-3" /></Button>
                       </div>
                     </div>
                   ) : (
@@ -1058,6 +1245,21 @@ const LabelEditor = () => {
             <Button variant="outline" onClick={() => setShowSaveAsDialog(false)}>Cancelar</Button>
             <Button onClick={handleSaveAsNew} disabled={!saveAsName.trim()}>Salvar</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Keyboard Shortcuts Dialog */}
+      <Dialog open={showShortcuts} onOpenChange={setShowShortcuts}>
+        <DialogContent className="max-w-xs">
+          <DialogHeader><DialogTitle>Atalhos de Teclado</DialogTitle></DialogHeader>
+          <div className="space-y-2">
+            {KEYBOARD_SHORTCUTS.map(s => (
+              <div key={s.keys} className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">{s.action}</span>
+                <kbd className="px-2 py-0.5 rounded bg-muted text-xs font-mono">{s.keys}</kbd>
+              </div>
+            ))}
+          </div>
         </DialogContent>
       </Dialog>
 
