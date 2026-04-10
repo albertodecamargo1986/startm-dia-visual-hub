@@ -26,8 +26,6 @@ const VARIATIONS: Variation[] = [
   { key: 'site_logo_favicon', label: 'Favicon', width: 32, height: 32, note: 'Recorte quadrado', square: true },
 ];
 
-type BgOption = 'transparent' | 'white' | 'dark';
-
 interface LogoUploadManagerProps {
   currentUrls: Record<string, string>;
   onSaved: (urls: Record<string, string>) => void;
@@ -37,7 +35,6 @@ function resizeImage(
   img: HTMLImageElement,
   targetW: number,
   targetH: number,
-  bg: BgOption,
   square?: boolean,
 ): Promise<Blob> {
   return new Promise((resolve) => {
@@ -45,14 +42,6 @@ function resizeImage(
     canvas.width = targetW;
     canvas.height = targetH;
     const ctx = canvas.getContext('2d')!;
-
-    if (bg === 'white') {
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, targetW, targetH);
-    } else if (bg === 'dark') {
-      ctx.fillStyle = '#1a1a2e';
-      ctx.fillRect(0, 0, targetW, targetH);
-    }
 
     if (square) {
       // center crop to square then resize
@@ -77,7 +66,6 @@ function resizeImage(
 export const LogoUploadManager = ({ currentUrls, onSaved }: LogoUploadManagerProps) => {
   const queryClient = useQueryClient();
   const [sourceFile, setSourceFile] = useState<File | null>(null);
-  const [bgOption, setBgOption] = useState<BgOption>('transparent');
   const [previews, setPreviews] = useState<Record<string, string>>({});
   const [blobs, setBlobs] = useState<Record<string, Blob>>({});
   const [saving, setSaving] = useState(false);
