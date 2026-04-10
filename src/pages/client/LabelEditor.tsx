@@ -355,6 +355,8 @@ const LabelEditorInner = () => {
             shapeLabel={ctx.currentShapeLabel}
             sizeLabel={ctx.currentSizeLabel}
             layerCount={ctx.layers.length}
+            canvas={ctx.fabricRef.current}
+            onHistoryCapture={ctx.pushHistory}
             onBrushColorChange={ctx.setBrushColor}
             onBrushWidthChange={ctx.setBrushWidth}
             onEraseLastDrawing={ctx.eraseLastDrawing}
