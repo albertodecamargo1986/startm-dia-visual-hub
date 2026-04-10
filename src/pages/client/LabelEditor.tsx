@@ -1278,7 +1278,21 @@ const LabelEditor = () => {
                     </div>
                     <div>
                       <Label className="text-xs">Tamanho</Label>
-                      <Input type="number" value={selectedObject.fontSize || 24} onChange={e => updateObjectProp('fontSize', Number(e.target.value))} className="h-8 text-xs" />
+                      <div className="flex items-center gap-1 mt-1">
+                        <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => updateObjectProp('fontSize', Math.max(6, (selectedObject.fontSize || 24) - 1))}>
+                          <Minus className="h-3 w-3" />
+                        </Button>
+                        <Input type="number" value={selectedObject.fontSize || 24} onChange={e => updateObjectProp('fontSize', Math.max(6, Number(e.target.value)))} className="h-8 text-xs text-center flex-1" min={6} />
+                        <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => updateObjectProp('fontSize', (selectedObject.fontSize || 24) + 1)}>
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      <div className="flex gap-1 mt-1.5 flex-wrap">
+                        {[12, 16, 20, 24, 32, 48].map(sz => (
+                          <Button key={sz} variant={(selectedObject.fontSize || 24) === sz ? 'default' : 'outline'} size="sm"
+                            className="h-6 px-2 text-[10px]" onClick={() => updateObjectProp('fontSize', sz)}>{sz}</Button>
+                        ))}
+                      </div>
                     </div>
                   </>
                 )}
