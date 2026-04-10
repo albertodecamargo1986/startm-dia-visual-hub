@@ -29,7 +29,7 @@ const signupSchema = z.object({
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const from = (location.state as any)?.from?.pathname || '/cliente';
+  const from = (location.state as LoginLocationState | null)?.from?.pathname || '/cliente';
 
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});

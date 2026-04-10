@@ -11,7 +11,7 @@ import { motion } from 'framer-motion';
 const EmailVerification = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const email = (location.state as any)?.email;
+  const email = (location.state as EmailVerificationLocationState | null)?.email;
   const [cooldown, setCooldown] = useState(0);
   const [loading, setLoading] = useState(false);
 
