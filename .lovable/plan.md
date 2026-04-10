@@ -1,38 +1,23 @@
 
-# Plano: Simplificar e Centralizar o Editor de Etiquetas
 
-## Problemas visíveis
-1. Canvas ocupa espaço excessivo e fica descentralizado (deslocado para a direita/cima)
-2. A etiqueta (4x4cm redonda) aparece enorme no canvas — deveria ter tamanho proporcional e centralizado
-3. Interface visual confusa com muitos painéis e opções simultâneas
-4. O `fitToContainer` não limita corretamente o tamanho visual — canvas aparece maior que a viewport útil
+# Plano: Remover download de PDF do painel do cliente
 
-## Mudanças planejadas
+O download/exportação de PDF deve ser exclusivo do painel administrativo. O cliente pode criar e editar etiquetas, mas não pode baixar o resultado.
 
-### 1. Corrigir fitToContainer para centralizar e reduzir o canvas
-- Limitar `scale` para que o canvas nunca exceda ~80% do container (atualmente usa `Math.min(..., 1)` mas o canvas real em px é enorme por causa do `CANVAS_SCALE = 4`)
-- O canvas de 4x4cm = 40mm = ~151px real * 4 (CANVAS_SCALE) = ~604px. Com zoom 68% fica ~410px CSS, mas o container tem ~700px. O canvas wrapper deveria estar perfeitamente centrado — o issue é o `p-2` padding no wrapper e flex alignment
-- Garantir que o wrapper do canvas use `margin: auto` e flex center funcione corretamente
+## Mudanças
 
-### 2. Reduzir complexidade visual do editor
-- Esconder a barra de toolbar duplicada (já tem botões "Adicionar" no painel esquerdo E na toolbar central — remover duplicação)
-- Simplificar a toolbar central: manter apenas Texto, Forma, Imagem, Undo/Redo, Zoom e Delete
-- Remover botões redundantes de formas da toolbar (círculo separado, grid, keyboard shortcuts)
+### `src/pages/client/LabelEditor.tsx`
+1. **Remover o botão "Exportar PDF"** da toolbar (linha ~962-964 — botão com ícone `Download`)
+2. **Remover o dialog de exportação** (linhas ~1314-1331 — `showExportDialog`)
+3. **Remover estados e função relacionados**: `showExportDialog`, `includeBleed`, `includeCutMarks`, `handleExportPDF` (linhas ~228, ~599-612)
+4. **Remover import** de `exportLabelPDF` (linha 27) e `Download` do lucide-react (linha 16)
 
-### 3. Melhorar o canvas wrapper
-- Remover `border-dashed` e `p-2` do wrapper — usar apenas um fundo neutro (cinza claro) com a etiqueta centralizada nele, como no Canva
-- O fundo cinza simula a "mesa de trabalho" e a etiqueta branca fica no centro
-- Aplicar `display: flex; align-items: center; justify-content: center` corretamente no containerRef
-
-### 4. Limpar painel esquerdo
-- Manter apenas: Adicionar (Texto/Imagem/Formas), Fundo, Templates
-- Mover "Molduras & Ornamentos" para dentro de Templates ou colapsar por default
-- Remover "Ações" (duplicar/salvar como) do painel esquerdo — já estão na top bar
+O painel admin (`AdminLabelProjects.tsx`) já possui o botão de export PDF e continuará funcionando normalmente.
 
 ## Arquivos modificados
-- `src/pages/client/LabelEditor.tsx` — Ajustes no layout, fitToContainer, toolbar simplificada, canvas wrapper limpo (~80 linhas alteradas)
+- `src/pages/client/LabelEditor.tsx` — remoção de ~30 linhas (botão, dialog, função, estados, import)
 
-## Escopo
-- Sem mudanças de banco de dados
-- Sem novas dependências
-- Foco em layout/CSS e remoção de duplicação de UI
+## Sem mudanças
+- Banco de dados, RLS, edge functions — nada muda
+- `AdminLabelProjects.tsx` — mantém export PDF intacto
+
