@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Canvas as FabricCanvas, Rect, Circle, IText, Line, Ellipse, Triangle, FabricObject } from 'fabric';
+import { Canvas as FabricCanvas, Rect, Circle, IText, Line, Ellipse, Triangle, FabricObject, FabricImage } from 'fabric';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -15,7 +15,10 @@ import {
   Plus, Download, Save, Trash2, Type, Square, Circle as CircleIcon,
   Minus, Triangle as TriangleIcon, Undo2, Redo2, ZoomIn, ZoomOut,
   FileText, Layers, Palette, ArrowUp, ArrowDown, Eye, EyeOff, Copy,
-  LayoutTemplate, Frame
+  LayoutTemplate, Frame, Image as ImageIcon, Lock, Unlock,
+  AlignHorizontalJustifyCenter, AlignVerticalJustifyCenter,
+  AlignStartHorizontal, AlignEndHorizontal, AlignStartVertical, AlignEndVertical,
+  GripVertical, Pencil
 } from 'lucide-react';
 import { LABEL_SHAPES, getFormatsForShape, mmToPx, type LabelFormat } from '@/lib/label-formats';
 import { exportLabelPDF } from '@/lib/label-pdf-export';
@@ -34,7 +37,6 @@ const GOOGLE_FONTS = [
   'Pacifico', 'Great Vibes', 'Lobster', 'Sacramento', 'Caveat',
 ];
 
-// Load Google Fonts
 const loadedFonts = new Set<string>();
 function loadGoogleFont(fontName: string) {
   if (loadedFonts.has(fontName) || ['Arial'].includes(fontName)) return;
@@ -45,13 +47,23 @@ function loadGoogleFont(fontName: string) {
   loadedFonts.add(fontName);
 }
 
-// Preload some fonts
 ['Roboto', 'Montserrat', 'Playfair Display', 'Dancing Script'].forEach(loadGoogleFont);
+
+// --- Layer item type ---
+interface LayerItem {
+  id: number;
+  name: string;
+  type: string;
+  visible: boolean;
+  locked: boolean;
+  obj: FabricObject;
+}
 
 const LabelEditor = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fabricRef = useRef<FabricCanvas | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   // State
   const [selectedShape, setSelectedShape] = useState('round');
@@ -63,6 +75,10 @@ const LabelEditor = () => {
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [includeBleed, setIncludeBleed] = useState(false);
   const [includeCutMarks, setIncludeCutMarks] = useState(true);
+  const [layers, setLayers] = useState<LayerItem[]>([]);
+  const [snapEnabled, setSnapEnabled] = useState(true);
+  const [editingLayerName, setEditingLayerName] = useState<number | null>(null);
+  const [layerNameDraft, setLayerNameDraft] = useState('');
 
   // Undo/redo
   const [history, setHistory] = useState<string[]>([]);
@@ -78,6 +94,33 @@ const LabelEditor = () => {
 
   const { markDirty } = useAutoSave(currentProject?.id || null, getCanvasJson);
 
+  // --- Layers sync ---
+  const syncLayers = useCallback(() => {
+    const fc = fabricRef.current;
+    if (!fc) { setLayers([]); return; }
+    const objs = fc.getObjects();
+    const items: LayerItem[] = objs.map((obj, i) => {
+      const customName = (obj as any).__layerName;
+      let typeName = obj.type || 'object';
+      if (obj.type === 'i-text') typeName = 'Texto';
+      else if (obj.type === 'rect') typeName = 'Retângulo';
+      else if (obj.type === 'circle') typeName = 'Círculo';
+      else if (obj.type === 'triangle') typeName = 'Triângulo';
+      else if (obj.type === 'line') typeName = 'Linha';
+      else if (obj.type === 'ellipse') typeName = 'Elipse';
+      else if (obj.type === 'image') typeName = 'Imagem';
+      return {
+        id: i,
+        name: customName || `${typeName} ${i + 1}`,
+        type: typeName,
+        visible: obj.visible !== false,
+        locked: !obj.selectable,
+        obj,
+      };
+    });
+    setLayers(items.reverse()); // top layer first
+  }, []);
+
   // Initialize canvas
   useEffect(() => {
     if (!canvasRef.current || fabricRef.current) return;
@@ -89,12 +132,33 @@ const LabelEditor = () => {
     });
     fabricRef.current = fc;
 
-    fc.on('object:modified', () => { markDirty(); pushHistory(); });
-    fc.on('object:added', () => { if (!isRestoring.current) { markDirty(); pushHistory(); } });
-    fc.on('object:removed', () => { markDirty(); pushHistory(); });
+    fc.on('object:modified', () => { markDirty(); pushHistory(); syncLayers(); });
+    fc.on('object:added', () => { if (!isRestoring.current) { markDirty(); pushHistory(); } syncLayers(); });
+    fc.on('object:removed', () => { markDirty(); pushHistory(); syncLayers(); });
     fc.on('selection:created', (e: any) => setSelectedObject(e.selected?.[0] || null));
     fc.on('selection:updated', (e: any) => setSelectedObject(e.selected?.[0] || null));
     fc.on('selection:cleared', () => setSelectedObject(null));
+
+    // Snap to center guides
+    fc.on('object:moving', (e: any) => {
+      if (!snapEnabled) return;
+      const obj = e.target;
+      if (!obj) return;
+      const canvasW = fc.getWidth() / (fc.getZoom() || 1);
+      const canvasH = fc.getHeight() / (fc.getZoom() || 1);
+      const centerX = canvasW / 2;
+      const centerY = canvasH / 2;
+      const objCenterX = (obj.left || 0) + (obj.getScaledWidth() / 2);
+      const objCenterY = (obj.top || 0) + (obj.getScaledHeight() / 2);
+      const threshold = 6;
+
+      if (Math.abs(objCenterX - centerX) < threshold) {
+        obj.set('left', centerX - obj.getScaledWidth() / 2);
+      }
+      if (Math.abs(objCenterY - centerY) < threshold) {
+        obj.set('top', centerY - obj.getScaledHeight() / 2);
+      }
+    });
 
     return () => { fc.dispose(); fabricRef.current = null; };
   }, []);
@@ -119,8 +183,9 @@ const LabelEditor = () => {
       fabricRef.current?.renderAll();
       setHistoryIdx(newIdx);
       isRestoring.current = false;
+      syncLayers();
     });
-  }, [history, historyIdx]);
+  }, [history, historyIdx, syncLayers]);
 
   const redo = useCallback(() => {
     if (historyIdx >= history.length - 1 || !fabricRef.current) return;
@@ -130,8 +195,9 @@ const LabelEditor = () => {
       fabricRef.current?.renderAll();
       setHistoryIdx(newIdx);
       isRestoring.current = false;
+      syncLayers();
     });
-  }, [history, historyIdx]);
+  }, [history, historyIdx, syncLayers]);
 
   // Apply format to canvas
   const applyFormat = useCallback((fmt: LabelFormat) => {
@@ -140,11 +206,7 @@ const LabelEditor = () => {
     const w = mmToPx(fmt.widthMm);
     const h = mmToPx(fmt.heightMm);
     fc.setDimensions({ width: w, height: h });
-
-    // Remove old clip path objects
     fc.clipPath = undefined;
-
-    // Add clip path for round shapes
     if (fmt.shape === 'round') {
       const clip = new Circle({ radius: w / 2, originX: 'center', originY: 'center', left: w / 2, top: h / 2 });
       fc.clipPath = clip;
@@ -152,7 +214,6 @@ const LabelEditor = () => {
       const clip = new Rect({ width: w, height: h, rx: mmToPx(3), ry: mmToPx(3), originX: 'center', originY: 'center', left: w / 2, top: h / 2 });
       fc.clipPath = clip;
     }
-
     fc.renderAll();
     fitToContainer();
   }, []);
@@ -199,7 +260,6 @@ const LabelEditor = () => {
     if (!fc) return;
     setCurrentProject(proj);
     setProjectName(proj.name);
-
     const fmt: LabelFormat = {
       id: `${proj.label_shape}-${proj.width_mm}x${proj.height_mm}`,
       shape: proj.label_shape as any,
@@ -209,9 +269,7 @@ const LabelEditor = () => {
     };
     setSelectedFormat(fmt);
     setSelectedShape(proj.label_shape);
-
     applyFormat(fmt);
-
     if (proj.canvas_json && Object.keys(proj.canvas_json).length > 0) {
       isRestoring.current = true;
       await fc.loadFromJSON(proj.canvas_json);
@@ -219,7 +277,8 @@ const LabelEditor = () => {
       isRestoring.current = false;
     }
     pushHistory();
-  }, [applyFormat, pushHistory]);
+    syncLayers();
+  }, [applyFormat, pushHistory, syncLayers]);
 
   // Add elements
   const addText = () => {
@@ -266,16 +325,46 @@ const LabelEditor = () => {
     fc.renderAll();
   };
 
-  // Apply template to canvas
+  // --- Image upload ---
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !fabricRef.current) return;
+    if (!file.type.startsWith('image/')) { toast.error('Selecione uma imagem'); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error('Imagem deve ter no máximo 5MB'); return; }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
+      const imgEl = new window.Image();
+      imgEl.onload = () => {
+        const fc = fabricRef.current!;
+        const canvasW = fc.getWidth() / (fc.getZoom() || 1);
+        const canvasH = fc.getHeight() / (fc.getZoom() || 1);
+        const maxDim = Math.min(canvasW, canvasH) * 0.6;
+        const scale = Math.min(maxDim / imgEl.width, maxDim / imgEl.height, 1);
+        const fabricImg = new FabricImage(imgEl, {
+          left: canvasW / 2 - (imgEl.width * scale) / 2,
+          top: canvasH / 2 - (imgEl.height * scale) / 2,
+          scaleX: scale,
+          scaleY: scale,
+        });
+        (fabricImg as any).__layerName = file.name.replace(/\.[^.]+$/, '');
+        fc.add(fabricImg);
+        fc.setActiveObject(fabricImg);
+        fc.renderAll();
+      };
+      imgEl.src = dataUrl;
+    };
+    reader.readAsDataURL(file);
+    if (e.target) e.target.value = '';
+  };
+
+  // Apply template
   const applyTemplate = (template: LabelTemplate) => {
     const fc = fabricRef.current;
     if (!fc || !selectedFormat) return;
-    // Clear canvas first
     fc.clear();
     fc.backgroundColor = '#ffffff';
-    // Re-apply clip path
     if (selectedFormat) applyFormat(selectedFormat);
-    // Add template objects
     const objs = template.getObjects(selectedFormat.widthMm, selectedFormat.heightMm);
     objs.forEach(obj => {
       loadGoogleFont(obj.fontFamily || 'Arial');
@@ -283,10 +372,10 @@ const LabelEditor = () => {
     });
     fc.renderAll();
     markDirty();
+    syncLayers();
     toast.success(`Template "${template.name}" aplicado`);
   };
 
-  // Add decorative element
   const addDecorative = (element: DecorativeElement) => {
     const fc = fabricRef.current;
     if (!fc || !selectedFormat) return;
@@ -294,9 +383,9 @@ const LabelEditor = () => {
     objs.forEach(obj => addObjectFromJson(fc, obj));
     fc.renderAll();
     markDirty();
+    syncLayers();
   };
 
-  // Helper to create fabric objects from JSON-like specs
   const addObjectFromJson = (fc: FabricCanvas, obj: any) => {
     let fabricObj: FabricObject | null = null;
     switch (obj.type) {
@@ -330,23 +419,77 @@ const LabelEditor = () => {
     markDirty();
   };
 
+  // --- Alignment helpers ---
+  const alignObject = (alignment: string) => {
+    const fc = fabricRef.current;
+    if (!fc || !selectedObject) return;
+    const canvasW = fc.getWidth() / (fc.getZoom() || 1);
+    const canvasH = fc.getHeight() / (fc.getZoom() || 1);
+    switch (alignment) {
+      case 'left': selectedObject.set('left', 0); break;
+      case 'center-h': selectedObject.set('left', canvasW / 2 - selectedObject.getScaledWidth() / 2); break;
+      case 'right': selectedObject.set('left', canvasW - selectedObject.getScaledWidth()); break;
+      case 'top': selectedObject.set('top', 0); break;
+      case 'center-v': selectedObject.set('top', canvasH / 2 - selectedObject.getScaledHeight() / 2); break;
+      case 'bottom': selectedObject.set('top', canvasH - selectedObject.getScaledHeight()); break;
+    }
+    fc.renderAll();
+    markDirty();
+  };
+
+  // --- Layer actions ---
+  const toggleLayerVisibility = (layer: LayerItem) => {
+    layer.obj.visible = !layer.obj.visible;
+    fabricRef.current?.renderAll();
+    syncLayers();
+    markDirty();
+  };
+
+  const toggleLayerLock = (layer: LayerItem) => {
+    const locked = !layer.locked;
+    layer.obj.selectable = !locked;
+    layer.obj.evented = !locked;
+    fabricRef.current?.renderAll();
+    syncLayers();
+  };
+
+  const selectLayer = (layer: LayerItem) => {
+    if (!layer.obj.selectable) return;
+    fabricRef.current?.setActiveObject(layer.obj);
+    fabricRef.current?.renderAll();
+    setSelectedObject(layer.obj);
+  };
+
+  const moveLayerUp = (layer: LayerItem) => {
+    fabricRef.current?.bringObjectForward(layer.obj);
+    fabricRef.current?.renderAll();
+    syncLayers();
+    markDirty();
+  };
+
+  const moveLayerDown = (layer: LayerItem) => {
+    fabricRef.current?.sendObjectBackwards(layer.obj);
+    fabricRef.current?.renderAll();
+    syncLayers();
+    markDirty();
+  };
+
+  const renameLayer = (layer: LayerItem, newName: string) => {
+    (layer.obj as any).__layerName = newName;
+    syncLayers();
+  };
+
   // Export PDF
   const handleExportPDF = async () => {
     const fc = fabricRef.current;
     if (!fc || !selectedFormat) { toast.error('Nenhum projeto aberto'); return; }
-
-    // Temporarily remove clip path, zoom to 1 for clean export
     const origZoom = fc.getZoom();
     fc.setZoom(1);
     fc.setDimensions({ width: fc.getWidth(), height: fc.getHeight() }, { cssOnly: false });
     fc.renderAll();
-
-    const canvasEl = fc.toCanvasElement(2); // 2x for quality
-
-    // Restore
+    const canvasEl = fc.toCanvasElement(2);
     fc.setZoom(origZoom);
     fitToContainer();
-
     try {
       const blob = await exportLabelPDF({
         format: selectedFormat,
@@ -367,7 +510,6 @@ const LabelEditor = () => {
     }
   };
 
-  // Manual save
   const handleSave = async () => {
     if (!currentProject || !fabricRef.current) return;
     const ok = await saveProject(currentProject.id, fabricRef.current.toJSON());
@@ -379,7 +521,6 @@ const LabelEditor = () => {
     await saveVersion(currentProject.id, fabricRef.current.toJSON());
   };
 
-  // Delete selected
   const deleteSelected = () => {
     const fc = fabricRef.current;
     if (!fc) return;
@@ -389,9 +530,8 @@ const LabelEditor = () => {
     fc.renderAll();
   };
 
-  // Layer operations
-  const bringForward = () => { if (selectedObject && fabricRef.current) { fabricRef.current.bringObjectForward(selectedObject); fabricRef.current.renderAll(); } };
-  const sendBackward = () => { if (selectedObject && fabricRef.current) { fabricRef.current.sendObjectBackwards(selectedObject); fabricRef.current.renderAll(); } };
+  const bringForward = () => { if (selectedObject && fabricRef.current) { fabricRef.current.bringObjectForward(selectedObject); fabricRef.current.renderAll(); syncLayers(); } };
+  const sendBackward = () => { if (selectedObject && fabricRef.current) { fabricRef.current.sendObjectBackwards(selectedObject); fabricRef.current.renderAll(); syncLayers(); } };
   const duplicateObj = () => {
     if (!selectedObject || !fabricRef.current) return;
     selectedObject.clone((cloned: any) => {
@@ -402,7 +542,6 @@ const LabelEditor = () => {
     });
   };
 
-  // Zoom
   const zoomIn = () => {
     const fc = fabricRef.current;
     if (!fc) return;
@@ -424,6 +563,9 @@ const LabelEditor = () => {
 
   return (
     <div className="space-y-4">
+      {/* Hidden image input */}
+      <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+
       {/* Header */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3">
@@ -493,16 +635,15 @@ const LabelEditor = () => {
       </div>
 
       <div className="flex flex-col lg:flex-row gap-4" style={{ minHeight: 'calc(100vh - 280px)' }}>
-        {/* Left panel - Tools & Elements */}
+        {/* Left panel */}
         <Card className="lg:w-64 shrink-0">
           <CardContent className="p-3">
             <Tabs defaultValue="elements">
-              <TabsList className="w-full grid grid-cols-5">
+              <TabsList className="w-full grid grid-cols-4">
                 <TabsTrigger value="elements" className="text-xs">Elementos</TabsTrigger>
                 <TabsTrigger value="templates" className="text-xs">Templates</TabsTrigger>
                 <TabsTrigger value="decor" className="text-xs">Molduras</TabsTrigger>
                 <TabsTrigger value="projects" className="text-xs">Projetos</TabsTrigger>
-                <TabsTrigger value="export" className="text-xs">Exportar</TabsTrigger>
               </TabsList>
 
               <TabsContent value="elements" className="space-y-3 mt-3">
@@ -532,6 +673,13 @@ const LabelEditor = () => {
                 </div>
                 <Separator />
                 <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Imagem</p>
+                  <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => imageInputRef.current?.click()} disabled={!currentProject}>
+                    <ImageIcon className="h-4 w-4 mr-2" />Upload de Imagem
+                  </Button>
+                </div>
+                <Separator />
+                <div>
                   <p className="text-xs font-medium text-muted-foreground mb-2">Ações</p>
                   <div className="flex gap-1 flex-wrap">
                     <Button variant="outline" size="icon" onClick={undo} title="Desfazer"><Undo2 className="h-4 w-4" /></Button>
@@ -540,6 +688,11 @@ const LabelEditor = () => {
                     <Button variant="outline" size="icon" onClick={zoomOut} title="Zoom -"><ZoomOut className="h-4 w-4" /></Button>
                     <Button variant="outline" size="icon" onClick={deleteSelected} title="Excluir"><Trash2 className="h-4 w-4" /></Button>
                   </div>
+                </div>
+                <Separator />
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs">Snap ao centro</Label>
+                  <Switch checked={snapEnabled} onCheckedChange={setSnapEnabled} />
                 </div>
               </TabsContent>
 
@@ -624,21 +777,6 @@ const LabelEditor = () => {
                   </div>
                 </ScrollArea>
               </TabsContent>
-
-              <TabsContent value="export" className="mt-3 space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs">Sangria (3mm)</Label>
-                  <Switch checked={includeBleed} onCheckedChange={setIncludeBleed} />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs">Marcas de corte</Label>
-                  <Switch checked={includeCutMarks} onCheckedChange={setIncludeCutMarks} />
-                </div>
-                <Button className="w-full" onClick={handleExportPDF} disabled={!currentProject}>
-                  <Download className="h-4 w-4 mr-2" />Exportar PDF Vetorial
-                </Button>
-                <p className="text-xs text-muted-foreground">PDF compatível com CorelDRAW, Illustrator e outros editores vetoriais.</p>
-              </TabsContent>
             </Tabs>
           </CardContent>
         </Card>
@@ -667,71 +805,161 @@ const LabelEditor = () => {
           </Card>
         </div>
 
-        {/* Right panel - Properties */}
+        {/* Right panel - Properties + Layers */}
         {currentProject && (
-          <Card className="lg:w-60 shrink-0">
-            <CardHeader className="p-3 pb-1">
-              <CardTitle className="text-sm">Propriedades</CardTitle>
-            </CardHeader>
-            <CardContent className="p-3 pt-0">
-              {selectedObject ? (
-                <div className="space-y-3">
-                  <div>
-                    <Label className="text-xs">Cor de preenchimento</Label>
-                    <div className="flex gap-2 items-center mt-1">
-                      <input type="color" value={selectedObject.fill || '#000000'}
-                        onChange={e => updateObjectProp('fill', e.target.value)} className="h-8 w-8 rounded border cursor-pointer" />
-                      <Input value={selectedObject.fill || ''} onChange={e => updateObjectProp('fill', e.target.value)} className="h-8 text-xs flex-1" />
-                    </div>
-                  </div>
+          <Card className="lg:w-64 shrink-0">
+            <CardContent className="p-3">
+              <Tabs defaultValue="props">
+                <TabsList className="w-full grid grid-cols-3">
+                  <TabsTrigger value="props" className="text-xs">Propriedades</TabsTrigger>
+                  <TabsTrigger value="layers" className="text-xs">Camadas</TabsTrigger>
+                  <TabsTrigger value="export" className="text-xs">Exportar</TabsTrigger>
+                </TabsList>
 
-                  {selectedObject.type === 'i-text' && (
-                    <>
+                <TabsContent value="props" className="mt-3">
+                  {selectedObject ? (
+                    <div className="space-y-3">
                       <div>
-                        <Label className="text-xs">Fonte</Label>
-                        <Select value={selectedObject.fontFamily || 'Arial'} onValueChange={v => { loadGoogleFont(v); updateObjectProp('fontFamily', v); }}>
-                          <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            {GOOGLE_FONTS.map(f => (
-                              <SelectItem key={f} value={f} style={{ fontFamily: f }}>{f}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <Label className="text-xs">Cor de preenchimento</Label>
+                        <div className="flex gap-2 items-center mt-1">
+                          <input type="color" value={selectedObject.fill || '#000000'}
+                            onChange={e => updateObjectProp('fill', e.target.value)} className="h-8 w-8 rounded border cursor-pointer" />
+                          <Input value={selectedObject.fill || ''} onChange={e => updateObjectProp('fill', e.target.value)} className="h-8 text-xs flex-1" />
+                        </div>
                       </div>
+
+                      {selectedObject.type === 'i-text' && (
+                        <>
+                          <div>
+                            <Label className="text-xs">Fonte</Label>
+                            <Select value={selectedObject.fontFamily || 'Arial'} onValueChange={v => { loadGoogleFont(v); updateObjectProp('fontFamily', v); }}>
+                              <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                {GOOGLE_FONTS.map(f => (
+                                  <SelectItem key={f} value={f} style={{ fontFamily: f }}>{f}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label className="text-xs">Tamanho</Label>
+                            <Input type="number" value={selectedObject.fontSize || 24} onChange={e => updateObjectProp('fontSize', Number(e.target.value))} className="h-8 text-xs" />
+                          </div>
+                        </>
+                      )}
+
                       <div>
-                        <Label className="text-xs">Tamanho</Label>
-                        <Input type="number" value={selectedObject.fontSize || 24} onChange={e => updateObjectProp('fontSize', Number(e.target.value))} className="h-8 text-xs" />
+                        <Label className="text-xs">Contorno</Label>
+                        <div className="flex gap-2 items-center mt-1">
+                          <input type="color" value={selectedObject.stroke || '#000000'}
+                            onChange={e => updateObjectProp('stroke', e.target.value)} className="h-8 w-8 rounded border cursor-pointer" />
+                          <Input type="number" value={selectedObject.strokeWidth || 0} min={0}
+                            onChange={e => updateObjectProp('strokeWidth', Number(e.target.value))} className="h-8 text-xs flex-1" placeholder="Espessura" />
+                        </div>
                       </div>
-                    </>
+
+                      <div>
+                        <Label className="text-xs">Opacidade</Label>
+                        <Input type="range" min={0} max={1} step={0.05} value={selectedObject.opacity ?? 1}
+                          onChange={e => updateObjectProp('opacity', Number(e.target.value))} className="h-8" />
+                      </div>
+
+                      <Separator />
+                      <div>
+                        <Label className="text-xs mb-1 block">Alinhar</Label>
+                        <div className="flex gap-1 flex-wrap">
+                          <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => alignObject('left')} title="Esquerda"><AlignStartHorizontal className="h-3 w-3" /></Button>
+                          <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => alignObject('center-h')} title="Centro H"><AlignHorizontalJustifyCenter className="h-3 w-3" /></Button>
+                          <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => alignObject('right')} title="Direita"><AlignEndHorizontal className="h-3 w-3" /></Button>
+                          <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => alignObject('top')} title="Topo"><AlignStartVertical className="h-3 w-3" /></Button>
+                          <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => alignObject('center-v')} title="Centro V"><AlignVerticalJustifyCenter className="h-3 w-3" /></Button>
+                          <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => alignObject('bottom')} title="Fundo"><AlignEndVertical className="h-3 w-3" /></Button>
+                        </div>
+                      </div>
+
+                      <Separator />
+                      <div className="flex gap-1 flex-wrap">
+                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={bringForward} title="Trazer para frente"><ArrowUp className="h-3 w-3" /></Button>
+                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={sendBackward} title="Enviar para trás"><ArrowDown className="h-3 w-3" /></Button>
+                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={duplicateObj} title="Duplicar"><Copy className="h-3 w-3" /></Button>
+                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={deleteSelected} title="Excluir"><Trash2 className="h-3 w-3" /></Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">Selecione um objeto para editar suas propriedades.</p>
                   )}
+                </TabsContent>
 
-                  <div>
-                    <Label className="text-xs">Contorno</Label>
-                    <div className="flex gap-2 items-center mt-1">
-                      <input type="color" value={selectedObject.stroke || '#000000'}
-                        onChange={e => updateObjectProp('stroke', e.target.value)} className="h-8 w-8 rounded border cursor-pointer" />
-                      <Input type="number" value={selectedObject.strokeWidth || 0} min={0}
-                        onChange={e => updateObjectProp('strokeWidth', Number(e.target.value))} className="h-8 text-xs flex-1" placeholder="Espessura" />
-                    </div>
-                  </div>
+                <TabsContent value="layers" className="mt-3">
+                  <ScrollArea className="h-[400px]">
+                    {layers.length === 0 ? (
+                      <p className="text-xs text-muted-foreground">Nenhuma camada ainda.</p>
+                    ) : (
+                      <div className="space-y-1">
+                        {layers.map(layer => (
+                          <div
+                            key={`${layer.id}-${layer.name}`}
+                            className={`flex items-center gap-1 p-1.5 rounded text-xs cursor-pointer transition-colors ${
+                              selectedObject === layer.obj ? 'bg-primary/10 border border-primary' : 'hover:bg-muted border border-transparent'
+                            }`}
+                            onClick={() => selectLayer(layer)}
+                          >
+                            <GripVertical className="h-3 w-3 text-muted-foreground shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              {editingLayerName === layer.id ? (
+                                <Input
+                                  value={layerNameDraft}
+                                  onChange={e => setLayerNameDraft(e.target.value)}
+                                  onBlur={() => { renameLayer(layer, layerNameDraft); setEditingLayerName(null); }}
+                                  onKeyDown={e => { if (e.key === 'Enter') { renameLayer(layer, layerNameDraft); setEditingLayerName(null); } }}
+                                  className="h-5 text-xs p-1"
+                                  autoFocus
+                                  onClick={e => e.stopPropagation()}
+                                />
+                              ) : (
+                                <span className="truncate block" onDoubleClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingLayerName(layer.id);
+                                  setLayerNameDraft(layer.name);
+                                }}>{layer.name}</span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-0.5 shrink-0">
+                              <Button variant="ghost" size="icon" className="h-5 w-5" onClick={e => { e.stopPropagation(); toggleLayerVisibility(layer); }}>
+                                {layer.visible ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3 text-muted-foreground" />}
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-5 w-5" onClick={e => { e.stopPropagation(); toggleLayerLock(layer); }}>
+                                {layer.locked ? <Lock className="h-3 w-3 text-muted-foreground" /> : <Unlock className="h-3 w-3" />}
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-5 w-5" onClick={e => { e.stopPropagation(); moveLayerUp(layer); }}>
+                                <ArrowUp className="h-3 w-3" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-5 w-5" onClick={e => { e.stopPropagation(); moveLayerDown(layer); }}>
+                                <ArrowDown className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </ScrollArea>
+                </TabsContent>
 
-                  <div>
-                    <Label className="text-xs">Opacidade</Label>
-                    <Input type="range" min={0} max={1} step={0.05} value={selectedObject.opacity ?? 1}
-                      onChange={e => updateObjectProp('opacity', Number(e.target.value))} className="h-8" />
+                <TabsContent value="export" className="mt-3 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs">Sangria (3mm)</Label>
+                    <Switch checked={includeBleed} onCheckedChange={setIncludeBleed} />
                   </div>
-
-                  <Separator />
-                  <div className="flex gap-1 flex-wrap">
-                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={bringForward} title="Trazer para frente"><ArrowUp className="h-3 w-3" /></Button>
-                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={sendBackward} title="Enviar para trás"><ArrowDown className="h-3 w-3" /></Button>
-                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={duplicateObj} title="Duplicar"><Copy className="h-3 w-3" /></Button>
-                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={deleteSelected} title="Excluir"><Trash2 className="h-3 w-3" /></Button>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs">Marcas de corte</Label>
+                    <Switch checked={includeCutMarks} onCheckedChange={setIncludeCutMarks} />
                   </div>
-                </div>
-              ) : (
-                <p className="text-xs text-muted-foreground">Selecione um objeto para editar suas propriedades.</p>
-              )}
+                  <Button className="w-full" onClick={handleExportPDF} disabled={!currentProject}>
+                    <Download className="h-4 w-4 mr-2" />Exportar PDF Vetorial
+                  </Button>
+                  <p className="text-xs text-muted-foreground">PDF compatível com CorelDRAW, Illustrator e outros editores vetoriais.</p>
+                </TabsContent>
+              </Tabs>
             </CardContent>
           </Card>
         )}
