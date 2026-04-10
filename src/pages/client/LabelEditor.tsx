@@ -1326,6 +1326,80 @@ const LabelEditor = () => {
                     </div>
                   </div>
 
+                  {/* Curved text controller properties */}
+                  {(selectedObject as any)?.__isCurvedTextController && (
+                    <>
+                      <div>
+                        <Label className="text-xs">Texto do arco</Label>
+                        <Input
+                          value={(selectedObject as any).__curvedText || ''}
+                          onChange={e => {
+                            const newText = e.target.value;
+                            (selectedObject as any).__curvedText = newText;
+                            rebuildCurvedText(selectedObject);
+                          }}
+                          className="h-8 text-xs mt-1"
+                          placeholder="Texto em arco"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Raio do arco</Label>
+                        <Input
+                          type="range" min={30} max={300} step={5}
+                          value={(selectedObject as any).__curvedRadius || 100}
+                          onChange={e => {
+                            (selectedObject as any).__curvedRadius = Number(e.target.value);
+                            rebuildCurvedText(selectedObject);
+                          }}
+                          className="h-8 mt-1"
+                        />
+                        <span className="text-[10px] text-muted-foreground">{(selectedObject as any).__curvedRadius || 100}px</span>
+                      </div>
+                      <div>
+                        <Label className="text-xs">Tamanho da fonte</Label>
+                        <Input
+                          type="number" min={8} max={72}
+                          value={(selectedObject as any).__curvedFontSize || 16}
+                          onChange={e => {
+                            (selectedObject as any).__curvedFontSize = Math.max(8, Number(e.target.value));
+                            rebuildCurvedText(selectedObject);
+                          }}
+                          className="h-8 text-xs mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Cor do texto</Label>
+                        <div className="flex gap-2 items-center mt-1">
+                          <input
+                            type="color"
+                            value={(selectedObject as any).__curvedFill || '#333333'}
+                            onChange={e => {
+                              (selectedObject as any).__curvedFill = e.target.value;
+                              rebuildCurvedText(selectedObject);
+                            }}
+                            className="h-8 w-8 rounded border cursor-pointer"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-xs">Fonte</Label>
+                        <Select
+                          value={(selectedObject as any).__curvedFontFamily || 'Montserrat'}
+                          onValueChange={v => {
+                            loadGoogleFont(v);
+                            (selectedObject as any).__curvedFontFamily = v;
+                            rebuildCurvedText(selectedObject);
+                          }}
+                        >
+                          <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {GOOGLE_FONTS.map(f => (<SelectItem key={f} value={f} style={{ fontFamily: f }}>{f}</SelectItem>))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </>
+                  )}
+
                   {selectedObject.type === 'i-text' && (
                     <>
                       <div>
