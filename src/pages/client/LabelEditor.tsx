@@ -1494,8 +1494,47 @@ const LabelEditor = () => {
           <div className="w-56 lg:w-60 shrink-0 border-l bg-card overflow-auto">
             <div className="p-3 space-y-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                {selectedObject ? 'Propriedades' : 'Canvas'}
+                {drawingMode ? 'Desenho Livre' : selectedObject ? 'Propriedades' : 'Canvas'}
               </p>
+
+              {/* ── Drawing mode controls ── */}
+              {drawingMode && !selectedObject && (
+                <>
+                  <div>
+                    <Label className="text-xs">Cor do traço</Label>
+                    <div className="flex gap-2 items-center mt-1">
+                      <input type="color" value={brushColor} onChange={e => setBrushColor(e.target.value)} className="h-8 w-8 rounded border cursor-pointer" />
+                      <Input value={brushColor} onChange={e => setBrushColor(e.target.value)} className="h-8 text-xs flex-1" />
+                    </div>
+                    <div className="flex gap-1 mt-1.5 flex-wrap">
+                      {['#333333', '#e11d48', '#2563eb', '#16a34a', '#eab308', '#9333ea', '#f97316', '#ffffff'].map(c => (
+                        <button key={c} onClick={() => setBrushColor(c)}
+                          className={`h-6 w-6 rounded border-2 transition-all ${brushColor === c ? 'border-primary scale-110' : 'border-transparent'}`}
+                          style={{ backgroundColor: c }} />
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Espessura: {brushWidth}px</Label>
+                    <input type="range" min={1} max={20} step={1} value={brushWidth}
+                      onChange={e => setBrushWidth(Number(e.target.value))}
+                      className="w-full mt-1" />
+                    <div className="flex gap-1 mt-1">
+                      {[1, 3, 5, 8, 12, 20].map(w => (
+                        <Button key={w} variant={brushWidth === w ? 'default' : 'outline'} size="sm"
+                          className="h-6 px-2 text-[10px]" onClick={() => setBrushWidth(w)}>{w}</Button>
+                      ))}
+                    </div>
+                  </div>
+                  <Separator />
+                  <Button variant="outline" size="sm" className="w-full gap-1" onClick={eraseLastDrawing}>
+                    <Eraser className="h-3.5 w-3.5" />Apagar último traço
+                  </Button>
+                  <Button variant="outline" size="sm" className="w-full gap-1" onClick={() => toggleDrawingMode(false)}>
+                    <MousePointer2 className="h-3.5 w-3.5" />Voltar à seleção
+                  </Button>
+                </>
+              )}
 
               {/* ── When NO object selected: show canvas properties ── */}
               {!selectedObject && (
