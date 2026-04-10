@@ -713,6 +713,140 @@ export const templateVintageRetro: LabelTemplate = {
   },
 };
 
+// ============================================================
+// EMPRESARIAL — LOGÍSTICA E ENVIO
+// ============================================================
+const templateEnvioLogistica: LabelTemplate = {
+  id: 'empresarial-envio-01',
+  name: 'Etiqueta de Envio',
+  category: 'empresarial',
+  description: 'Etiqueta profissional para logística e envio de encomendas',
+  tags: ['envio', 'logística', 'encomenda', 'endereço', 'correios', 'frete'],
+  premium: false,
+  getObjects: (wm, hm) => {
+    const { cx, cy, w, h } = center(wm, hm);
+    return [
+      { type: 'rect', left: 0, top: 0, width: w, height: h, fill: '#FFFFFF', selectable: false },
+      { type: 'rect', left: 0, top: 0, width: w, height: h * 0.2, fill: '#1A237E', selectable: false },
+      { type: 'i-text', text: '📦  MINHA EMPRESA', left: cx, top: h * 0.1, originX: 'center', originY: 'center', fontSize: h * 0.065, fontFamily: 'Montserrat', fontWeight: 'bold', fill: '#FFFFFF' },
+      { type: 'line', x1: w * 0.05, y1: h * 0.25, x2: w * 0.95, y2: h * 0.25, stroke: '#1A237E', strokeWidth: 2 },
+      { type: 'i-text', text: 'DESTINATÁRIO', left: w * 0.08, top: h * 0.31, fontSize: h * 0.042, fontFamily: 'Montserrat', fontWeight: 'bold', fill: '#1A237E', charSpacing: 150 },
+      { type: 'i-text', text: 'Nome Completo do Cliente', left: w * 0.08, top: h * 0.41, fontSize: h * 0.06, fontFamily: 'Roboto', fontWeight: 'bold', fill: '#111111' },
+      { type: 'i-text', text: 'Rua Exemplo, 123 — Apto 45\nBairro Centro — Cidade/SP\nCEP: 00000-000', left: w * 0.08, top: h * 0.54, fontSize: h * 0.048, fontFamily: 'Roboto', fill: '#333333', lineHeight: 1.5 },
+      { type: 'line', x1: w * 0.05, y1: h * 0.76, x2: w * 0.95, y2: h * 0.76, stroke: '#CCCCCC', strokeWidth: 1, strokeDashArray: [6, 3] },
+      { type: 'i-text', text: 'REMETENTE: Minha Empresa  •  CEP: 00000-000', left: cx, top: h * 0.86, originX: 'center', originY: 'center', fontSize: h * 0.038, fontFamily: 'Roboto', fill: '#888888' },
+      { type: 'i-text', text: '# BR000000000BR', left: cx, top: h * 0.94, originX: 'center', originY: 'center', fontSize: h * 0.042, fontFamily: 'Courier New', fontWeight: 'bold', fill: '#1A237E', charSpacing: 100 },
+    ];
+  },
+};
+
+// ============================================================
+// MODERNO — GRADIENTE COLORIDO
+// ============================================================
+const templateModernoGradiente: LabelTemplate = {
+  id: 'moderno-gradiente-01',
+  name: 'Gradiente Vibrante',
+  category: 'moderno',
+  description: 'Design moderno com gradiente vibrante e visual tech',
+  tags: ['moderno', 'gradiente', 'colorido', 'vibrante', 'tech', 'digital'],
+  premium: false,
+  getObjects: (wm, hm) => {
+    const { cx, cy, w, h } = center(wm, hm);
+    return [
+      { type: 'rect', left: 0, top: 0, width: w, height: h, fill: '#1A0533', selectable: false },
+      { type: 'rect', left: 0, top: 0, width: w, height: h * 0.5, fill: '#FF006620', selectable: false },
+      { type: 'circle', left: w * 0.8, top: -h * 0.1, radius: h * 0.35, fill: '#FF00AA15', selectable: false },
+      { type: 'circle', left: -w * 0.1, top: h * 0.6, radius: h * 0.3, fill: '#7C3AED20', selectable: false },
+      { type: 'i-text', text: '✦', left: cx, top: h * 0.18, originX: 'center', originY: 'center', fontSize: h * 0.1, fill: '#FF00AA' },
+      { type: 'i-text', text: 'BRAND', left: cx, top: h * 0.34, originX: 'center', originY: 'center', fontSize: h * 0.13, fontFamily: 'Montserrat', fontWeight: 'bold', fill: '#FFFFFF', charSpacing: 400 },
+      { type: 'i-text', text: 'STUDIO', left: cx, top: h * 0.47, originX: 'center', originY: 'center', fontSize: h * 0.07, fontFamily: 'Montserrat', fill: '#FF00AA', charSpacing: 600 },
+      { type: 'line', x1: w * 0.2, y1: h * 0.57, x2: w * 0.8, y2: h * 0.57, stroke: '#7C3AED', strokeWidth: 2 },
+      { type: 'i-text', text: 'Design que inspira', left: cx, top: h * 0.68, originX: 'center', originY: 'center', fontSize: h * 0.055, fontFamily: 'Lato', fontStyle: 'italic', fill: '#CCBBFF' },
+      { type: 'i-text', text: 'www.brandstudio.com', left: cx, top: h * 0.84, originX: 'center', originY: 'center', fontSize: h * 0.042, fontFamily: 'Roboto', fill: '#FF00AA', charSpacing: 50 },
+    ];
+  },
+};
+
+// ============================================================
+// ESCOLAR — NOME PARA MATERIAL
+// ============================================================
+const templateEscolarNome: LabelTemplate = {
+  id: 'escolar-nome-01',
+  name: 'Nome Escolar',
+  category: 'escolar',
+  description: 'Etiqueta de nome para material escolar infantil',
+  tags: ['escolar', 'nome', 'criança', 'material', 'caderno', 'mochila'],
+  premium: false,
+  getObjects: (wm, hm) => {
+    const { cx, cy, w, h } = center(wm, hm);
+    return [
+      { type: 'rect', left: 0, top: 0, width: w, height: h, fill: '#E3F2FD', selectable: false },
+      { type: 'rect', left: w * 0.03, top: h * 0.05, width: w * 0.94, height: h * 0.9, fill: 'transparent', stroke: '#1565C0', strokeWidth: 3, strokeDashArray: [8, 4], rx: 8, ry: 8 },
+      { type: 'i-text', text: '⭐ ⭐ ⭐', left: cx, top: h * 0.18, originX: 'center', originY: 'center', fontSize: h * 0.1 },
+      { type: 'i-text', text: 'Este material pertence a:', left: cx, top: h * 0.36, originX: 'center', originY: 'center', fontSize: h * 0.052, fontFamily: 'Roboto', fill: '#1565C0' },
+      { type: 'i-text', text: 'Nome da Criança', left: cx, top: h * 0.53, originX: 'center', originY: 'center', fontSize: h * 0.09, fontFamily: 'Pacifico', fill: '#0D47A1' },
+      { type: 'line', x1: w * 0.1, y1: h * 0.65, x2: w * 0.9, y2: h * 0.65, stroke: '#1565C0', strokeWidth: 1 },
+      { type: 'i-text', text: 'Turma: ______   Série: ______', left: cx, top: h * 0.78, originX: 'center', originY: 'center', fontSize: h * 0.048, fontFamily: 'Roboto', fill: '#1565C0' },
+      { type: 'i-text', text: 'Tel: (  )  _____.____', left: cx, top: h * 0.9, originX: 'center', originY: 'center', fontSize: h * 0.044, fontFamily: 'Roboto', fill: '#42A5F5' },
+    ];
+  },
+};
+
+// ============================================================
+// CASAMENTO — ELEGANTE
+// ============================================================
+const templateCasamentoElegante: LabelTemplate = {
+  id: 'festa-casamento-01',
+  name: 'Casamento Elegante',
+  category: 'festas',
+  subcategory: 'casamento',
+  description: 'Etiqueta elegante para casamentos com ornamentos dourados',
+  tags: ['casamento', 'wedding', 'elegante', 'romantico', 'dourado', 'bege'],
+  premium: false,
+  getObjects: (wm, hm) => {
+    const { cx, cy, w, h } = center(wm, hm);
+    return [
+      { type: 'rect', left: 0, top: 0, width: w, height: h, fill: '#FDFAF5', selectable: false },
+      { type: 'rect', left: w * 0.04, top: h * 0.04, width: w * 0.92, height: h * 0.92, fill: 'transparent', stroke: '#C9A84C', strokeWidth: 2, rx: 2, ry: 2 },
+      { type: 'rect', left: w * 0.07, top: h * 0.07, width: w * 0.86, height: h * 0.86, fill: 'transparent', stroke: '#C9A84C', strokeWidth: 0.5, rx: 1, ry: 1 },
+      { type: 'i-text', text: '❀  ❀  ❀', left: cx, top: h * 0.15, originX: 'center', originY: 'center', fontSize: h * 0.065, fill: '#C9A84C' },
+      { type: 'i-text', text: 'Ana & Pedro', left: cx, top: h * 0.33, originX: 'center', originY: 'center', fontSize: h * 0.1, fontFamily: 'Great Vibes', fill: '#4A3728' },
+      { type: 'i-text', text: 'CASAM-SE', left: cx, top: h * 0.47, originX: 'center', originY: 'center', fontSize: h * 0.05, fontFamily: 'Montserrat', fill: '#C9A84C', charSpacing: 400 },
+      { type: 'i-text', text: '14 de Junho de 2026', left: cx, top: h * 0.58, originX: 'center', originY: 'center', fontSize: h * 0.055, fontFamily: 'Lato', fill: '#4A3728' },
+      { type: 'line', x1: w * 0.2, y1: h * 0.67, x2: w * 0.8, y2: h * 0.67, stroke: '#C9A84C', strokeWidth: 1 },
+      { type: 'i-text', text: 'Local do Evento\nCidade — Estado', left: cx, top: h * 0.79, originX: 'center', originY: 'center', fontSize: h * 0.048, fontFamily: 'Lato', fill: '#7A6550', textAlign: 'center', lineHeight: 1.5 },
+      { type: 'i-text', text: '❀  ❀  ❀', left: cx, top: h * 0.9, originX: 'center', originY: 'center', fontSize: h * 0.065, fill: '#C9A84C' },
+    ];
+  },
+};
+
+// ============================================================
+// SABONETE ARTESANAL — BOTÂNICO
+// ============================================================
+const templateSaboneteNatural: LabelTemplate = {
+  id: 'botanico-sabonete-01',
+  name: 'Sabonete Natural',
+  category: 'botanico',
+  description: 'Etiqueta para sabonete artesanal natural com visual botânico',
+  tags: ['sabonete', 'natural', 'artesanal', 'vegano', 'orgânico', 'lavanda'],
+  premium: false,
+  getObjects: (wm, hm) => {
+    const { cx, cy, w, h } = center(wm, hm);
+    return [
+      { type: 'rect', left: 0, top: 0, width: w, height: h, fill: '#F3E8FF', selectable: false },
+      { type: 'rect', left: 0, top: 0, width: w * 0.08, height: h, fill: '#7C3AED', selectable: false },
+      { type: 'rect', left: w * 0.92, top: 0, width: w * 0.08, height: h, fill: '#7C3AED', selectable: false },
+      { type: 'i-text', text: '🌸', left: cx, top: h * 0.17, originX: 'center', originY: 'center', fontSize: h * 0.13 },
+      { type: 'i-text', text: 'Sabonete', left: cx, top: h * 0.34, originX: 'center', originY: 'center', fontSize: h * 0.1, fontFamily: 'Playfair Display', fontStyle: 'italic', fill: '#4C1D95' },
+      { type: 'i-text', text: 'de Lavanda', left: cx, top: h * 0.47, originX: 'center', originY: 'center', fontSize: h * 0.07, fontFamily: 'Dancing Script', fill: '#7C3AED' },
+      { type: 'line', x1: w * 0.2, y1: h * 0.57, x2: w * 0.8, y2: h * 0.57, stroke: '#7C3AED', strokeWidth: 1, strokeDashArray: [4, 3] },
+      { type: 'i-text', text: 'Vegano • Artesanal • Sem Parabenos', left: cx, top: h * 0.67, originX: 'center', originY: 'center', fontSize: h * 0.044, fontFamily: 'Lato', fill: '#6D28D9', textAlign: 'center' },
+      { type: 'i-text', text: '90g', left: cx, top: h * 0.8, originX: 'center', originY: 'center', fontSize: h * 0.065, fontFamily: 'Montserrat', fontWeight: 'bold', fill: '#4C1D95' },
+      { type: 'i-text', text: 'Naturelle', left: cx, top: h * 0.9, originX: 'center', originY: 'center', fontSize: h * 0.052, fontFamily: 'Sacramento', fill: '#7C3AED' },
+    ];
+  },
+};
+
 // Append all new templates to the main array
 LABEL_TEMPLATES.push(
   templateProdutoMinimalista,
@@ -727,6 +861,11 @@ LABEL_TEMPLATES.push(
   templateBotanicoErvas,
   templateMinimalistaPreto,
   templateVintageRetro,
+  templateEnvioLogistica,
+  templateModernoGradiente,
+  templateEscolarNome,
+  templateCasamentoElegante,
+  templateSaboneteNatural,
 );
 
 export function getTemplatesByCategory(category: string): LabelTemplate[] {
