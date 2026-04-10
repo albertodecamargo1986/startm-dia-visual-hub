@@ -269,7 +269,7 @@ const CmsPageEditor = () => {
             <Badge variant={page.status === 'published' ? 'default' : 'secondary'}>
               {page.status === 'published' ? 'Publicada' : 'Rascunho'}
             </Badge>
-            {dirty && <Badge variant="outline" className="text-xs border-yellow-500 text-yellow-600">Alterações não salvas</Badge>}
+            {dirty && <Badge variant="outline" className="text-xs border-destructive/50 text-destructive">Alterações não salvas</Badge>}
           </div>
           <div className="flex gap-2 items-center">
             {/* Auto-save toggle */}
