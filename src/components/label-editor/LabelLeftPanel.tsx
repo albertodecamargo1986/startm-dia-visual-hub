@@ -5,20 +5,21 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Palette, Shapes, Layers, X, Frame, Eye, EyeOff, Lock, Unlock, ArrowUp, ArrowDown, GripVertical } from 'lucide-react';
 import {
-  TEMPLATE_CATEGORIES, getTemplatesByCategory,
   DECORATIVE_CATEGORIES, getDecorativeByCategory,
   type LabelTemplate, type DecorativeElement
 } from '@/lib/label-templates';
 import { SVG_ELEMENTS_LIBRARY } from './svg-library';
+import { TemplateGallery } from './panels/TemplateGallery';
 import type { LayerItem, SvgElement } from './types';
 
 interface LabelLeftPanelProps {
   bgColor: string;
+  widthMm: number;
+  heightMm: number;
   onBgColorChange: (color: string) => void;
   onApplyTemplate: (t: LabelTemplate) => void;
   onAddDecorative: (el: DecorativeElement) => void;
   onAddSvgElement: (el: SvgElement) => void;
-  getTemplateColors: (t: LabelTemplate) => string[];
   layers: LayerItem[];
   selectedObject: any;
   editingLayerName: number | null;
@@ -35,8 +36,8 @@ interface LabelLeftPanelProps {
 }
 
 const LabelLeftPanel = ({
-  bgColor, onBgColorChange, onApplyTemplate, onAddDecorative, onAddSvgElement,
-  getTemplateColors, layers, selectedObject, editingLayerName, layerNameDraft,
+  bgColor, widthMm, heightMm, onBgColorChange, onApplyTemplate, onAddDecorative, onAddSvgElement,
+  layers, selectedObject, editingLayerName, layerNameDraft,
   onClose, onSelectLayer, onToggleLayerVisibility, onToggleLayerLock,
   onMoveLayerUp, onMoveLayerDown, onStartEditLayerName, onLayerNameDraftChange, onFinishEditLayerName,
 }: LabelLeftPanelProps) => (
@@ -69,33 +70,15 @@ const LabelLeftPanel = ({
 
             <Separator />
 
-            {/* Templates */}
+            {/* Templates Gallery */}
             <div>
               <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Templates</p>
-              <div className="space-y-2">
-                {TEMPLATE_CATEGORIES.map(cat => {
-                  const templates = getTemplatesByCategory(cat.id);
-                  if (templates.length === 0) return null;
-                  return (
-                    <div key={cat.id}>
-                      <p className="text-xs text-muted-foreground mb-1">{cat.emoji} {cat.label}</p>
-                      <div className="grid grid-cols-2 gap-1.5">
-                        {templates.map(t => {
-                          const colors = getTemplateColors(t);
-                          return (
-                            <button key={t.id} onClick={() => onApplyTemplate(t)}
-                              className="flex flex-col items-center gap-1 p-2 rounded-lg border hover:border-primary/50 hover:bg-muted/50 transition-all text-left">
-                              <div className="w-full h-8 rounded flex gap-0.5 overflow-hidden">
-                                {colors.map((c, i) => (<div key={i} className="flex-1 rounded-sm" style={{ backgroundColor: c }} />))}
-                              </div>
-                              <span className="text-[11px] font-medium truncate w-full">{t.name}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
+              <div className="h-[400px]">
+                <TemplateGallery
+                  onSelectTemplate={onApplyTemplate}
+                  widthMm={widthMm}
+                  heightMm={heightMm}
+                />
               </div>
             </div>
 

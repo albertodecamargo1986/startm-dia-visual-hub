@@ -273,11 +273,12 @@ const LabelEditorInner = () => {
           {ctx.showLeftPanel && (
             <LabelLeftPanel
               bgColor={ctx.bgColor}
+              widthMm={ctx.selectedFormat?.widthMm ?? 50}
+              heightMm={ctx.selectedFormat?.heightMm ?? 50}
               onBgColorChange={ctx.handleBgColorChange}
               onApplyTemplate={ctx.applyTemplate}
               onAddDecorative={ctx.addDecorative}
               onAddSvgElement={ctx.addSvgElement}
-              getTemplateColors={ctx.getTemplateColors}
               layers={ctx.layers}
               selectedObject={ctx.selectedObject}
               editingLayerName={ctx.editingLayerName}
