@@ -16,6 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ArrowLeft, Save, Globe, Eye, History, Loader2, Plus, Trash2, Copy, GripVertical, ChevronUp, ChevronDown, ChevronRight, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Section {
   id?: string;
@@ -30,6 +31,7 @@ interface Section {
 const CmsPageEditor = () => {
   const { id } = useParams<{ id: string }>();
   const qc = useQueryClient();
+  const { isSuperAdmin } = useAuth();
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [page, setPage] = useState({ title: '', slug: '', seo_title: '', seo_description: '', is_home: false, status: 'draft' });
@@ -212,7 +214,7 @@ const CmsPageEditor = () => {
           <Button variant="outline" size="sm" onClick={handleSave} disabled={saving}>
             {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}Salvar
           </Button>
-          <Button size="sm" onClick={handlePublish} disabled={publishing}>
+          <Button size="sm" onClick={handlePublish} disabled={publishing || !isSuperAdmin} title={!isSuperAdmin ? 'Apenas super_admin pode publicar' : ''}>
             {publishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Globe className="mr-2 h-4 w-4" />}Publicar
           </Button>
         </div>
