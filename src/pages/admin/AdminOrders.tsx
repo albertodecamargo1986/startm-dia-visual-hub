@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
@@ -48,6 +48,21 @@ const AdminOrders = () => {
       return { orders: (data ?? []) as (Order & { profiles: { full_name: string; email: string } | null })[], total: count ?? 0 };
     },
   });
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-orders-realtime')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'orders',
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [queryClient]);
 
   const orders = data?.orders ?? [];
   const total = data?.total ?? 0;
