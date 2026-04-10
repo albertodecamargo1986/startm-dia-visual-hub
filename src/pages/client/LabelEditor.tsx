@@ -450,6 +450,34 @@ const LabelEditor = () => {
     setBgColor(background);
   }, []);
 
+  // ── Project CRUD ──
+  const handleNewProject = async () => {
+    if (!selectedFormat) { toast.error('Selecione um formato'); return; }
+    const proj = await createProject({ name: projectName, label_shape: selectedFormat.shape, width_mm: selectedFormat.widthMm, height_mm: selectedFormat.heightMm });
+    if (proj) {
+      resetCanvas();
+      setCurrentProject(proj);
+      setProjectName(proj.name);
+      applyFormat(selectedFormat);
+      pushHistory();
+    }
+  };
+
+  const loadProject = useCallback(async (proj: LabelProject) => {
+    const fc = fabricRef.current; if (!fc) return;
+    resetCanvas();
+    setCurrentProject(proj); setProjectName(proj.name);
+    const fmt: LabelFormat = { id: `${proj.label_shape}-${proj.width_mm}x${proj.height_mm}`, shape: proj.label_shape as any, label: `${proj.width_mm / 10}×${proj.height_mm / 10} cm`, widthMm: proj.width_mm, heightMm: proj.height_mm };
+    setSelectedFormat(fmt); setSelectedShape(proj.label_shape); applyFormat(fmt);
+    if (proj.canvas_json && Object.keys(proj.canvas_json).length > 0) {
+      isRestoring.current = true;
+      await fc.loadFromJSON(proj.canvas_json);
+      fc.renderAll(); isRestoring.current = false;
+      setBgColor((fc.backgroundColor as string) || '#ffffff');
+    }
+    pushHistory(); syncLayers();
+  }, [applyFormat, pushHistory, resetCanvas, syncLayers]);
+
   // ── Add elements ──
   const addText = () => {
     const fc = fabricRef.current; if (!fc) return;
