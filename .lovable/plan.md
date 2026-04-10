@@ -1,19 +1,18 @@
 
 
-# Fix: Webhook PagSeguro — valor "analyzing" inválido no banco
+# Fix: Race condition no AuthContext — loading vs fetchProfile
 
 ## Problema
-O webhook tenta gravar `payment_status = 'analyzing'` quando PagSeguro envia status 2 (análise), mas o banco tem CHECK constraint que só aceita `('pending','paid','failed','refunded')`. Isso causa erro silencioso e o pedido nunca atualiza.
+`setLoading(false)` é chamado imediatamente após `setSession`, antes de `fetchProfile` resolver. O `RequireAdmin` vê `loading=false` + `isAdmin=false` e redireciona o admin para `/` antes dos roles carregarem.
 
 ## Alteração
 
-### `supabase/functions/pagseguro-webhook/index.ts`
-- Substituir o bloco de mapeamento de status (linhas ~47–58) para:
-  - Status 2 (análise) → manter `pending` em vez de `analyzing`
-  - Status 5 (disputa) → manter `pending`, apenas registrar na timeline
-  - Status 3/4 (pago) → `paid` / `awaiting_artwork`
-  - Status 6/7 (cancelado) → `refunded` / `cancelled`
-- Adicionar flag `shouldUpdate` para só gravar no banco quando o status realmente muda (status 3, 4, 6 ou 7)
-- Envolver o bloco de update + timeline dentro de `if (shouldUpdate)`
-- Para status 2 e 5, apenas registrar na timeline sem alterar o pedido
+### `src/contexts/AuthContext.tsx` — Substituir useEffect (linhas 44–64)
+- Criar função `syncSession` que faz `await fetchProfile()` antes de `setLoading(false)`
+- Adicionar flag `isMounted` para evitar state updates após unmount
+- Remover o `setTimeout` que desacoplava fetchProfile do fluxo
+- `getSession` inicial: aguardar `syncSession` antes de liberar loading
+- `onAuthStateChange`: chamar `syncSession` que também aguarda profile
+
+Nenhuma outra alteração no arquivo.
 
