@@ -543,6 +543,67 @@ const LabelEditor = () => {
                 </div>
               </TabsContent>
 
+              <TabsContent value="templates" className="mt-3">
+                <ScrollArea className="h-[400px]">
+                  {!currentProject ? (
+                    <p className="text-xs text-muted-foreground">Crie um projeto primeiro.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {TEMPLATE_CATEGORIES.map(cat => {
+                        const templates = getTemplatesByCategory(cat.id);
+                        if (templates.length === 0) return null;
+                        return (
+                          <div key={cat.id}>
+                            <p className="text-xs font-medium text-muted-foreground mb-1">{cat.emoji} {cat.label}</p>
+                            <div className="space-y-1">
+                              {templates.map(t => (
+                                <Button key={t.id} variant="outline" size="sm" className="w-full justify-start text-xs h-auto py-1.5"
+                                  onClick={() => applyTemplate(t)}>
+                                  <LayoutTemplate className="h-3 w-3 mr-2 shrink-0" />
+                                  <div className="text-left">
+                                    <span className="block font-medium">{t.name}</span>
+                                    <span className="block text-muted-foreground text-[10px]">{t.description}</span>
+                                  </div>
+                                </Button>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </ScrollArea>
+              </TabsContent>
+
+              <TabsContent value="decor" className="mt-3">
+                <ScrollArea className="h-[400px]">
+                  {!currentProject ? (
+                    <p className="text-xs text-muted-foreground">Crie um projeto primeiro.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {DECORATIVE_CATEGORIES.map(cat => {
+                        const elements = getDecorativeByCategory(cat.id);
+                        if (elements.length === 0) return null;
+                        return (
+                          <div key={cat.id}>
+                            <p className="text-xs font-medium text-muted-foreground mb-1">{cat.emoji} {cat.label}</p>
+                            <div className="grid grid-cols-2 gap-1">
+                              {elements.map(el => (
+                                <Button key={el.id} variant="outline" size="sm" className="text-xs h-auto py-1.5"
+                                  onClick={() => addDecorative(el)}>
+                                  <Frame className="h-3 w-3 mr-1 shrink-0" />
+                                  {el.name}
+                                </Button>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </ScrollArea>
+              </TabsContent>
+
               <TabsContent value="projects" className="mt-3">
                 <ScrollArea className="h-[400px]">
                   <div className="space-y-2">
