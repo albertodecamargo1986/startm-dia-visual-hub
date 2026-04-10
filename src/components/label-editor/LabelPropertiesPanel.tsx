@@ -318,7 +318,8 @@ const LabelPropertiesPanel = ({
         </>
       )}
     </div>
-  </div>
-);
+   </div>
+  );
+};
 
 export default LabelPropertiesPanel;
