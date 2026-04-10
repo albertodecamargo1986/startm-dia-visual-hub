@@ -45,15 +45,7 @@ const CmsPageRevisions = () => {
 
   const restoreMut = useMutation({
     mutationFn: async (revisionId: string) => {
-      const rev = revisions.find(r => r.id === revisionId);
-      if (!rev) throw new Error('Revisão não encontrada');
-      const snapshot = rev.snapshot as { page: Record<string, unknown>; sections: Record<string, unknown>[] };
-      if (!snapshot?.page || !snapshot?.sections) throw new Error('Snapshot inválido');
-
-      const res = await cmsApi.saveDraft(
-        { id, ...snapshot.page },
-        snapshot.sections
-      );
+      const res = await cmsApi.restoreRevision(id!, revisionId);
       if (!res.success) throw new Error(res.error || 'Erro');
     },
     onSuccess: () => {
