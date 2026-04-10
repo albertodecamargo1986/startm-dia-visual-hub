@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Canvas as FabricCanvas, Rect, Circle, IText, Line, Ellipse, Triangle } from 'fabric';
+import { Canvas as FabricCanvas, Rect, Circle, IText, Line, Ellipse, Triangle, FabricObject } from 'fabric';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -14,11 +14,17 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Plus, Download, Save, Trash2, Type, Square, Circle as CircleIcon,
   Minus, Triangle as TriangleIcon, Undo2, Redo2, ZoomIn, ZoomOut,
-  FileText, Layers, Palette, ArrowUp, ArrowDown, Eye, EyeOff, Copy
+  FileText, Layers, Palette, ArrowUp, ArrowDown, Eye, EyeOff, Copy,
+  LayoutTemplate, Frame
 } from 'lucide-react';
 import { LABEL_SHAPES, getFormatsForShape, mmToPx, type LabelFormat } from '@/lib/label-formats';
 import { exportLabelPDF } from '@/lib/label-pdf-export';
 import { useLabelProjects, useAutoSave, type LabelProject } from '@/hooks/use-label-projects';
+import {
+  TEMPLATE_CATEGORIES, LABEL_TEMPLATES, getTemplatesByCategory,
+  DECORATIVE_CATEGORIES, DECORATIVE_ELEMENTS, getDecorativeByCategory,
+  type LabelTemplate, type DecorativeElement
+} from '@/lib/label-templates';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
