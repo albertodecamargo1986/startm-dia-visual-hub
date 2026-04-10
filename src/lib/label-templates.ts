@@ -1,4 +1,5 @@
 import { mmToPx } from './label-formats';
+import { Rect, IText, Line, Path } from 'fabric';
 
 export type TemplateCategory =
   | 'produtos'
