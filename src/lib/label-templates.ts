@@ -392,6 +392,152 @@ export const DECORATIVE_ELEMENTS: DecorativeElement[] = [
   },
 ];
 
+// =============================================
+// CATEGORIA: PRODUTOS / E-COMMERCE
+// =============================================
+export const templateProdutoMinimalista: LabelTemplate = {
+  id: 'produto-minimalista-01',
+  name: 'Produto Minimalista',
+  category: 'produtos',
+  description: 'Layout limpo para produtos com marca, nome e informações',
+  tags: ['minimalista', 'produto', 'clean', 'moderno'],
+  premium: false,
+  thumbnail: '/thumbnails/produto-minimalista-01.png',
+  getObjects: (w, h) => {
+    const wPx = mmToPx(w);
+    const hPx = mmToPx(h);
+    return [
+      new Rect({ left: wPx * 0.05, top: hPx * 0.05, width: wPx * 0.9, height: hPx * 0.9, fill: '#FFFFFF', stroke: '#E0E0E0', strokeWidth: 2, rx: 8, ry: 8 }),
+      new Rect({ left: wPx * 0.05, top: hPx * 0.05, width: wPx * 0.9, height: hPx * 0.12, fill: '#1A1A2E', rx: 8, ry: 8 }),
+      new IText('MARCA', { left: wPx * 0.5, top: hPx * 0.09, originX: 'center', originY: 'center', fontSize: hPx * 0.06, fontFamily: 'Montserrat', fontWeight: 'bold', fill: '#FFFFFF', charSpacing: 200 }),
+      new IText('Nome do Produto', { left: wPx * 0.5, top: hPx * 0.38, originX: 'center', originY: 'center', fontSize: hPx * 0.09, fontFamily: 'Playfair Display', fill: '#1A1A2E', fontStyle: 'italic' }),
+      new Line([wPx * 0.2, hPx * 0.52, wPx * 0.8, hPx * 0.52], { stroke: '#1A1A2E', strokeWidth: 1 }),
+      new IText('Descrição do produto\nIngredientes ou informações', { left: wPx * 0.5, top: hPx * 0.65, originX: 'center', originY: 'center', fontSize: hPx * 0.045, fontFamily: 'Roboto', fill: '#666666', textAlign: 'center', lineHeight: 1.4 }),
+      new IText('www.suamarca.com.br', { left: wPx * 0.5, top: hPx * 0.88, originX: 'center', originY: 'center', fontSize: hPx * 0.04, fontFamily: 'Roboto', fill: '#1A1A2E', charSpacing: 50 }),
+    ];
+  },
+};
+
+// =============================================
+// CATEGORIA: ALIMENTOS / GASTRONOMIA
+// =============================================
+export const templateAlimentoArtesanal: LabelTemplate = {
+  id: 'alimento-artesanal-01',
+  name: 'Alimento Artesanal',
+  category: 'alimentos',
+  description: 'Rótulo artesanal para alimentos com moldura dupla',
+  tags: ['alimento', 'artesanal', 'orgânico', 'natural', 'doce', 'bolo'],
+  premium: false,
+  thumbnail: '/thumbnails/alimento-artesanal-01.png',
+  getObjects: (w, h) => {
+    const wPx = mmToPx(w);
+    const hPx = mmToPx(h);
+    return [
+      new Rect({ left: 0, top: 0, width: wPx, height: hPx, fill: '#FFF8F0', selectable: false }),
+      new Rect({ left: wPx * 0.04, top: hPx * 0.04, width: wPx * 0.92, height: hPx * 0.92, fill: 'transparent', stroke: '#8B5E3C', strokeWidth: 3, rx: 4, ry: 4 }),
+      new Rect({ left: wPx * 0.07, top: hPx * 0.07, width: wPx * 0.86, height: hPx * 0.86, fill: 'transparent', stroke: '#8B5E3C', strokeWidth: 1, strokeDashArray: [5, 3], rx: 2, ry: 2 }),
+      new Rect({ left: wPx * 0.04, top: hPx * 0.04, width: wPx * 0.92, height: hPx * 0.2, fill: '#8B5E3C', rx: 4, ry: 4 }),
+      new IText('✦  FEITO COM AMOR  ✦', { left: wPx * 0.5, top: hPx * 0.14, originX: 'center', originY: 'center', fontSize: hPx * 0.055, fontFamily: 'Montserrat', fontWeight: 'bold', fill: '#FFF8F0', charSpacing: 100 }),
+      new IText('Brigadeiro\nGourmet', { left: wPx * 0.5, top: hPx * 0.42, originX: 'center', originY: 'center', fontSize: hPx * 0.1, fontFamily: 'Playfair Display', fontStyle: 'italic', fill: '#5C3317', textAlign: 'center', lineHeight: 1.2 }),
+      new IText('— ✦ —', { left: wPx * 0.5, top: hPx * 0.62, originX: 'center', originY: 'center', fontSize: hPx * 0.07, fontFamily: 'Georgia', fill: '#8B5E3C' }),
+      new IText('Tradicional ao leite ninho', { left: wPx * 0.5, top: hPx * 0.74, originX: 'center', originY: 'center', fontSize: hPx * 0.05, fontFamily: 'Dancing Script', fill: '#8B5E3C' }),
+      new IText('100g  •  Val: ____/____ ', { left: wPx * 0.5, top: hPx * 0.87, originX: 'center', originY: 'center', fontSize: hPx * 0.04, fontFamily: 'Roboto', fill: '#8B5E3C' }),
+    ];
+  },
+};
+
+// =============================================
+// CATEGORIA: COSMÉTICOS / BELEZA
+// =============================================
+export const templateCosmeticoLuxo: LabelTemplate = {
+  id: 'cosmetico-luxo-01',
+  name: 'Cosmético Luxo',
+  category: 'cosmeticos',
+  description: 'Rótulo sofisticado dark com detalhes dourados',
+  tags: ['cosmetico', 'beleza', 'luxo', 'skincare', 'premium'],
+  premium: false,
+  thumbnail: '/thumbnails/cosmetico-luxo-01.png',
+  getObjects: (w, h) => {
+    const wPx = mmToPx(w);
+    const hPx = mmToPx(h);
+    return [
+      new Rect({ left: 0, top: 0, width: wPx, height: hPx, fill: '#0D0D0D', selectable: false }),
+      new Rect({ left: wPx * 0.1, top: hPx * 0.08, width: wPx * 0.8, height: 2, fill: '#C9A84C' }),
+      new Rect({ left: wPx * 0.1, top: hPx * 0.92, width: wPx * 0.8, height: 2, fill: '#C9A84C' }),
+      new IText('◆', { left: wPx * 0.5, top: hPx * 0.22, originX: 'center', originY: 'center', fontSize: hPx * 0.08, fontFamily: 'Georgia', fill: '#C9A84C' }),
+      new IText('LUXE', { left: wPx * 0.5, top: hPx * 0.36, originX: 'center', originY: 'center', fontSize: hPx * 0.13, fontFamily: 'Playfair Display', fill: '#FFFFFF', charSpacing: 400 }),
+      new IText('BEAUTÉ', { left: wPx * 0.5, top: hPx * 0.48, originX: 'center', originY: 'center', fontSize: hPx * 0.05, fontFamily: 'Montserrat', fill: '#C9A84C', charSpacing: 600 }),
+      new Line([wPx * 0.3, hPx * 0.57, wPx * 0.7, hPx * 0.57], { stroke: '#C9A84C', strokeWidth: 1 }),
+      new IText('Sérum Facial\nHidratação Profunda', { left: wPx * 0.5, top: hPx * 0.7, originX: 'center', originY: 'center', fontSize: hPx * 0.055, fontFamily: 'Lato', fill: '#CCCCCC', textAlign: 'center', lineHeight: 1.4 }),
+      new IText('30 ml', { left: wPx * 0.5, top: hPx * 0.86, originX: 'center', originY: 'center', fontSize: hPx * 0.045, fontFamily: 'Montserrat', fill: '#C9A84C', charSpacing: 200 }),
+    ];
+  },
+};
+
+// =============================================
+// CATEGORIA: FESTAS / EVENTOS
+// =============================================
+export const templateFestaBalloon: LabelTemplate = {
+  id: 'festa-balloon-01',
+  name: 'Festa Balões',
+  category: 'festas',
+  description: 'Etiqueta colorida para festas de aniversário',
+  tags: ['festa', 'aniversário', 'balão', 'colorido', 'criança'],
+  premium: false,
+  thumbnail: '/thumbnails/festa-balloon-01.png',
+  getObjects: (w, h) => {
+    const wPx = mmToPx(w);
+    const hPx = mmToPx(h);
+    return [
+      new Rect({ left: 0, top: 0, width: wPx, height: hPx * 0.5, fill: '#FF6B9D', selectable: false }),
+      new Rect({ left: 0, top: hPx * 0.5, width: wPx, height: hPx * 0.5, fill: '#FF8E53', selectable: false }),
+      new IText('🎈', { left: wPx * 0.15, top: hPx * 0.12, fontSize: hPx * 0.12 }),
+      new IText('🎈', { left: wPx * 0.72, top: hPx * 0.08, fontSize: hPx * 0.1 }),
+      new IText('Feliz', { left: wPx * 0.5, top: hPx * 0.32, originX: 'center', originY: 'center', fontSize: hPx * 0.13, fontFamily: 'Pacifico', fill: '#FFFFFF' }),
+      new IText('Aniversário!', { left: wPx * 0.5, top: hPx * 0.47, originX: 'center', originY: 'center', fontSize: hPx * 0.1, fontFamily: 'Pacifico', fill: '#FFF9C4' }),
+      new IText('✦ ✦ ✦ ✦ ✦', { left: wPx * 0.5, top: hPx * 0.62, originX: 'center', originY: 'center', fontSize: hPx * 0.055, fontFamily: 'Georgia', fill: '#FFFFFF' }),
+      new IText('Maria Clara', { left: wPx * 0.5, top: hPx * 0.75, originX: 'center', originY: 'center', fontSize: hPx * 0.09, fontFamily: 'Dancing Script', fill: '#FFFFFF' }),
+      new IText('7 anos', { left: wPx * 0.5, top: hPx * 0.87, originX: 'center', originY: 'center', fontSize: hPx * 0.065, fontFamily: 'Montserrat', fontWeight: 'bold', fill: '#FFF9C4' }),
+    ];
+  },
+};
+
+// =============================================
+// CATEGORIA: BOTÂNICO / NATURAL
+// =============================================
+export const templateBotanico: LabelTemplate = {
+  id: 'botanico-natural-01',
+  name: 'Botânico Natural',
+  category: 'botanico',
+  description: 'Rótulo verde natural para chás e produtos orgânicos',
+  tags: ['botânico', 'natural', 'plantas', 'orgânico', 'ervas', 'chá'],
+  premium: false,
+  thumbnail: '/thumbnails/botanico-natural-01.png',
+  getObjects: (w, h) => {
+    const wPx = mmToPx(w);
+    const hPx = mmToPx(h);
+    return [
+      new Rect({ left: 0, top: 0, width: wPx, height: hPx, fill: '#F1F7EE', selectable: false }),
+      new Rect({ left: wPx * 0.05, top: hPx * 0.05, width: wPx * 0.9, height: hPx * 0.9, fill: 'transparent', stroke: '#4A7C59', strokeWidth: 2, rx: 4, ry: 4 }),
+      new IText('❧  ❧  ❧', { left: wPx * 0.5, top: hPx * 0.16, originX: 'center', originY: 'center', fontSize: hPx * 0.065, fill: '#4A7C59' }),
+      new IText('Chá de Camomila', { left: wPx * 0.5, top: hPx * 0.35, originX: 'center', originY: 'center', fontSize: hPx * 0.09, fontFamily: 'Playfair Display', fontStyle: 'italic', fill: '#2D5016', textAlign: 'center' }),
+      new IText('100% Natural • Orgânico\nSem conservantes', { left: wPx * 0.5, top: hPx * 0.52, originX: 'center', originY: 'center', fontSize: hPx * 0.05, fontFamily: 'Lato', fill: '#4A7C59', textAlign: 'center', lineHeight: 1.5 }),
+      new Line([wPx * 0.2, hPx * 0.64, wPx * 0.8, hPx * 0.64], { stroke: '#4A7C59', strokeWidth: 1, strokeDashArray: [4, 3] }),
+      new IText('Peso: 50g  •  Val: ____/____', { left: wPx * 0.5, top: hPx * 0.75, originX: 'center', originY: 'center', fontSize: hPx * 0.045, fontFamily: 'Roboto', fill: '#4A7C59' }),
+      new IText('Natureza Viva', { left: wPx * 0.5, top: hPx * 0.87, originX: 'center', originY: 'center', fontSize: hPx * 0.055, fontFamily: 'Dancing Script', fill: '#2D5016' }),
+    ];
+  },
+};
+
+// Append new templates to the main array
+LABEL_TEMPLATES.push(
+  templateProdutoMinimalista,
+  templateAlimentoArtesanal,
+  templateCosmeticoLuxo,
+  templateFestaBalloon,
+  templateBotanico,
+);
+
 export function getTemplatesByCategory(category: string): LabelTemplate[] {
   return LABEL_TEMPLATES.filter(t => t.category === category);
 }
