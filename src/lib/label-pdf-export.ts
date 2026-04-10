@@ -1,5 +1,8 @@
 import jsPDF from 'jspdf';
+import type { Canvas as FabricCanvas } from 'fabric';
 import type { LabelFormat } from './label-formats';
+
+// ── Raster export (existing) ──────────────────────────────────────
 
 interface ExportOptions {
   format: LabelFormat;
@@ -24,7 +27,6 @@ export async function exportLabelPDF(opts: ExportOptions): Promise<Blob> {
     format: [pageW, pageH],
   });
 
-  // Metadata
   doc.setProperties({
     title: projectName,
     subject: `Etiqueta ${format.label} - ${format.shape}`,
@@ -34,30 +36,109 @@ export async function exportLabelPDF(opts: ExportOptions): Promise<Blob> {
   const x = marginMm + bleedMm;
   const y = marginMm + bleedMm;
 
-  // Draw cut marks
   if (includeCutMarks) {
-    doc.setDrawColor(0);
-    doc.setLineWidth(0.1);
-    const markLen = 5;
-    // Top-left
-    doc.line(x - bleedMm, y - bleedMm - markLen, x - bleedMm, y - bleedMm);
-    doc.line(x - bleedMm - markLen, y - bleedMm, x - bleedMm, y - bleedMm);
-    // Top-right
-    doc.line(x + format.widthMm + bleedMm, y - bleedMm - markLen, x + format.widthMm + bleedMm, y - bleedMm);
-    doc.line(x + format.widthMm + bleedMm, y - bleedMm, x + format.widthMm + bleedMm + markLen, y - bleedMm);
-    // Bottom-left
-    doc.line(x - bleedMm, y + format.heightMm + bleedMm, x - bleedMm, y + format.heightMm + bleedMm + markLen);
-    doc.line(x - bleedMm - markLen, y + format.heightMm + bleedMm, x - bleedMm, y + format.heightMm + bleedMm);
-    // Bottom-right
-    doc.line(x + format.widthMm + bleedMm, y + format.heightMm + bleedMm, x + format.widthMm + bleedMm, y + format.heightMm + bleedMm + markLen);
-    doc.line(x + format.widthMm + bleedMm, y + format.heightMm + bleedMm, x + format.widthMm + bleedMm + markLen, y + format.heightMm + bleedMm);
+    drawCropMarks(doc, x, y, format.widthMm, format.heightMm, bleedMm);
   }
 
-  // Add the canvas as image (high res)
   const imgData = canvasEl.toDataURL('image/png', 1.0);
   doc.addImage(imgData, 'PNG', x, y, format.widthMm, format.heightMm);
 
-  // Draw label outline
+  drawLabelOutline(doc, x, y, format);
+
+  return doc.output('blob');
+}
+
+// ── Vector export (new) ───────────────────────────────────────────
+
+interface VectorExportOptions {
+  canvas: FabricCanvas;
+  format: LabelFormat;
+  projectName: string;
+  bleedMm?: number;
+  includeCutMarks?: boolean;
+}
+
+const MM_TO_PX = 3.7795;
+
+export async function exportVectorPDF(opts: VectorExportOptions): Promise<Blob> {
+  const { canvas, format, projectName, bleedMm = 3, includeCutMarks = true } = opts;
+  const { svg2pdf } = await import('svg2pdf.js');
+
+  const marginMm = includeCutMarks ? 10 : 5;
+  const pageW = format.widthMm + bleedMm * 2 + marginMm * 2;
+  const pageH = format.heightMm + bleedMm * 2 + marginMm * 2;
+
+  const doc = new jsPDF({
+    orientation: pageW > pageH ? 'landscape' : 'portrait',
+    unit: 'mm',
+    format: [pageW, pageH],
+  });
+
+  doc.setProperties({
+    title: projectName,
+    subject: `Etiqueta vetorial ${format.label} - ${format.shape}`,
+    creator: 'Editor de Etiquetas',
+  });
+
+  // Export Fabric canvas as SVG
+  const svgString = canvas.toSVG({
+    width: `${format.widthMm}mm`,
+    height: `${format.heightMm}mm`,
+  });
+
+  const parser = new DOMParser();
+  const svgDoc = parser.parseFromString(svgString, 'image/svg+xml');
+  const svgElement = svgDoc.documentElement as unknown as SVGElement;
+
+  const offsetX = marginMm + bleedMm;
+  const offsetY = marginMm + bleedMm;
+
+  // Render SVG into PDF (vector)
+  await svg2pdf(svgElement, doc, {
+    x: offsetX,
+    y: offsetY,
+    width: format.widthMm,
+    height: format.heightMm,
+  });
+
+  if (includeCutMarks) {
+    drawCropMarks(doc, offsetX, offsetY, format.widthMm, format.heightMm, bleedMm);
+  }
+
+  drawLabelOutline(doc, offsetX, offsetY, format);
+
+  return doc.output('blob');
+}
+
+// ── Shared helpers ────────────────────────────────────────────────
+
+function drawCropMarks(
+  doc: jsPDF,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  bleed: number,
+) {
+  doc.setDrawColor(0);
+  doc.setLineWidth(0.1);
+  const m = 5;
+
+  // Top-left
+  doc.line(x - bleed, y - bleed - m, x - bleed, y - bleed);
+  doc.line(x - bleed - m, y - bleed, x - bleed, y - bleed);
+  // Top-right
+  doc.line(x + w + bleed, y - bleed - m, x + w + bleed, y - bleed);
+  doc.line(x + w + bleed, y - bleed, x + w + bleed + m, y - bleed);
+  // Bottom-left
+  doc.line(x - bleed, y + h + bleed, x - bleed, y + h + bleed + m);
+  doc.line(x - bleed - m, y + h + bleed, x - bleed, y + h + bleed);
+  // Bottom-right
+  doc.line(x + w + bleed, y + h + bleed, x + w + bleed, y + h + bleed + m);
+  doc.line(x + w + bleed, y + h + bleed, x + w + bleed + m, y + h + bleed);
+}
+
+function drawLabelOutline(doc: jsPDF, x: number, y: number, format: LabelFormat) {
   doc.setDrawColor(200);
   doc.setLineWidth(0.15);
   if (format.shape === 'round') {
@@ -68,6 +149,4 @@ export async function exportLabelPDF(opts: ExportOptions): Promise<Blob> {
   } else {
     doc.rect(x, y, format.widthMm, format.heightMm);
   }
-
-  return doc.output('blob');
 }
