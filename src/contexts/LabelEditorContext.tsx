@@ -643,12 +643,38 @@ export const LabelEditorProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const applyTemplate = useCallback((template: LabelTemplate) => {
     const fc = fabricRef.current;
     if (!fc || !selectedFormat) return;
-    resetCanvas(); applyFormat(selectedFormat);
+
+    // Check if canvas has user objects (excluding background/boundary)
+    const hasUserObjects = fc.getObjects().filter(
+      (o) => !(o as any).data?.isBackground && !(o as any).data?.isBoundary
+    ).length > 0;
+
+    if (hasUserObjects) {
+      const confirmed = window.confirm(
+        'Aplicar este template vai substituir o design atual. Continuar?'
+      );
+      if (!confirmed) return;
+    }
+
+    // Remove editable objects, keep background and boundary
+    fc.getObjects().forEach((obj) => {
+      if (!(obj as any).data?.isBackground && !(obj as any).data?.isBoundary) {
+        fc.remove(obj);
+      }
+    });
+
+    // Generate and add template objects
     const objs = template.getObjects(selectedFormat.widthMm, selectedFormat.heightMm);
-    objs.forEach(obj => { loadGoogleFont(obj.fontFamily || 'Arial'); addObjectFromJson(fc, obj); });
-    fc.renderAll(); markDirty(); syncLayers();
+    objs.forEach(obj => {
+      loadGoogleFont(obj.fontFamily || 'Arial');
+      addObjectFromJson(fc, obj);
+    });
+
+    fc.renderAll();
+    markDirty();
+    syncLayers();
     toast.success(`Template "${template.name}" aplicado`);
-  }, [selectedFormat, resetCanvas, applyFormat, addObjectFromJson, markDirty, syncLayers]);
+  }, [selectedFormat, addObjectFromJson, markDirty, syncLayers]);
 
   const addDecorative = useCallback((element: DecorativeElement) => {
     const fc = fabricRef.current;
