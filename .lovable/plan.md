@@ -1,16 +1,20 @@
 
 
-# Fix: Salvar product_snapshot nos order_items
+# Fix: Logo com fundo preto — ImageEditor converte para JPEG
 
 ## Problema
-`product_snapshot` não é preenchido ao criar pedido, fazendo com que fotos e dados dos itens desapareçam quando o produto original é editado/removido.
+O `ImageEditor` (image-editor.tsx) salva a imagem editada como **JPEG** (`image/jpeg`), que não suporta transparência. Qualquer PNG com fundo transparente perde a transparência e fica com fundo preto.
 
-## Alteração
+## Alterações
 
-### `src/pages/Checkout.tsx` — bloco `orderItems` dentro de `handleCreateOrder` (~linhas 95-105)
-- Adicionar campo `product_snapshot` com `thumbnail`, `priceUnit`, `needsArtwork`, `unitPrice`
-- Adicionar `custom_width: item.customWidth || null` e `custom_height: item.customHeight || null` (com fallback null)
-- Definir `artwork_status` como `'pending'` se `needsArtwork`, senão `'not_required'`
+### 1. `src/components/ui/image-editor.tsx` (~linha 89-95)
+- Alterar `canvas.toBlob` para usar `image/png` em vez de `image/jpeg`
+- Alterar o nome do arquivo de `edited-image.jpg` para `edited-image.png`
+- Remover o parâmetro de qualidade (não se aplica a PNG)
 
-Nenhuma outra alteração necessária.
+### 2. `src/components/admin/LogoUploadManager.tsx` — preview backgrounds (~linha 226)
+- Usar fundo com padrão xadrez (checkerboard) para as previews, para que o admin possa ver a transparência corretamente, em vez de `#f5f5f5` sólido que esconde a transparência
+
+## Resultado
+Logos PNG manterão fundo transparente ao passar pelo editor de imagem e ao serem redimensionadas nas variações.
 
