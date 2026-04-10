@@ -1069,18 +1069,22 @@ const LabelEditor = () => {
                       {/* Decorative elements */}
                       <div>
                         <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Molduras & Ornamentos</p>
-                        <div className="space-y-2">
+                        <div className="space-y-3">
                           {DECORATIVE_CATEGORIES.map(cat => {
                             const elements = getDecorativeByCategory(cat.id);
                             if (elements.length === 0) return null;
                             return (
                               <div key={cat.id}>
-                                <p className="text-xs text-muted-foreground mb-1">{cat.emoji} {cat.label}</p>
-                                <div className="grid grid-cols-2 gap-1">
+                                <p className="text-xs text-muted-foreground mb-1.5">{cat.emoji} {cat.label}</p>
+                                <div className="grid grid-cols-2 gap-1.5">
                                   {elements.map(el => (
-                                    <Button key={el.id} variant="outline" size="sm" className="text-xs h-auto py-1.5" onClick={() => addDecorative(el)}>
-                                      <Frame className="h-3 w-3 mr-1 shrink-0" />{el.name}
-                                    </Button>
+                                    <button key={el.id} onClick={() => addDecorative(el)}
+                                      className="flex flex-col items-center gap-1 p-2 rounded-lg border hover:border-primary/50 hover:bg-muted/50 transition-all">
+                                      <div className="w-full h-10 rounded bg-muted/30 border border-dashed border-muted-foreground/20 flex items-center justify-center">
+                                        <Frame className="h-4 w-4 text-muted-foreground" />
+                                      </div>
+                                      <span className="text-[10px] font-medium truncate w-full text-center">{el.name}</span>
+                                    </button>
                                   ))}
                                 </div>
                               </div>
