@@ -345,6 +345,48 @@ export type Database = {
           },
         ]
       }
+      payment_webhook_events: {
+        Row: {
+          error_message: string | null
+          id: string
+          order_number: string | null
+          payload: Json | null
+          pg_status: number | null
+          processed_at: string | null
+          provider: string
+          provider_event_id: string
+          received_at: string | null
+          status: string
+          transaction_code: string | null
+        }
+        Insert: {
+          error_message?: string | null
+          id?: string
+          order_number?: string | null
+          payload?: Json | null
+          pg_status?: number | null
+          processed_at?: string | null
+          provider?: string
+          provider_event_id: string
+          received_at?: string | null
+          status?: string
+          transaction_code?: string | null
+        }
+        Update: {
+          error_message?: string | null
+          id?: string
+          order_number?: string | null
+          payload?: Json | null
+          pg_status?: number | null
+          processed_at?: string | null
+          provider?: string
+          provider_event_id?: string
+          received_at?: string | null
+          status?: string
+          transaction_code?: string | null
+        }
+        Relationships: []
+      }
       portfolio_items: {
         Row: {
           active: boolean | null
