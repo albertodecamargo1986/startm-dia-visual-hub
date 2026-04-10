@@ -955,7 +955,7 @@ const LabelEditor = () => {
         </div>
 
         {/* ── MAIN AREA: Toolbar + Canvas + Properties ── */}
-        <div className="flex flex-1 min-h-0">
+        <div className="flex flex-1 min-h-0 relative">
 
           {/* ── VERTICAL TOOLBAR (Photoshop style) ── */}
           <div className="w-12 shrink-0 border-r bg-card flex flex-col items-center py-2 gap-1">
