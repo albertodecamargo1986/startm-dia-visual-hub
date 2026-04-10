@@ -49,6 +49,7 @@ import CmsPageList from "./pages/admin/cms/CmsPageList";
 import CmsPageCreate from "./pages/admin/cms/CmsPageCreate";
 import CmsPageEditorPage from "./pages/admin/cms/CmsPageEditor";
 import CmsPageRevisions from "./pages/admin/cms/CmsPageRevisions";
+import CmsMediaLibrary from "./pages/admin/cms/CmsMediaLibrary";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -109,6 +110,7 @@ const App = () => (
                       <Route path="/admin/cms/nova" element={<CmsPageCreate />} />
                       <Route path="/admin/cms/:id" element={<CmsPageEditorPage />} />
                       <Route path="/admin/cms/:id/revisoes" element={<CmsPageRevisions />} />
+                      <Route path="/admin/midia" element={<CmsMediaLibrary />} />
                       <Route path="/admin/aparencia" element={<AdminTheme />} />
                       <Route path="/admin/analytics" element={<AdminAnalytics />} />
                       <Route path="/admin/operacional" element={<AdminBackups />} />
