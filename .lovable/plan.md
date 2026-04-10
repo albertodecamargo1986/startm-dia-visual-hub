@@ -1,66 +1,88 @@
 
 
-# Hardening do Webhook PagSeguro — Assinatura + Idempotência
+# Automação de Notificações de Pedido
 
-## Problema Atual
-- Sem validação de origem (qualquer POST é aceito)
-- Sem idempotência (mesmo evento pode processar múltiplas vezes)
-- Pode rebaixar status `paid` → `pending` com notificações antigas
-- Logs não estruturados
+## Contexto
+
+O projeto não tem domínio de email configurado. Sem isso, não é possível enviar emails via infraestrutura Lovable. A implementação precisa ser feita em duas partes: a fila de notificações (backend) e o envio de email (requer configuração de domínio pelo usuário).
 
 ## Plano
 
-### 1. Migração SQL — Tabela `payment_webhook_events`
+### 1. Migração SQL — Tabela `notifications_queue` + Trigger
+
+Criar tabela para enfileirar notificações com suporte a retry:
 
 ```sql
-CREATE TABLE public.payment_webhook_events (
+CREATE TABLE public.notifications_queue (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  provider text NOT NULL DEFAULT 'pagseguro',
-  provider_event_id text NOT NULL,        -- notificationCode
-  transaction_code text DEFAULT '',
-  pg_status int,
-  order_number text DEFAULT '',
+  order_id uuid NOT NULL REFERENCES orders(id),
+  event_type text NOT NULL,  -- pedido_criado, pagamento_confirmado, etc.
+  channel text NOT NULL DEFAULT 'email',
+  recipient_type text NOT NULL, -- customer | admin
+  recipient_email text,
   payload jsonb DEFAULT '{}'::jsonb,
-  status text NOT NULL DEFAULT 'received', -- received | processed | skipped | error
-  received_at timestamptz DEFAULT now(),
-  processed_at timestamptz,
-  error_message text DEFAULT '',
-  UNIQUE(provider, provider_event_id)      -- idempotência
+  status text NOT NULL DEFAULT 'pending', -- pending | sent | failed | skipped
+  attempts int DEFAULT 0,
+  max_attempts int DEFAULT 5,
+  next_retry_at timestamptz DEFAULT now(),
+  last_error text,
+  created_at timestamptz DEFAULT now(),
+  processed_at timestamptz
 );
-ALTER TABLE public.payment_webhook_events ENABLE ROW LEVEL SECURITY;
-
--- Somente admins podem ler (para auditoria)
-CREATE POLICY "Webhook events: admin read" ON public.payment_webhook_events
-  FOR SELECT TO authenticated
-  USING (has_role(auth.uid(), 'admin'::app_role) OR has_role(auth.uid(), 'super_admin'::app_role));
 ```
 
-### 2. Reescrever `pagseguro-webhook/index.ts`
+Criar trigger na tabela `orders` que enfileira notificações ao detectar mudança de `status`:
 
-Fluxo atualizado:
+```sql
+CREATE FUNCTION enqueue_order_notification() RETURNS trigger ...
+-- Mapeia status → event_type
+-- Insere 2 linhas: uma para customer, uma para admin
+```
 
-1. **Validar origem**: O PagSeguro não envia assinatura HMAC. A validação oficial é feita consultando a API do PagSeguro com o `notificationCode` — se retornar XML válido com `<transaction>`, a notificação é legítima. Verificar que a resposta HTTP é 200 e contém `<code>`.
+RLS: admins podem ler; a edge function usa service role.
 
-2. **Idempotência**: Antes de processar, tentar `INSERT` na tabela `payment_webhook_events` com `provider_event_id = notificationCode`. Se violar UNIQUE, o evento já foi processado → retornar 200 sem fazer nada.
+### 2. Edge Function `process-notifications`
 
-3. **Proteção contra rebaixamento**: Buscar o pedido atual antes de atualizar. Se o `payment_status` atual já é `paid` e o novo status seria `pending`, ignorar (marcar evento como `skipped`).
+- Busca notificações `pending` onde `next_retry_at <= now()` em batch (10 por vez)
+- Para cada notificação, tenta enviar email via `send-transactional-email`
+- Em caso de falha: incrementa `attempts`, calcula `next_retry_at` com backoff exponencial (2^attempts * 30s)
+- Se `attempts >= max_attempts`, marca como `failed`
+- **Pré-requisito de email**: Enquanto o domínio de email não estiver configurado, a function registra o evento mas marca como `skipped` com motivo claro
 
-4. **Ordem de status válida**: Definir hierarquia `pending < paid < refunded`. Só aceitar transições para frente (exceto `refunded` que é terminal).
+### 3. Templates de Email (6 eventos)
 
-5. **Log estruturado**: Usar `console.log(JSON.stringify({ ... }))` com campos padronizados (`event`, `notificationCode`, `transactionCode`, `orderNumber`, `pgStatus`, `action`).
+Criar templates React Email em `_shared/transactional-email-templates/` para:
+- `pedido-criado` (cliente + admin)
+- `pagamento-confirmado` (cliente)
+- `aguardando-arte` (cliente)
+- `arte-aprovada` (cliente)
+- `pedido-enviado` (cliente)
+- `pedido-cancelado` (cliente + admin)
 
-6. **Respostas HTTP**: Sempre 200 para o PagSeguro (ele reenvia em caso de erro). Registrar erros internamente na tabela.
+Cada template recebe variáveis: `customerName`, `orderNumber`, `status`, `orderLink`.
 
-### 3. Arquivos Alterados
+### 4. Integrar Trigger nos Pontos Existentes
+
+O trigger SQL cobre mudanças feitas via `UPDATE orders SET status = ...`, que já ocorrem em:
+- `AdminOrderDetail.tsx` (mudança manual de status)
+- `AdminOrders.tsx` (quick status)
+- `pagseguro-webhook` (pagamento confirmado/cancelado)
+- `artwork-helpers.ts` (arte aprovada → em produção)
+
+### 5. Estrutura para WhatsApp (futuro)
+
+A coluna `channel` na tabela já suporta `'whatsapp'`. Quando implementar, basta adicionar lógica condicional na edge function.
+
+## Pré-requisito: Domínio de Email
+
+Antes de poder enviar os emails, é necessário configurar um domínio de email. Vou incluir o botão de configuração para que você possa fazer isso. A fila e os templates serão criados já preparados — assim que o domínio estiver verificado, os emails começam a ser enviados automaticamente.
+
+## Arquivos Alterados
 
 | Arquivo | Alteração |
 |---|---|
-| Nova migração SQL | Cria `payment_webhook_events` com UNIQUE constraint |
-| `supabase/functions/pagseguro-webhook/index.ts` | Idempotência, proteção contra rebaixamento, logs estruturados |
-
-### Critérios de Aceite
-- Evento duplicado → `skipped` na tabela, pedido inalterado
-- Notificação inválida (XML sem `<code>`) → registrada como `error`
-- Status `paid` nunca rebaixado para `pending`
-- Toda decisão logada com contexto estruturado
+| Nova migração SQL | Tabela `notifications_queue`, trigger `enqueue_order_notification` |
+| `supabase/functions/process-notifications/index.ts` | Nova edge function de processamento |
+| `_shared/transactional-email-templates/*.tsx` | 6 templates de notificação |
+| `_shared/transactional-email-templates/registry.ts` | Registro dos novos templates |
 
