@@ -137,8 +137,17 @@ const Checkout = () => {
         return;
       }
 
-      const result = data as unknown as { order_id: string; order_number: string };
+      const result = data as unknown as { order_id: string; order_number: string; items: Array<{ cart_index: number; order_item_id: string }> };
       setOrderId(result.order_id);
+
+      // Build cart item ID → order item ID map
+      const map: Record<string, string> = {};
+      result.items.forEach(({ cart_index, order_item_id }) => {
+        const cartItem = items[cart_index];
+        if (cartItem) map[cartItem.id] = order_item_id;
+      });
+      setItemIdMap(map);
+
       setLoading(false);
 
       if (needsArtworkStep) {
