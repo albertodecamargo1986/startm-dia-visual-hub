@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { LoginLocationState } from '@/types';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { supabase } from '@/integrations/supabase/client';
@@ -29,7 +30,7 @@ const signupSchema = z.object({
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const from = (location.state as any)?.from?.pathname || '/cliente';
+  const from = (location.state as LoginLocationState | null)?.from?.pathname || '/cliente';
 
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});

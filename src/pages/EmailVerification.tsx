@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import type { EmailVerificationLocationState } from '@/types';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,7 +12,7 @@ import { motion } from 'framer-motion';
 const EmailVerification = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const email = (location.state as any)?.email;
+  const email = (location.state as EmailVerificationLocationState | null)?.email;
   const [cooldown, setCooldown] = useState(0);
   const [loading, setLoading] = useState(false);
 

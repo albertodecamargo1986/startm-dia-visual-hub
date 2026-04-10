@@ -55,3 +55,21 @@ export const ORDER_STATUS_COLORS: Record<OrderStatus, string> = {
   cancelled: 'bg-red-500/20 text-red-400',
   refunded: 'bg-gray-500/20 text-gray-400',
 };
+
+export interface LoginLocationState {
+  from?: { pathname: string };
+}
+
+export interface EmailVerificationLocationState {
+  email: string;
+}
+
+export interface AddressData {
+  cep: string;
+  street: string;
+  number: string;
+  complement: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+}

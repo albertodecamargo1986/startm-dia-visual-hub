@@ -10,15 +10,7 @@ import { KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
 import { useEffect } from 'react';
 
-interface AddressData {
-  cep: string;
-  street: string;
-  number: string;
-  complement: string;
-  neighborhood: string;
-  city: string;
-  state: string;
-}
+import type { AddressData } from '@/types';
 
 const emptyAddress: AddressData = { cep: '', street: '', number: '', complement: '', neighborhood: '', city: '', state: '' };
 
@@ -43,7 +35,7 @@ const ClientProfile = () => {
         cpf_cnpj: profile.cpf_cnpj ?? '',
         company_name: profile.company_name ?? '',
       });
-      const da = (profile as any).default_address as AddressData | null;
+      const da = profile.default_address as unknown as AddressData | null;
       if (da) setAddress({ ...emptyAddress, ...da });
     }
   }, [profile]);
@@ -85,8 +77,8 @@ const ClientProfile = () => {
 
     const { error } = await supabase.from('profiles').update({
       ...form,
-      default_address: address as any,
-    } as any).eq('id', profile.id);
+      default_address: address as unknown as Record<string, string>,
+    }).eq('id', profile.id);
 
     if (error) toast.error('Erro ao salvar.');
     else toast.success('Perfil atualizado!');

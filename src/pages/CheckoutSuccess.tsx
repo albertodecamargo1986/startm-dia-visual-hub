@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { CheckCircle, Package, Clock, CreditCard } from 'lucide-react';
 import { formatBRL } from '@/lib/format';
 import { Button } from '@/components/ui/button';
+import type { Order, OrderItem } from '@/types';
 import { Card } from '@/components/ui/card';
 import { motion } from 'framer-motion';
 
@@ -17,8 +18,8 @@ const statusLabels: Record<string, { label: string; color: string; icon: typeof 
 const CheckoutSuccess = () => {
   const [searchParams] = useSearchParams();
   const orderIdParam = searchParams.get('order');
-  const [order, setOrder] = useState<any>(null);
-  const [items, setItems] = useState<any[]>([]);
+  const [order, setOrder] = useState<Order | null>(null);
+  const [items, setItems] = useState<OrderItem[]>([]);
 
   useEffect(() => {
     if (!orderIdParam) return;
@@ -40,7 +41,7 @@ const CheckoutSuccess = () => {
         table: 'orders',
         filter: `id=eq.${orderIdParam}`,
       }, (payload) => {
-        setOrder((prev: any) => prev ? { ...prev, ...payload.new } : payload.new);
+        setOrder((prev) => prev ? { ...prev, ...(payload.new as Partial<Order>) } : payload.new as Order);
       })
       .subscribe();
 
