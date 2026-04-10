@@ -1,42 +1,66 @@
 
 
-# Vínculo robusto de arquivos por `order_item.id`
+# Hardening do Webhook PagSeguro — Assinatura + Idempotência
 
-## Problema
-Linha 191 de `Checkout.tsx` busca `order_item` por `product_name`, que falha com produtos duplicados no carrinho.
+## Problema Atual
+- Sem validação de origem (qualquer POST é aceito)
+- Sem idempotência (mesmo evento pode processar múltiplas vezes)
+- Pode rebaixar status `paid` → `pending` com notificações antigas
+- Logs não estruturados
 
-## Solução
+## Plano
 
-### 1. Alterar RPC `create_order_transactional` (migração SQL)
-
-Modificar a função para retornar, além de `order_id` e `order_number`, um array `items` com `{ cart_index, order_item_id }` para cada item inserido. Isso permite o frontend mapear cart item → order item de forma determinística.
+### 1. Migração SQL — Tabela `payment_webhook_events`
 
 ```sql
--- No loop de inserção, coletar os IDs gerados
--- Retornar: { order_id, order_number, items: [{ cart_index: 0, order_item_id: "uuid" }, ...] }
+CREATE TABLE public.payment_webhook_events (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  provider text NOT NULL DEFAULT 'pagseguro',
+  provider_event_id text NOT NULL,        -- notificationCode
+  transaction_code text DEFAULT '',
+  pg_status int,
+  order_number text DEFAULT '',
+  payload jsonb DEFAULT '{}'::jsonb,
+  status text NOT NULL DEFAULT 'received', -- received | processed | skipped | error
+  received_at timestamptz DEFAULT now(),
+  processed_at timestamptz,
+  error_message text DEFAULT '',
+  UNIQUE(provider, provider_event_id)      -- idempotência
+);
+ALTER TABLE public.payment_webhook_events ENABLE ROW LEVEL SECURITY;
+
+-- Somente admins podem ler (para auditoria)
+CREATE POLICY "Webhook events: admin read" ON public.payment_webhook_events
+  FOR SELECT TO authenticated
+  USING (has_role(auth.uid(), 'admin'::app_role) OR has_role(auth.uid(), 'super_admin'::app_role));
 ```
 
-### 2. Atualizar `Checkout.tsx`
+### 2. Reescrever `pagseguro-webhook/index.ts`
 
-- Após o RPC, construir um mapa `cartItemId → orderItemId` usando o índice do array de items (a ordem do array de itens no payload corresponde à ordem do array de itens no carrinho).
-- Em `handleFileSelect`, usar diretamente o `orderItemId` do mapa em vez de fazer query por `product_name`.
-- Remover as linhas 187-193 (query por `product_name`).
-- Armazenar o mapa em state: `const [itemIdMap, setItemIdMap] = useState<Record<string, string>>({})`.
+Fluxo atualizado:
 
-### 3. Validação
+1. **Validar origem**: O PagSeguro não envia assinatura HMAC. A validação oficial é feita consultando a API do PagSeguro com o `notificationCode` — se retornar XML válido com `<transaction>`, a notificação é legítima. Verificar que a resposta HTTP é 200 e contém `<code>`.
 
-- No upload, verificar se `orderItemId` existe no mapa antes de prosseguir.
-- Se não existir, mostrar erro e não fazer upload.
+2. **Idempotência**: Antes de processar, tentar `INSERT` na tabela `payment_webhook_events` com `provider_event_id = notificationCode`. Se violar UNIQUE, o evento já foi processado → retornar 200 sem fazer nada.
 
-### Arquivos alterados
+3. **Proteção contra rebaixamento**: Buscar o pedido atual antes de atualizar. Se o `payment_status` atual já é `paid` e o novo status seria `pending`, ignorar (marcar evento como `skipped`).
+
+4. **Ordem de status válida**: Definir hierarquia `pending < paid < refunded`. Só aceitar transições para frente (exceto `refunded` que é terminal).
+
+5. **Log estruturado**: Usar `console.log(JSON.stringify({ ... }))` com campos padronizados (`event`, `notificationCode`, `transactionCode`, `orderNumber`, `pgStatus`, `action`).
+
+6. **Respostas HTTP**: Sempre 200 para o PagSeguro (ele reenvia em caso de erro). Registrar erros internamente na tabela.
+
+### 3. Arquivos Alterados
 
 | Arquivo | Alteração |
 |---|---|
-| Nova migração SQL | Altera `create_order_transactional` para retornar array de item IDs |
-| `src/pages/Checkout.tsx` | Usa mapa de IDs em vez de query por `product_name` |
+| Nova migração SQL | Cria `payment_webhook_events` com UNIQUE constraint |
+| `supabase/functions/pagseguro-webhook/index.ts` | Idempotência, proteção contra rebaixamento, logs estruturados |
 
-### Critérios de aceite
-- Cada arquivo vinculado ao `order_item_id` correto, sem ambiguidade
-- Zero queries por `product_name` no fluxo de upload
-- Funciona com produtos duplicados no carrinho
+### Critérios de Aceite
+- Evento duplicado → `skipped` na tabela, pedido inalterado
+- Notificação inválida (XML sem `<code>`) → registrada como `error`
+- Status `paid` nunca rebaixado para `pending`
+- Toda decisão logada com contexto estruturado
 
