@@ -214,7 +214,7 @@ const CmsPageEditor = () => {
           <Button variant="outline" size="sm" onClick={handleSave} disabled={saving}>
             {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}Salvar
           </Button>
-          <Button size="sm" onClick={handlePublish} disabled={publishing}>
+          <Button size="sm" onClick={handlePublish} disabled={publishing || !isSuperAdmin} title={!isSuperAdmin ? 'Apenas super_admin pode publicar' : ''}>
             {publishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Globe className="mr-2 h-4 w-4" />}Publicar
           </Button>
         </div>
