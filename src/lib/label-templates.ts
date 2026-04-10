@@ -1,11 +1,32 @@
 import { mmToPx } from './label-formats';
 
+export type TemplateCategory =
+  | 'produtos'
+  | 'alimentos'
+  | 'cosmeticos'
+  | 'eventos'
+  | 'empresarial'
+  | 'escolar'
+  | 'festas'
+  | 'artesanal'
+  | 'minimalista'
+  | 'vintage'
+  | 'botanico'
+  | 'moderno'
+  | 'premium'
+  | 'promocional'
+  | 'festivo'
+  | 'elegante';
+
 export interface LabelTemplate {
   id: string;
   name: string;
-  category: 'minimalista' | 'premium' | 'promocional' | 'artesanal' | 'festivo' | 'elegante';
+  category: TemplateCategory;
+  subcategory?: string;
   description: string;
-  // Returns fabric objects JSON to add to canvas
+  thumbnail?: string;
+  tags?: string[];
+  premium?: boolean;
   getObjects: (widthMm: number, heightMm: number) => any[];
 }
 
