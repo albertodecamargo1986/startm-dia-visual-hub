@@ -550,7 +550,46 @@ const LabelEditor = () => {
     toast.success('Texto em arco adicionado! Selecione o círculo de controle para mover.');
   };
 
-  const addShape = (type: string) => {
+  const rebuildCurvedText = useCallback((controller: any) => {
+    const fc = fabricRef.current; if (!fc) return;
+    // Remove old curved chars
+    const allObjs = fc.getObjects();
+    const oldChars = allObjs.filter((o: any) => o.__isCurvedChar);
+    oldChars.forEach(o => fc.remove(o));
+
+    const textStr = controller.__curvedText || 'TEXTO';
+    const radius = controller.__curvedRadius || 100;
+    const fontSize = controller.__curvedFontSize || 16;
+    const fontFamily = controller.__curvedFontFamily || 'Montserrat';
+    const fill = controller.__curvedFill || '#333333';
+    const centerX = controller.left || 0;
+    const centerY = controller.top || 0;
+    const charAngle = 360 / (textStr.length * 2.5);
+    const startAngle = -90 - (textStr.length - 1) * charAngle / 2;
+
+    for (let i = 0; i < textStr.length; i++) {
+      const angleDeg = startAngle + i * charAngle;
+      const angleRad = (angleDeg * Math.PI) / 180;
+      const x = centerX + radius * Math.cos(angleRad);
+      const y = centerY + radius * Math.sin(angleRad);
+      const charText = new IText(textStr[i], {
+        left: x, top: y,
+        originX: 'center', originY: 'center',
+        fontSize, fontFamily, fill,
+        angle: angleDeg + 90,
+        selectable: false, evented: false,
+      });
+      (charText as any).__isCurvedChar = true;
+      fc.add(charText);
+    }
+
+    // Update controller radius
+    controller.set('radius', radius);
+    fc.renderAll();
+    markDirty();
+  }, [markDirty]);
+
+
     const fc = fabricRef.current; if (!fc) return;
     const centerX = fc.getWidth() / (2 * (zoom || 1));
     const centerY = fc.getHeight() / (2 * (zoom || 1));
