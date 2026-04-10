@@ -91,7 +91,7 @@ const CmsPageCreate = () => {
           type: s.type,
           name: s.name,
           sort_order: i,
-          data: s.data,
+          data: s.data as unknown as Record<string, never>,
           enabled: true,
         }));
         const { error: secErr } = await supabase.from('cms_sections').insert(sections);
