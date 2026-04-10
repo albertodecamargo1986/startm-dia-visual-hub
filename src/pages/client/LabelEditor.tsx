@@ -190,36 +190,40 @@ const LabelEditorInner = () => {
                     </Button>
                   </div>
                   <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">Ou escolha um modelo pronto</p>
-                  <div className="space-y-4">
-                    {TEMPLATE_CATEGORIES.map(cat => {
-                      const templates = getTemplatesByCategory(cat.id);
-                      if (templates.length === 0) return null;
+                  <div className="mb-4">
+                    <TemplateFiltersBar
+                      filters={templateFilters}
+                      activeFilterCount={activeTemplateFilterCount}
+                      onUpdate={updateTemplateFilter}
+                      onToggleTag={toggleTemplateTag}
+                      onReset={resetTemplateFilters}
+                      totalResults={filteredTemplates.length}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {filteredTemplates.map(t => {
+                      const colors = ctx.getTemplateColors(t);
                       return (
-                        <div key={cat.id}>
-                          <p className="text-sm font-medium mb-2">{cat.emoji} {cat.label}</p>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                            {templates.map(t => {
-                              const colors = ctx.getTemplateColors(t);
-                              return (
-                                <button key={t.id} onClick={async () => {
-                                  // Template selection handled via applyTemplate after creating project
-                                  ctx.applyTemplate(t);
-                                }} className="flex flex-col items-center gap-2 p-3 rounded-xl border-2 border-border hover:border-primary/50 hover:shadow-md transition-all group">
-                                  <div className="w-full aspect-square rounded-lg flex items-center justify-center overflow-hidden relative bg-white">
-                                    <div className="w-full h-full flex gap-0.5">
-                                      {colors.map((c, i) => (<div key={i} className="flex-1" style={{ backgroundColor: c }} />))}
-                                    </div>
-                                  </div>
-                                  <span className="text-xs font-medium truncate w-full text-center">{t.name}</span>
-                                  <span className="text-[10px] text-muted-foreground">{t.description}</span>
-                                </button>
-                              );
-                            })}
+                        <button key={t.id} onClick={async () => {
+                          ctx.applyTemplate(t);
+                        }} className="flex flex-col items-center gap-2 p-3 rounded-xl border-2 border-border hover:border-primary/50 hover:shadow-md transition-all group">
+                          <div className="w-full aspect-square rounded-lg flex items-center justify-center overflow-hidden relative bg-muted">
+                            <div className="w-full h-full flex gap-0.5">
+                              {colors.map((c, i) => (<div key={i} className="flex-1" style={{ backgroundColor: c }} />))}
+                            </div>
                           </div>
-                        </div>
+                          <span className="text-xs font-medium truncate w-full text-center">{t.name}</span>
+                          <span className="text-[10px] text-muted-foreground">{t.description}</span>
+                        </button>
                       );
                     })}
                   </div>
+                  {filteredTemplates.length === 0 && (
+                    <div className="text-center py-8">
+                      <span className="text-2xl block mb-2">🎨</span>
+                      <span className="text-sm text-muted-foreground">Nenhum template encontrado</span>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
