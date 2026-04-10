@@ -1,50 +1,86 @@
 
 
-# Plano: Ajustes finais do Editor de Etiquetas vs Especificação
+# Plano: Redesign do Editor de Etiquetas — Layout estilo Photoshop
 
-## Status atual — o que já está feito
-- Rota `/cliente/etiquetas` com wizard de 4 etapas
-- 25 formatos pré-definidos (redondo, quadrado, retangular, arredondados)
-- Texto com Google Fonts, formas básicas, molduras, templates por nicho
-- Camadas (ordenar, ocultar, bloquear, renomear)
-- Undo/redo, auto-save, versionamento, lista "Meus designs"
-- Contorno visual (delimiter), texto centralizado proporcional
-- Controles de tamanho (+/-, presets), alinhamento, snap
-- PDF export apenas no admin
-- RLS por `user_id`
+## Problemas atuais
+1. Layout confuso — painel esquerdo largo, canvas deslocado, painel direito aparece/desaparece
+2. Toolbar central com poucos controles, sem acesso rápido às ferramentas
+3. Canvas não fica centralizado de forma estável
+4. Área de pintura (canvas) não tem tamanho visualmente proporcional à etiqueta
+5. Falta de uma toolbar vertical de ferramentas como no Photoshop
 
-## Gaps identificados na especificação
+## Mudanças planejadas
 
-### 1. Espaçamento de texto (charSpacing/lineHeight)
-A spec pede "espaçamento" como ferramenta de texto. O painel de propriedades tem fonte, tamanho e cor, mas falta controle de **espaçamento entre letras** e **altura de linha**.
+### 1. Layout Photoshop: Toolbar vertical à esquerda
+Substituir o botão "Painel de design" por uma **barra de ferramentas vertical fina** (48px) no lado esquerdo com ícones:
+- Seleção (cursor)
+- Texto (T)
+- Retângulo, Círculo, Triângulo, Linha
+- Imagem
+- Mão (pan) — futuro
 
-**Mudança**: Adicionar dois sliders no painel direito quando texto selecionado — `charSpacing` e `lineHeight`.
+Ao clicar numa ferramenta, a ação é executada diretamente (addText, addShape, etc). Sem painel colapsável.
 
-### 2. Alinhamento de texto (textAlign)
-A spec pede alinhamento de texto (esquerda, centro, direita). Existe `alignObject` (posição no canvas), mas falta **alinhamento interno do texto** (textAlign).
+### 2. Painel lateral esquerdo simplificado
+O painel de "Design" (templates, fundo, molduras) vira um **drawer/painel togglável** que abre por cima do canvas quando necessário, em vez de ocupar espaço fixo. Ou fica como uma aba fina colapsada.
 
-**Mudança**: Adicionar botões left/center/right para `textAlign` no painel de propriedades de texto.
+Alternativa mais simples: manter o painel mas reduzir para **w-48** (192px) e colapsar por padrão. Abrir apenas via ícone na toolbar.
 
-### 3. Estilo de texto (negrito/itálico)
-Falta toggle de **bold** e **italic** no painel de propriedades.
+### 3. Canvas centralizado com fundo de "mesa de trabalho"
+- Container do canvas usa `bg-neutral-800` (cinza escuro, como Photoshop) com checkerboard pattern sutil
+- Canvas com `margin: auto` e sombra para parecer um "papel" na mesa
+- `fitToContainer` limita a 70% do container (não 80%) para dar mais respiro
+- Remover `rounded` do canvas-wrapper (etiqueta não é arredondada no editor, o clipPath já cuida do formato)
 
-**Mudança**: Adicionar botões B/I que alternam `fontWeight` e `fontStyle`.
+### 4. Barra superior (top bar) mais limpa
+- Manter: Voltar, nome do projeto, badge de formato, Save, Versão, Pedir
+- Mover undo/redo e zoom para a **barra inferior (status bar)** — como no Photoshop
+- Remover toolbar central duplicada (a que tem Grid, Delete, etc.)
 
-### 4. Tutorial inicial mais claro
-O onboarding atual é um banner dismissível com 1 frase. A spec pede "tutorial inicial de 3 passos".
+### 5. Painel de propriedades (direita) — sempre visível
+Em vez de aparecer/desaparecer quando seleciona objeto, o painel direito fica **sempre visível** com conteúdo contextual:
+- Sem seleção: mostra propriedades do canvas (fundo, tamanho, grid)
+- Com seleção: mostra propriedades do objeto (como já faz)
 
-**Mudança**: Expandir o banner de onboarding para 3 cards com ícones: (1) Escolha formato, (2) Personalize, (3) Salve e peça. Simples e direto, sem modal bloqueante.
+### 6. Status bar inferior melhorada
+Mover para a barra inferior:
+- Undo/Redo
+- Zoom slider (ou +/- com %)
+- Snap toggle
+- Info do formato
+- Grid toggle
 
-### 5. Botão "Salvar rascunho" explícito
-O save atual é um ícone de disquete na top bar. A spec pede botões claros: "Salvar rascunho", "Salvar versão".
+## Estrutura visual final
 
-**Mudança**: Renomear os tooltips e adicionar labels visíveis nos botões da top bar em telas maiores (lg+).
+```text
+┌─────────────────────────────────────────────────────────┐
+│ ← Voltar │ Nome do projeto │ Badge │ Save │ Versão │Pedir│  ← Top bar
+├──┬──────────────────────────────────────────────┬───────┤
+│  │                                              │Props  │
+│T │                                              │───────│
+│🔲│         ████████████████████                 │Cor    │
+│⭕│         █   CANVAS/LABEL   █                 │Fonte  │
+│△ │         █                  █                 │Tam.   │
+│— │         ████████████████████                 │B I    │
+│🖼│              Mesa escura                      │Align  │
+│  │                                              │...    │
+├──┴──────────────────────────────────────────────┴───────┤
+│ ↩ ↪ │ 🔍- 68% 🔍+ │ Snap ✓ │ Grid │ Redondo 4×4cm    │  ← Status bar
+└─────────────────────────────────────────────────────────┘
+```
 
 ## Arquivos modificados
-- `src/pages/client/LabelEditor.tsx` — Adicionar controles de texto (charSpacing, lineHeight, textAlign, bold/italic), melhorar onboarding, labels nos botões de salvar (~60 linhas adicionadas)
+- `src/pages/client/LabelEditor.tsx` — Reestruturação do layout (~150 linhas alteradas):
+  - Nova toolbar vertical à esquerda (ferramentas)
+  - Remover toolbar central horizontal
+  - Painel direito sempre visível com conteúdo contextual
+  - Status bar com undo/redo/zoom/grid/snap
+  - Canvas wrapper com fundo escuro (estilo Photoshop)
+  - Painel esquerdo (Design/Camadas) acessível via ícone na toolbar, colapsado por padrão
+  - fitToContainer ajustado para 70%
 
 ## Sem mudanças
-- Banco de dados, RLS, edge functions — tudo já existe
-- `label-templates.ts` — templates existentes são suficientes
-- Exportação PDF — já restrita ao admin
+- Banco de dados, RLS, edge functions
+- Lógica de Fabric.js, salvamento, templates
+- Funcionalidades existentes (apenas reposicionadas)
 
