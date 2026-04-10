@@ -147,11 +147,13 @@ const Checkout = () => {
       toast.error('Arquivo muito grande. Máximo 50MB.');
       return;
     }
-    if (!orderId || !user) return;
+    if (!orderId || !user || !profile) return;
 
     setArtworkFiles(prev => ({ ...prev, [itemId]: { file, progress: 0 } }));
 
-    const path = `${user.id}/${orderId}/${file.name}`;
+    const ext = file.name.split('.').pop() || 'pdf';
+    const path = `${user.id}/${orderId}/${itemId}-${Date.now()}.${ext}`;
+
     const { data, error } = await supabase.storage.from('artwork-files').upload(path, file, {
       upsert: true,
     });
@@ -162,20 +164,44 @@ const Checkout = () => {
       return;
     }
 
-    setArtworkFiles(prev => ({ ...prev, [itemId]: { file, progress: 100, url: data.path } }));
+    // Gerar URL assinada de 1 ano
+    const { data: signedData } = await supabase.storage
+      .from('artwork-files')
+      .createSignedUrl(path, 31536000);
 
-    // Register in customer_files
+    const fileUrl = signedData?.signedUrl || path;
+
+    setArtworkFiles(prev => ({ ...prev, [itemId]: { file, progress: 100, url: fileUrl } }));
+
+    // Buscar o order_item correspondente
+    const { data: orderItemsData } = await supabase
+      .from('order_items')
+      .select('id')
+      .eq('order_id', orderId)
+      .eq('product_name', items.find(i => i.id === itemId)?.productName || '');
+
+    const orderItemId = orderItemsData?.[0]?.id || null;
+
     await supabase.from('customer_files').insert({
-      customer_id: profile!.id,
+      customer_id: profile.id,
+      order_item_id: orderItemId,
       file_name: file.name,
-      file_url: data.path,
+      file_url: fileUrl,
       file_type: file.type,
       file_size: file.size,
       category: 'artwork',
       status: 'pending',
     });
 
-    toast.success(`Arquivo "${file.name}" enviado!`);
+    // Atualizar artwork_url no order_item
+    if (orderItemId) {
+      await supabase.from('order_items').update({
+        artwork_url: fileUrl,
+        artwork_status: 'pending',
+      }).eq('id', orderItemId);
+    }
+
+    toast.success(`Arquivo "${file.name}" enviado com sucesso!`);
   };
 
   const handlePayment = async () => {
