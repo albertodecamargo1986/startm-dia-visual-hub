@@ -608,10 +608,10 @@ const LabelEditor = () => {
   // ── RENDER ──
   // ══════════════════════════════════════
 
-  // If no project is open, show the creation wizard / project list
+  // Single return to keep canvas always mounted
   if (!currentProject) {
     return (
-      <TooltipProvider>
+      <TooltipProvider delayDuration={300}>
         <div className="space-y-6 max-w-4xl mx-auto">
           {/* Subtle onboarding banner */}
           {showOnboarding && (
@@ -691,7 +691,6 @@ const LabelEditor = () => {
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                     {availableFormats.map(f => {
                       const isSquare = f.widthMm === f.heightMm;
-                      // Preview proportional sizing
                       const maxPrev = 60;
                       const prevW = isSquare ? maxPrev : maxPrev;
                       const prevH = isSquare ? maxPrev : (f.heightMm / f.widthMm) * maxPrev;
@@ -790,8 +789,10 @@ const LabelEditor = () => {
             </div>
           )}
 
-          {/* Hidden canvas for initialization */}
-          <canvas ref={canvasRef} className="hidden" />
+          {/* Canvas always mounted but hidden when no project */}
+          <div className="hidden">
+            <canvas ref={canvasRef} />
+          </div>
           <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
         </div>
       </TooltipProvider>
