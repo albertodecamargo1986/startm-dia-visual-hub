@@ -1,11 +1,32 @@
 import { mmToPx } from './label-formats';
 
+export type TemplateCategory =
+  | 'produtos'
+  | 'alimentos'
+  | 'cosmeticos'
+  | 'eventos'
+  | 'empresarial'
+  | 'escolar'
+  | 'festas'
+  | 'artesanal'
+  | 'minimalista'
+  | 'vintage'
+  | 'botanico'
+  | 'moderno'
+  | 'premium'
+  | 'promocional'
+  | 'festivo'
+  | 'elegante';
+
 export interface LabelTemplate {
   id: string;
   name: string;
-  category: 'minimalista' | 'premium' | 'promocional' | 'artesanal' | 'festivo' | 'elegante';
+  category: TemplateCategory;
+  subcategory?: string;
   description: string;
-  // Returns fabric objects JSON to add to canvas
+  thumbnail?: string;
+  tags?: string[];
+  premium?: boolean;
   getObjects: (widthMm: number, heightMm: number) => any[];
 }
 
@@ -16,6 +37,16 @@ export const TEMPLATE_CATEGORIES = [
   { id: 'artesanal', label: 'Artesanal', emoji: '🧶' },
   { id: 'festivo', label: 'Festivo', emoji: '🎉' },
   { id: 'elegante', label: 'Elegante', emoji: '💎' },
+  { id: 'produtos', label: 'Produtos', emoji: '📦' },
+  { id: 'alimentos', label: 'Alimentos', emoji: '🍯' },
+  { id: 'cosmeticos', label: 'Cosméticos', emoji: '💄' },
+  { id: 'eventos', label: 'Eventos', emoji: '🎪' },
+  { id: 'empresarial', label: 'Empresarial', emoji: '🏢' },
+  { id: 'escolar', label: 'Escolar', emoji: '📚' },
+  { id: 'festas', label: 'Festas', emoji: '🥳' },
+  { id: 'vintage', label: 'Vintage', emoji: '📜' },
+  { id: 'botanico', label: 'Botânico', emoji: '🌿' },
+  { id: 'moderno', label: 'Moderno', emoji: '⬡' },
 ];
 
 function center(widthMm: number, heightMm: number) {
