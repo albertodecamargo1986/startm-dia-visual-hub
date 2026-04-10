@@ -1,74 +1,79 @@
 
 
-# Observabilidade de Checkout e Pagamento
+# Backups e Recuperação Operacional
+
+## Contexto
+
+Lovable Cloud gerencia a infraestrutura de banco de dados (backups automáticos diários são nativos da plataforma). Não temos acesso a `pg_dump`, cron jobs de sistema, nem ao painel de infraestrutura. O que podemos fazer é criar **verificações automatizadas** e **documentação operacional** dentro do projeto.
 
 ## Plano
 
-### 1. Criar tabela `analytics_events`
+### 1. Edge Function `health-check` (verificação de integridade)
 
-Migration SQL:
+Nova função `supabase/functions/health-check/index.ts` que:
+- Verifica conectividade com o banco (SELECT 1)
+- Conta registros recentes em tabelas críticas (orders, profiles, products)
+- Verifica que os buckets de storage estão acessíveis (list com limit 1)
+- Compara contagens com thresholds mínimos (ex: products > 0)
+- Retorna status `healthy` / `degraded` / `unhealthy` com detalhes
+- Grava resultado em nova tabela `health_checks`
+
+### 2. Tabela `health_checks`
+
+Migration:
 ```sql
-CREATE TABLE public.analytics_events (
+CREATE TABLE public.health_checks (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  event_name text NOT NULL,
-  user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,
-  order_id uuid,
-  metadata jsonb DEFAULT '{}'::jsonb,
+  status text NOT NULL, -- healthy, degraded, unhealthy
+  details jsonb DEFAULT '{}'::jsonb,
   created_at timestamptz DEFAULT now()
 );
-
-ALTER TABLE public.analytics_events ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Analytics: admin read"
-  ON public.analytics_events FOR SELECT TO authenticated
-  USING (has_role(auth.uid(), 'admin'::app_role) OR has_role(auth.uid(), 'super_admin'::app_role));
-
-CREATE POLICY "Analytics: authenticated insert"
-  ON public.analytics_events FOR INSERT TO authenticated
-  WITH CHECK (auth.uid() = user_id);
-
-CREATE INDEX idx_analytics_event_name ON public.analytics_events(event_name);
-CREATE INDEX idx_analytics_created_at ON public.analytics_events(created_at);
+ALTER TABLE public.health_checks ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Health: admin read"
+  ON public.health_checks FOR SELECT TO authenticated
+  USING (has_role(auth.uid(), 'admin'::app_role)
+      OR has_role(auth.uid(), 'super_admin'::app_role));
 ```
 
-LGPD: `user_id` is nullable (SET NULL on delete). No PII stored in metadata — only IDs, amounts, counts.
+### 3. Cron job semanal para health-check
 
-### 2. Criar helper `src/lib/analytics.ts`
+Usar `pg_cron` + `pg_net` para invocar a edge function automaticamente (1x/semana).
 
-Utility function `trackEvent(eventName, metadata?)` that inserts into `analytics_events` using the current auth user. Silent on error (never blocks UX).
+### 4. Página admin de status operacional
 
-### 3. Instrumentar eventos no frontend
+Criar `src/pages/admin/AdminBackups.tsx` com:
+- Histórico de health checks (tabela com status e detalhes)
+- Indicador visual do último status (verde/amarelo/vermelho)
+- Link para a documentação de restore
 
-| Evento | Onde | Metadata |
-|---|---|---|
-| `checkout_started` | `Checkout.tsx` — mount | `{ itemCount, total }` |
-| `order_created` | `Checkout.tsx` — após RPC sucesso | `{ orderId, orderNumber, total }` |
-| `artwork_uploaded` | `Checkout.tsx` — após upload sucesso | `{ orderId, itemId }` |
-| `payment_redirected` | `Checkout.tsx` — `handlePayment` antes do redirect | `{ orderId, method: 'pagseguro' }` |
-| `payment_confirmed` | `CheckoutSuccess.tsx` — mount com order válido | `{ orderId }` |
+Adicionar rota `/admin/operacional` no `AdminLayout` com ícone `Shield`.
 
-### 4. Criar página admin `AdminAnalytics.tsx`
+### 5. Documentação de backup e restore
 
-Nova rota `/admin/analytics` com:
-- Filtro de período (7d, 30d, custom)
-- KPIs de funil: checkout_started → order_created → payment_redirected → payment_confirmed
-- Taxa de conversão entre etapas (%)
-- Gráfico de barras do funil (recharts)
-- Tabela com contagem diária por evento
+Criar `docs/backup-restore.md` com:
+- Política de backup (DB automático pela plataforma, storage em buckets dedicados)
+- Checklist de restore em staging (passo a passo)
+- Plano de rollback para migrações
+- Contatos e responsáveis
 
-### 5. Registrar no AdminLayout
+### 6. Alerta admin em falha
 
-Adicionar link "Analytics" no menu lateral com ícone `BarChart3`.
+A edge function `health-check` enfileira notificação em `notifications_queue` quando status é `degraded` ou `unhealthy`, reutilizando o sistema de notificações existente.
 
 ## Arquivos
 
 | Arquivo | Alteração |
 |---|---|
-| Migration SQL | Nova tabela `analytics_events` |
-| `src/lib/analytics.ts` | Novo — helper trackEvent |
-| `src/pages/Checkout.tsx` | Adicionar chamadas trackEvent |
-| `src/pages/CheckoutSuccess.tsx` | Adicionar trackEvent payment_confirmed |
-| `src/pages/admin/AdminAnalytics.tsx` | Nova página com funil e KPIs |
-| `src/pages/admin/AdminLayout.tsx` | Adicionar link Analytics |
-| `src/App.tsx` | Adicionar rota /admin/analytics |
+| Migration SQL | Nova tabela `health_checks` + cron job |
+| `supabase/functions/health-check/index.ts` | Nova — verificação de integridade |
+| `src/pages/admin/AdminBackups.tsx` | Nova — painel de status operacional |
+| `src/pages/admin/AdminLayout.tsx` | Adicionar link "Operacional" |
+| `src/App.tsx` | Adicionar rota `/admin/operacional` |
+| `docs/backup-restore.md` | Nova — documentação de backup/restore |
+
+## Limitações
+
+- Backups de banco são gerenciados automaticamente pela plataforma — não temos controle direto sobre agendamento ou retenção
+- O health-check valida integridade funcional, não a existência física do backup
+- Restore real requer acesso ao painel da plataforma
 
