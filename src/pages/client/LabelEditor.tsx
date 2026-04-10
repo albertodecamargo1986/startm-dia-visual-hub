@@ -399,8 +399,8 @@ const LabelEditor = () => {
     if (cw <= 0 || ch <= 0) return;
     const canvasW = fc.getWidth(); const canvasH = fc.getHeight();
     if (canvasW <= 0 || canvasH <= 0) return;
-    // Limit to 80% of container so canvas doesn't fill the whole area
-    const scale = Math.min((cw * 0.8) / canvasW, (ch * 0.8) / canvasH, 1);
+    // Limit to 70% of container for breathing room (Photoshop style)
+    const scale = Math.min((cw * 0.7) / canvasW, (ch * 0.7) / canvasH, 1);
     if (!Number.isFinite(scale) || scale <= 0) return;
     setZoom(scale); fc.setZoom(scale);
     fc.setDimensions({ width: canvasW * scale, height: canvasH * scale }, { cssOnly: true });
