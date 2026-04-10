@@ -497,8 +497,10 @@ const LabelEditor = () => {
         <Card className="lg:w-64 shrink-0">
           <CardContent className="p-3">
             <Tabs defaultValue="elements">
-              <TabsList className="w-full grid grid-cols-3">
+              <TabsList className="w-full grid grid-cols-5">
                 <TabsTrigger value="elements" className="text-xs">Elementos</TabsTrigger>
+                <TabsTrigger value="templates" className="text-xs">Templates</TabsTrigger>
+                <TabsTrigger value="decor" className="text-xs">Molduras</TabsTrigger>
                 <TabsTrigger value="projects" className="text-xs">Projetos</TabsTrigger>
                 <TabsTrigger value="export" className="text-xs">Exportar</TabsTrigger>
               </TabsList>
