@@ -347,102 +347,6 @@ const LabelEditor = () => {
     });
   }, [history, historyIdx, syncLayers]);
 
-  const applyFormat = useCallback((fmt: LabelFormat) => {
-    const fc = fabricRef.current; if (!fc) return;
-    const w = mmToPx(fmt.widthMm); const h = mmToPx(fmt.heightMm);
-    fc.setDimensions({ width: w, height: h });
-    fc.clipPath = undefined;
-    if (fmt.shape === 'round') fc.clipPath = new Circle({ radius: w / 2, originX: 'center', originY: 'center', left: w / 2, top: h / 2 });
-    else if (fmt.shape === 'rounded-square' || fmt.shape === 'rounded-rectangle') fc.clipPath = new Rect({ width: w, height: h, rx: mmToPx(3), ry: mmToPx(3), originX: 'center', originY: 'center', left: w / 2, top: h / 2 });
-    addShapeDelimiter(fc, fmt);
-    fc.renderAll(); fitToContainer();
-  }, [addShapeDelimiter]);
-
-  const fitToContainer = useCallback(() => {
-    const fc = fabricRef.current; const container = containerRef.current;
-    if (!fc || !container) return;
-    const cw = container.clientWidth - 40; const ch = container.clientHeight - 40;
-    if (cw <= 0 || ch <= 0) return;
-    const canvasW = fc.getWidth(); const canvasH = fc.getHeight();
-    if (canvasW <= 0 || canvasH <= 0) return;
-    const scale = Math.min(cw / canvasW, ch / canvasH, 1);
-    if (!Number.isFinite(scale) || scale <= 0) return;
-    setZoom(scale); fc.setZoom(scale);
-    fc.setDimensions({ width: canvasW * scale, height: canvasH * scale }, { cssOnly: true });
-  }, []);
-
-  useEffect(() => {
-    window.addEventListener('resize', fitToContainer);
-    return () => window.removeEventListener('resize', fitToContainer);
-  }, [fitToContainer]);
-
-  useEffect(() => {
-    if (!currentProject || !selectedFormat) return;
-    const frame = window.requestAnimationFrame(() => fitToContainer());
-    return () => window.cancelAnimationFrame(frame);
-  }, [currentProject?.id, selectedFormat?.id, fitToContainer]);
-
-  useEffect(() => {
-    if (currentProject) return;
-    setSelectedObject(null);
-    setLayers([]);
-  }, [currentProject]);
-
-  const handleBgColorChange = useCallback((color: string) => {
-    setBgColor(color);
-    const fc = fabricRef.current;
-    if (fc) { fc.backgroundColor = color; fc.renderAll(); markDirty(); }
-  }, [markDirty]);
-
-  const generateThumbnail = useCallback(async () => {
-    const fc = fabricRef.current;
-    if (!fc || !currentProject || !selectedFormat || !user) return;
-    await generateAndUploadThumbnail(fc, currentProject.id, user.id, selectedFormat);
-  }, [currentProject, selectedFormat, user]);
-
-  const resetCanvas = useCallback((background = '#ffffff') => {
-    const fc = fabricRef.current;
-    if (!fc) return;
-    isRestoring.current = true;
-    fc.clear();
-    fc.backgroundColor = background;
-    fc.clipPath = undefined;
-    fc.discardActiveObject();
-    fc.renderAll();
-    isRestoring.current = false;
-    setSelectedObject(null);
-    setLayers([]);
-    setBgColor(background);
-  }, []);
-
-  // ── Project CRUD ──
-  const handleNewProject = async () => {
-    if (!selectedFormat) { toast.error('Selecione um formato'); return; }
-    const proj = await createProject({ name: projectName, label_shape: selectedFormat.shape, width_mm: selectedFormat.widthMm, height_mm: selectedFormat.heightMm });
-    if (proj) {
-      resetCanvas();
-      setCurrentProject(proj);
-      setProjectName(proj.name);
-      applyFormat(selectedFormat);
-      pushHistory();
-    }
-  };
-
-  const loadProject = useCallback(async (proj: LabelProject) => {
-    const fc = fabricRef.current; if (!fc) return;
-    resetCanvas();
-    setCurrentProject(proj); setProjectName(proj.name);
-    const fmt: LabelFormat = { id: `${proj.label_shape}-${proj.width_mm}x${proj.height_mm}`, shape: proj.label_shape as any, label: `${proj.width_mm / 10}×${proj.height_mm / 10} cm`, widthMm: proj.width_mm, heightMm: proj.height_mm };
-    setSelectedFormat(fmt); setSelectedShape(proj.label_shape); applyFormat(fmt);
-    if (proj.canvas_json && Object.keys(proj.canvas_json).length > 0) {
-      isRestoring.current = true;
-      await fc.loadFromJSON(proj.canvas_json);
-      fc.renderAll(); isRestoring.current = false;
-      setBgColor((fc.backgroundColor as string) || '#ffffff');
-    }
-    pushHistory(); syncLayers();
-  }, [applyFormat, pushHistory, resetCanvas, syncLayers]);
-
   // ── Add shape delimiter to canvas ──
   const addShapeDelimiter = useCallback((fc: FabricCanvas, fmt: LabelFormat) => {
     // Remove existing delimiter
@@ -477,6 +381,17 @@ const LabelEditor = () => {
     fc.add(delimiter);
     fc.sendObjectToBack(delimiter);
   }, []);
+
+  const applyFormat = useCallback((fmt: LabelFormat) => {
+    const fc = fabricRef.current; if (!fc) return;
+    const w = mmToPx(fmt.widthMm); const h = mmToPx(fmt.heightMm);
+    fc.setDimensions({ width: w, height: h });
+    fc.clipPath = undefined;
+    if (fmt.shape === 'round') fc.clipPath = new Circle({ radius: w / 2, originX: 'center', originY: 'center', left: w / 2, top: h / 2 });
+    else if (fmt.shape === 'rounded-square' || fmt.shape === 'rounded-rectangle') fc.clipPath = new Rect({ width: w, height: h, rx: mmToPx(3), ry: mmToPx(3), originX: 'center', originY: 'center', left: w / 2, top: h / 2 });
+    addShapeDelimiter(fc, fmt);
+    fc.renderAll(); fitToContainer();
+  }, [addShapeDelimiter]);
 
   // ── Add elements ──
   const addText = () => {
