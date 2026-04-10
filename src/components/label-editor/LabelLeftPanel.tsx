@@ -36,8 +36,8 @@ interface LabelLeftPanelProps {
 }
 
 const LabelLeftPanel = ({
-  bgColor, onBgColorChange, onApplyTemplate, onAddDecorative, onAddSvgElement,
-  getTemplateColors, layers, selectedObject, editingLayerName, layerNameDraft,
+  bgColor, widthMm, heightMm, onBgColorChange, onApplyTemplate, onAddDecorative, onAddSvgElement,
+  layers, selectedObject, editingLayerName, layerNameDraft,
   onClose, onSelectLayer, onToggleLayerVisibility, onToggleLayerLock,
   onMoveLayerUp, onMoveLayerDown, onStartEditLayerName, onLayerNameDraftChange, onFinishEditLayerName,
 }: LabelLeftPanelProps) => (
