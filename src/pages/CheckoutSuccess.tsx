@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { CheckCircle, Package, Clock, CreditCard } from 'lucide-react';
 import { formatBRL } from '@/lib/format';
+import { trackEvent } from '@/lib/analytics';
 import { Button } from '@/components/ui/button';
 import type { Order, OrderItem } from '@/types';
 import { Card } from '@/components/ui/card';
@@ -26,7 +27,10 @@ const CheckoutSuccess = () => {
 
     const fetchOrder = async () => {
       const { data } = await supabase.from('orders').select('*').eq('id', orderIdParam).single();
-      if (data) setOrder(data);
+      if (data) {
+        setOrder(data);
+        trackEvent('payment_confirmed', { orderId: orderIdParam }, orderIdParam);
+      }
       const { data: orderItems } = await supabase.from('order_items').select('*').eq('order_id', orderIdParam);
       if (orderItems) setItems(orderItems);
     };

@@ -43,6 +43,7 @@ import AdminSettings from "./pages/admin/AdminSettings";
 import AdminPortfolio from "./pages/admin/AdminPortfolio";
 import AdminPageEditor from "./pages/admin/AdminPageEditor";
 import AdminTheme from "./pages/admin/AdminTheme";
+import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -100,6 +101,7 @@ const App = () => (
                       <Route path="/admin/arquivos" element={<AdminFiles />} />
                       <Route path="/admin/paginas" element={<AdminPageEditor />} />
                       <Route path="/admin/aparencia" element={<AdminTheme />} />
+                      <Route path="/admin/analytics" element={<AdminAnalytics />} />
                       <Route path="/admin/configuracoes" element={<AdminSettings />} />
                     </Route>
                   </Route>
