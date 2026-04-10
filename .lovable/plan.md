@@ -1,20 +1,22 @@
 
 
-# Fix: Logo com fundo preto — ImageEditor converte para JPEG
+# Fix: Logos PNG com fundo transparente
 
-## Problema
-O `ImageEditor` (image-editor.tsx) salva a imagem editada como **JPEG** (`image/jpeg`), que não suporta transparência. Qualquer PNG com fundo transparente perde a transparência e fica com fundo preto.
+## Diagnóstico
 
-## Alterações
+O código já foi corrigido anteriormente — tanto o `ImageEditor` quanto o `LogoUploadManager` já exportam em PNG. O problema é que **as logos atualmente salvas no banco foram geradas antes da correção** (quando o editor ainda usava JPEG, que não suporta transparência).
 
-### 1. `src/components/ui/image-editor.tsx` (~linha 89-95)
-- Alterar `canvas.toBlob` para usar `image/png` em vez de `image/jpeg`
-- Alterar o nome do arquivo de `edited-image.jpg` para `edited-image.png`
-- Remover o parâmetro de qualidade (não se aplica a PNG)
+## Ação necessária
 
-### 2. `src/components/admin/LogoUploadManager.tsx` — preview backgrounds (~linha 226)
-- Usar fundo com padrão xadrez (checkerboard) para as previews, para que o admin possa ver a transparência corretamente, em vez de `#f5f5f5` sólido que esconde a transparência
+### 1. Verificar e limpar qualquer resquício — sem alteração de código
 
-## Resultado
-Logos PNG manterão fundo transparente ao passar pelo editor de imagem e ao serem redimensionadas nas variações.
+O código atual (`image-editor.tsx` linha 89-95 e `LogoUploadManager.tsx` linha 73) já usa `image/png`. Não há alteração de código necessária.
+
+### 2. Orientação ao administrador
+
+O admin precisa **re-enviar a logo original** pela tela de Configurações → Identidade Visual para que as novas variações sejam geradas corretamente em PNG com transparência.
+
+### Alternativa: se preferir, posso forçar a regeração
+
+Se quiser, posso adicionar um botão "Regenerar logos" na tela de settings que busca a logo atual do storage, reprocessa todas as variações em PNG transparente e substitui as URLs no banco — sem precisar re-upload manual.
 
