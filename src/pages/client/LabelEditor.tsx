@@ -548,6 +548,66 @@ const LabelEditor = () => {
     pushHistory(); syncLayers();
   }, [applyFormat, pushHistory, resetCanvas, syncLayers]);
 
+  // ── Drawing mode ──
+  const toggleDrawingMode = useCallback((enable: boolean) => {
+    const fc = fabricRef.current; if (!fc) return;
+    fc.isDrawingMode = enable;
+    setDrawingMode(enable);
+    if (enable) {
+      const brush = new PencilBrush(fc);
+      brush.width = brushWidth;
+      brush.color = brushColor;
+      fc.freeDrawingBrush = brush;
+      setActiveTool('draw');
+      fc.discardActiveObject();
+      fc.renderAll();
+    } else {
+      setActiveTool('select');
+    }
+  }, [brushWidth, brushColor]);
+
+  useEffect(() => {
+    const fc = fabricRef.current;
+    if (!fc || !fc.freeDrawingBrush || !drawingMode) return;
+    fc.freeDrawingBrush.width = brushWidth;
+    fc.freeDrawingBrush.color = brushColor;
+  }, [brushWidth, brushColor, drawingMode]);
+
+  const eraseLastDrawing = useCallback(() => {
+    const fc = fabricRef.current; if (!fc) return;
+    const objs = fc.getObjects();
+    for (let i = objs.length - 1; i >= 0; i--) {
+      if (objs[i].type === 'path' && !(objs[i] as any).__isDelimiter) {
+        fc.remove(objs[i]);
+        fc.renderAll();
+        break;
+      }
+    }
+  }, []);
+
+  // ── Add SVG element from library ──
+  const addSvgElement = useCallback((element: SvgElement) => {
+    const fc = fabricRef.current; if (!fc) return;
+    const canvasW = fc.getWidth() / (fc.getZoom() || 1);
+    const canvasH = fc.getHeight() / (fc.getZoom() || 1);
+    const size = Math.min(canvasW, canvasH) * 0.25;
+    const pathObj = new Path(element.path, {
+      left: canvasW / 2,
+      top: canvasH / 2,
+      originX: 'center',
+      originY: 'center',
+      fill: 'transparent',
+      stroke: '#333333',
+      strokeWidth: 2,
+      scaleX: size / 24,
+      scaleY: size / 24,
+    });
+    (pathObj as any).__layerName = element.name;
+    fc.add(pathObj);
+    fc.setActiveObject(pathObj);
+    fc.renderAll();
+  }, []);
+
   // ── Add elements ──
   const addText = () => {
     const fc = fabricRef.current; if (!fc) return;
