@@ -46,6 +46,7 @@ import AdminPageEditor from "./pages/admin/AdminPageEditor";
 import AdminTheme from "./pages/admin/AdminTheme";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminBackups from "./pages/admin/AdminBackups";
+import AdminLabelProjects from "./pages/admin/AdminLabelProjects";
 import CmsPageList from "./pages/admin/cms/CmsPageList";
 import CmsPageCreate from "./pages/admin/cms/CmsPageCreate";
 import CmsPageEditorPage from "./pages/admin/cms/CmsPageEditor";
