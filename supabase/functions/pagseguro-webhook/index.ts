@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
     const orderNumber = referenceMatch[1];
     const transactionCode = transCodeMatch?.[1] || "";
 
-    // PagSeguro statuses: 1=waiting, 2=analysis, 3=paid, 4=available, 5=dispute, 6=refunded, 7=cancelled
+    // PagSeguro: 1=aguardando, 2=análise, 3=paga, 4=disponível, 5=disputa, 6=devolvida, 7=cancelada
     let paymentStatus = "pending";
     let orderStatus = "pending_payment";
 
@@ -51,38 +51,46 @@ Deno.serve(async (req) => {
       paymentStatus = "paid";
       orderStatus = "awaiting_artwork";
     } else if (pgStatus === 2) {
-      paymentStatus = "analyzing";
+      // "analyzing" não é válido no banco — manter como pending
+      paymentStatus = "pending";
+      orderStatus = "pending_payment";
+    } else if (pgStatus === 5) {
+      // Disputa — manter status atual, apenas registrar na timeline
+      paymentStatus = "pending";
       orderStatus = "pending_payment";
     } else if (pgStatus === 6 || pgStatus === 7) {
       paymentStatus = "refunded";
       orderStatus = "cancelled";
     }
 
+    // Só atualizar o banco se o status realmente mudou (evitar sobrescrever paid com pending)
+    const shouldUpdate = pgStatus === 3 || pgStatus === 4 || pgStatus === 6 || pgStatus === 7;
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { data: order } = await supabase
-      .from("orders")
-      .update({
-        payment_status: paymentStatus,
-        status: orderStatus,
-        payment_id: transactionCode,
-      })
-      .eq("order_number", orderNumber)
-      .select()
-      .single();
+    if (shouldUpdate) {
+      const { data: order } = await supabase
+        .from("orders")
+        .update({
+          payment_status: paymentStatus,
+          status: orderStatus,
+          payment_id: transactionCode,
+        })
+        .eq("order_number", orderNumber)
+        .select()
+        .single();
 
-    if (order) {
-      const messages: Record<string, string> = {
-        paid: "✅ Pagamento confirmado! Seu pedido entrou na fila de produção.",
-        analyzing: "🔍 Pagamento em análise pelo PagSeguro.",
-        pending: "⏳ Aguardando confirmação do pagamento.",
-        refunded: "❌ Pagamento cancelado ou estornado.",
-      };
-      await supabase.from("order_timeline").insert({
-        order_id: order.id,
-        status: orderStatus,
-        message: messages[paymentStatus] || `Status atualizado: ${paymentStatus}`,
-      });
+      if (order) {
+        const messages: Record<string, string> = {
+          paid: "✅ Pagamento confirmado! Aguardando envio de arte.",
+          refunded: "❌ Pagamento cancelado ou estornado.",
+        };
+        await supabase.from("order_timeline").insert({
+          order_id: order.id,
+          status: orderStatus,
+          message: messages[paymentStatus] || `Pagamento: ${paymentStatus}`,
+        });
+      }
     }
 
     return new Response("OK", { status: 200 });
