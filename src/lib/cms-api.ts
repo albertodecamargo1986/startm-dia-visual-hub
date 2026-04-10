@@ -23,9 +23,18 @@ export const cmsApi = {
   publish: (pageId: string) =>
     callCms('publish-page', { pageId }),
 
-  unpublish: (pageId: string) =>
-    callCms('unpublish-page', { pageId }),
+  unpublish: (pageId: string, targetStatus: string = 'draft') =>
+    callCms('unpublish-page', { pageId, targetStatus }),
 
   duplicate: (pageId: string, newSlug: string, newTitle: string) =>
     callCms('duplicate-page', { pageId, newSlug, newTitle }),
+
+  softDelete: (pageId: string) =>
+    callCms('soft-delete-page', { pageId }),
+
+  restorePage: (pageId: string) =>
+    callCms('restore-page', { pageId }),
+
+  restoreRevision: (pageId: string, revisionId: string) =>
+    callCms('restore-revision', { pageId, revisionId }),
 };
