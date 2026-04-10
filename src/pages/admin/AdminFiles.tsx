@@ -64,12 +64,22 @@ const AdminFiles = () => {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin-files'] }); toast.success('Arquivo rejeitado.'); setRejectOpen(false); setRejectReason(''); },
   });
 
-  const handleDownload = async (fileUrl: string) => {
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const path = fileUrl.replace(`${supabaseUrl}/storage/v1/object/public/artwork-files/`, '');
-    const { data } = await supabase.storage.from('artwork-files').createSignedUrl(path, 3600);
-    if (data?.signedUrl) window.open(data.signedUrl, '_blank');
-    else toast.error('Erro ao gerar link');
+  const handleDownload = async (fileUrl: string, fileName?: string) => {
+    try {
+      if (fileUrl.startsWith('http')) {
+        const a = document.createElement('a');
+        a.href = fileUrl;
+        a.download = fileName || 'arquivo';
+        a.target = '_blank';
+        a.click();
+        return;
+      }
+      const { data, error } = await supabase.storage.from('artwork-files').createSignedUrl(fileUrl, 3600);
+      if (error || !data?.signedUrl) { toast.error('Erro ao gerar link de download'); return; }
+      window.open(data.signedUrl, '_blank');
+    } catch {
+      toast.error('Erro ao baixar arquivo');
+    }
   };
 
   const formatSize = (bytes: number) => bytes > 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${(bytes / 1024).toFixed(0)} KB`;
@@ -122,7 +132,7 @@ const AdminFiles = () => {
                 <TableCell><Badge className={statusColors[f.status ?? 'pending']}>{statusLabels[f.status ?? 'pending']}</Badge></TableCell>
                 <TableCell>
                   <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" onClick={() => handleDownload(f.file_url)} title="Download"><Download className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon" onClick={() => handleDownload(f.file_url, f.file_name)} title="Download"><Download className="h-4 w-4" /></Button>
                     {f.status === 'pending' && (
                       <>
                         <Button variant="ghost" size="icon" onClick={() => approve.mutate(f.id)} title="Aprovar"><Check className="h-4 w-4 text-green-400" /></Button>

@@ -140,11 +140,22 @@ const AdminOrderDetail = () => {
     },
   });
 
-  const handleDownload = async (fileUrl: string) => {
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const path = fileUrl.replace(`${supabaseUrl}/storage/v1/object/public/artwork-files/`, '');
-    const { data } = await supabase.storage.from('artwork-files').createSignedUrl(path, 3600);
-    if (data?.signedUrl) window.open(data.signedUrl, '_blank');
+  const handleDownload = async (fileUrl: string, fileName?: string) => {
+    try {
+      if (fileUrl.startsWith('http')) {
+        const a = document.createElement('a');
+        a.href = fileUrl;
+        a.download = fileName || 'arquivo';
+        a.target = '_blank';
+        a.click();
+        return;
+      }
+      const { data, error } = await supabase.storage.from('artwork-files').createSignedUrl(fileUrl, 3600);
+      if (error || !data?.signedUrl) { toast.error('Erro ao gerar link de download'); return; }
+      window.open(data.signedUrl, '_blank');
+    } catch {
+      toast.error('Erro ao baixar arquivo');
+    }
   };
 
   const openWhatsApp = () => {
@@ -231,7 +242,7 @@ const AdminOrderDetail = () => {
                           {f.status === 'rejected' && f.admin_comment && <p className="text-xs text-red-400 mt-1">{f.admin_comment}</p>}
                         </div>
                         <div className="flex gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => handleDownload(f.file_url)} title="Download"><Download className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="icon" onClick={() => handleDownload(f.file_url, f.file_name)} title="Download"><Download className="h-4 w-4" /></Button>
                           {f.status === 'pending' && (
                             <>
                               <Button variant="ghost" size="icon" onClick={() => approveArt.mutate({ fileId: f.id, itemId: item.id })} title="Aprovar"><Check className="h-4 w-4 text-green-400" /></Button>
