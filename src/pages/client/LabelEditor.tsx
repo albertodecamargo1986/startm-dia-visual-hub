@@ -13,7 +13,7 @@ import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
-  Plus, Download, Save, Trash2, Type, Square, Circle as CircleIcon,
+  Plus, Save, Trash2, Type, Square, Circle as CircleIcon,
   Minus, Triangle as TriangleIcon, Undo2, Redo2, ZoomIn, ZoomOut,
   Layers, Palette, ArrowUp, ArrowDown, Eye, EyeOff, Copy,
   LayoutTemplate, Frame, Image as ImageIcon, Lock, Unlock,
@@ -24,7 +24,7 @@ import {
   ArrowLeft, Check, Pencil
 } from 'lucide-react';
 import { LABEL_SHAPES, getFormatsForShape, mmToPx, type LabelFormat } from '@/lib/label-formats';
-import { exportLabelPDF } from '@/lib/label-pdf-export';
+
 import { useLabelProjects, useAutoSave, type LabelProject } from '@/hooks/use-label-projects';
 import {
   TEMPLATE_CATEGORIES, LABEL_TEMPLATES, getTemplatesByCategory,
@@ -203,8 +203,6 @@ const LabelEditor = () => {
   const [projectName, setProjectName] = useState('Sem título');
   const [selectedObject, setSelectedObject] = useState<any>(null);
   const [zoom, setZoom] = useState(1);
-  const [includeBleed, setIncludeBleed] = useState(false);
-  const [includeCutMarks, setIncludeCutMarks] = useState(true);
   const [layers, setLayers] = useState<LayerItem[]>([]);
   const [snapEnabled, setSnapEnabled] = useState(true);
   const [editingLayerName, setEditingLayerName] = useState<number | null>(null);
@@ -225,7 +223,7 @@ const LabelEditor = () => {
   const [showGrid, setShowGrid] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showLeftPanel, setShowLeftPanel] = useState(true);
-  const [showExportDialog, setShowExportDialog] = useState(false);
+  
 
   // Undo/redo
   const [history, setHistory] = useState<string[]>([]);
@@ -596,20 +594,6 @@ const LabelEditor = () => {
   const moveLayerDown = (layer: LayerItem) => { fabricRef.current?.sendObjectBackwards(layer.obj); fabricRef.current?.renderAll(); syncLayers(); markDirty(); };
   const renameLayer = (layer: LayerItem, newName: string) => { (layer.obj as any).__layerName = newName; syncLayers(); };
 
-  const handleExportPDF = async () => {
-    const fc = fabricRef.current;
-    if (!fc || !selectedFormat) { toast.error('Nenhum projeto aberto'); return; }
-    const origZoom = fc.getZoom();
-    fc.setZoom(1); fc.setDimensions({ width: fc.getWidth(), height: fc.getHeight() }, { cssOnly: false }); fc.renderAll();
-    const canvasEl = fc.toCanvasElement(2);
-    fc.setZoom(origZoom); fitToContainer();
-    try {
-      const blob = await exportLabelPDF({ format: selectedFormat, canvasEl, projectName: currentProject?.name || 'etiqueta', includeBleed, includeCutMarks });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = `${currentProject?.name || 'etiqueta'}.pdf`; a.click();
-      URL.revokeObjectURL(url); toast.success('PDF exportado!');
-    } catch { toast.error('Erro ao exportar PDF'); }
-  };
 
   const handleSave = async () => {
     if (!currentProject || !fabricRef.current) return;
@@ -959,9 +943,6 @@ const LabelEditor = () => {
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowPrintPreview(true)}><Printer className="h-4 w-4" /></Button>
             </TooltipTrigger><TooltipContent>Prévia de impressão</TooltipContent></Tooltip>
 
-            <Tooltip><TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowExportDialog(true)}><Download className="h-4 w-4" /></Button>
-            </TooltipTrigger><TooltipContent>Exportar PDF</TooltipContent></Tooltip>
 
             <Separator orientation="vertical" className="h-6 mx-1" />
 
@@ -1311,26 +1292,6 @@ const LabelEditor = () => {
 
         {/* ── DIALOGS ── */}
 
-        {/* Export dialog */}
-        <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
-          <DialogContent className="max-w-sm">
-            <DialogHeader><DialogTitle>Exportar PDF</DialogTitle></DialogHeader>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm">Sangria (3mm)</Label>
-                <Switch checked={includeBleed} onCheckedChange={setIncludeBleed} />
-              </div>
-              <div className="flex items-center justify-between">
-                <Label className="text-sm">Marcas de corte</Label>
-                <Switch checked={includeCutMarks} onCheckedChange={setIncludeCutMarks} />
-              </div>
-              <p className="text-xs text-muted-foreground">PDF compatível com CorelDRAW, Illustrator e outros editores vetoriais.</p>
-              <Button className="w-full" onClick={() => { handleExportPDF(); setShowExportDialog(false); }}>
-                <Download className="h-4 w-4 mr-2" />Exportar PDF
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
 
         {/* Save As Dialog */}
         <Dialog open={showSaveAsDialog} onOpenChange={setShowSaveAsDialog}>
