@@ -5,12 +5,10 @@ import {
   type GradientStop,
   type GradientType,
   GRADIENT_PRESETS,
-} from '@/lib/label-gradients';
-import {
   applyGradientToObject,
   applyGradientToBackground,
-  removeGradientFromObject,
-} from '@/lib/gradient-fabric';
+} from '@/lib/label-gradients';
+import { removeGradientFromObject } from '@/lib/gradient-fabric';
 import { toast } from 'sonner';
 
 const CUSTOM_PRESETS_KEY = 'label_custom_gradients';
@@ -36,14 +34,14 @@ export function useLabelGradients(
   const allPresets = [...GRADIENT_PRESETS, ...customPresets];
 
   const applyToSelected = useCallback(
-    (preset: LabelGradientPreset, customAngle?: number) => {
+    (preset: LabelGradientPreset) => {
       if (!canvas) return;
       const obj = canvas.getActiveObject();
       if (!obj) {
         toast.error('Selecione um objeto primeiro');
         return;
       }
-      applyGradientToObject(obj, preset, customAngle);
+      applyGradientToObject(obj, preset);
       setActiveGradientId(preset.id);
       captureHistory();
     },
@@ -51,14 +49,14 @@ export function useLabelGradients(
   );
 
   const applyToBackground = useCallback(
-    (preset: LabelGradientPreset, customAngle?: number) => {
+    (preset: LabelGradientPreset) => {
       if (!canvas) return;
-      applyGradientToBackground(canvas, preset, widthPx, heightPx, customAngle);
+      applyGradientToBackground(canvas, preset);
       setActiveGradientId(preset.id);
       captureHistory();
       toast.success('Degradê aplicado ao fundo');
     },
-    [canvas, widthPx, heightPx, captureHistory],
+    [canvas, captureHistory],
   );
 
   const removeFromSelected = useCallback(

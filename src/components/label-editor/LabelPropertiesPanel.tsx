@@ -147,11 +147,10 @@ const LabelPropertiesPanel = ({
            </button>
 
            {showGradientPanel && (
-             <GradientPanel
-               canvas={canvas}
-               selectedObject={selectedObject}
-               onHistoryCapture={onHistoryCapture}
-             />
+              <GradientPanel
+                canvas={canvas}
+                captureHistory={onHistoryCapture}
+              />
            )}
 
           {/* Curved text controller */}
