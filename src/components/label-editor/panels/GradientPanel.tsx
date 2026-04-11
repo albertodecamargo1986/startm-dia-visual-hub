@@ -164,6 +164,7 @@ export function GradientPanel({ canvas, captureHistory }: Props) {
             key={preset.id}
             preset={preset}
             isActive={activeGradientId === preset.id}
+            isCustom={preset.category === 'personalizado'}
             onApply={() => handleApplyPreset(preset)}
             onDelete={
               preset.category === 'personalizado'
