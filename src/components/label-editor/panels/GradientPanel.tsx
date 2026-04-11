@@ -12,12 +12,12 @@ import { GradientPresetCard } from './GradientPresetCard';
 
 interface Props {
   canvas: fabric.Canvas | null;
-  widthPx: number;
-  heightPx: number;
   captureHistory: () => void;
 }
 
-export function GradientPanel({ canvas, widthPx, heightPx, captureHistory }: Props) {
+export function GradientPanel({ canvas, captureHistory }: Props) {
+  const widthPx = canvas?.width ?? 500;
+  const heightPx = canvas?.height ?? 500;
   const [activeCategory, setActiveCategory] = useState<GradientPresetCategory>('populares');
   const [showBuilder, setShowBuilder] = useState(false);
   const [applyTarget, setApplyTarget] = useState<'object' | 'background'>('object');

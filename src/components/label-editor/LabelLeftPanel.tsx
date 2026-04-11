@@ -105,8 +105,7 @@ const LabelLeftPanel = ({
                 <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">✨ Gradientes</p>
                 <GradientPanel
                   canvas={canvas}
-                  selectedObject={selectedObject}
-                  onHistoryCapture={onHistoryCapture}
+                  captureHistory={onHistoryCapture}
                 />
               </div>
 
