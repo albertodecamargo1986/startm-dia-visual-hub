@@ -13,6 +13,8 @@ import {
   AlignHorizontalJustifyCenter, AlignVerticalJustifyCenter,
   AlignStartHorizontal, AlignEndHorizontal, AlignStartVertical, AlignEndVertical,
 } from 'lucide-react';
+import { GRADIENT_PRESETS, gradientToCSS } from '@/lib/label-gradients';
+import { useLabelGradients } from '@/hooks/use-label-gradients';
 import { GOOGLE_FONTS, loadGoogleFont, type LayerItem } from './types';
 import { GradientPanel } from './panels/GradientPanel';
 import type { Canvas as FabricCanvas } from 'fabric';
@@ -53,6 +55,7 @@ const LabelPropertiesPanel = ({
   onRebuildCurvedText, fabricRenderAll,
 }: LabelPropertiesPanelProps) => {
   const [showGradientPanel, setShowGradientPanel] = useState(false);
+  const { applyToSelected } = useLabelGradients(canvas, 0, 0, onHistoryCapture);
 
   return (
   <div className="w-56 lg:w-60 shrink-0 border-l bg-card overflow-auto">
@@ -151,6 +154,25 @@ const LabelPropertiesPanel = ({
                 canvas={canvas}
                 captureHistory={onHistoryCapture}
               />
+           )}
+
+           {/* Quick gradient presets */}
+           {selectedObject && selectedObject.type !== 'i-text' && !showGradientPanel && (
+             <div>
+               <Label className="text-xs">Degradê Rápido</Label>
+               <div className="grid grid-cols-4 gap-1 mt-1">
+                 {GRADIENT_PRESETS.slice(0, 8).map((preset) => (
+                   <button
+                     key={preset.id}
+                     onClick={() => applyToSelected(preset)}
+                     title={preset.name}
+                     className="aspect-square rounded-lg border border-border
+                                hover:border-primary hover:scale-110 transition-all"
+                     style={{ background: gradientToCSS(preset) }}
+                   />
+                 ))}
+               </div>
+             </div>
            )}
 
           {/* Curved text controller */}
