@@ -101,17 +101,6 @@ const LabelLeftPanel = ({
 
               <Separator />
 
-              {/* Gradients */}
-              <div>
-                <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">✨ Gradientes</p>
-                <GradientPanel
-                  canvas={canvas}
-                  captureHistory={onHistoryCapture}
-                />
-              </div>
-
-              <Separator />
-
               {/* Templates with filters */}
               <div>
                 <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Templates</p>
