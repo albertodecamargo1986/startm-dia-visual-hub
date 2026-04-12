@@ -847,6 +847,185 @@ const templateSaboneteNatural: LabelTemplate = {
   },
 };
 
+// ============================================================
+// MODERNO — NEON GRADIENTE (degradê nativo Fabric.js)
+// ============================================================
+const templateNeonGradiente: LabelTemplate = {
+  id: 'moderno-neon-gradient-01',
+  name: 'Neon Gradiente',
+  category: 'moderno',
+  description: 'Design neon escuro com degradês nativos no canvas',
+  tags: ['neon', 'gradiente', 'moderno', 'colorido', 'escuro', 'tech'],
+  premium: false,
+  getObjects: (wm, hm) => {
+    const { cx, cy, w, h } = center(wm, hm);
+    return [
+      {
+        type: 'rect', left: 0, top: 0, width: w, height: h, selectable: false,
+        fill: {
+          type: 'linear', gradientUnits: 'pixels',
+          coords: { x1: 0, y1: 0, x2: w, y2: h },
+          colorStops: [
+            { offset: 0, color: '#0F0C29' },
+            { offset: 0.5, color: '#302B63' },
+            { offset: 1, color: '#24243E' },
+          ],
+        },
+      },
+      {
+        type: 'circle', left: cx, top: h * 0.3, radius: h * 0.18,
+        originX: 'center', originY: 'center',
+        fill: {
+          type: 'radial', gradientUnits: 'pixels',
+          coords: { x1: h * 0.18, y1: h * 0.18, r1: 0, x2: h * 0.18, y2: h * 0.18, r2: h * 0.18 },
+          colorStops: [
+            { offset: 0, color: '#00C9FF' },
+            { offset: 1, color: '#92FE9D' },
+          ],
+        },
+      },
+      {
+        type: 'i-text', text: 'NEON', left: cx, top: h * 0.65,
+        originX: 'center', originY: 'center',
+        fontSize: h * 0.14, fontFamily: 'Montserrat', fontWeight: 'bold',
+        charSpacing: 300,
+        fill: {
+          type: 'linear', gradientUnits: 'pixels',
+          coords: { x1: 0, y1: 0, x2: h * 0.14 * 4, y2: 0 },
+          colorStops: [
+            { offset: 0, color: '#FF00CC' },
+            { offset: 1, color: '#3333FF' },
+          ],
+        },
+      },
+      { type: 'i-text', text: 'BRAND', left: cx, top: h * 0.82, originX: 'center', originY: 'center', fontSize: h * 0.05, fontFamily: 'Montserrat', fill: '#AAAAFF', charSpacing: 500 },
+    ];
+  },
+};
+
+// ============================================================
+// PREMIUM — OURO GRADIENTE
+// ============================================================
+const templateOuroGradiente: LabelTemplate = {
+  id: 'premium-ouro-gradient-01',
+  name: 'Ouro Premium',
+  category: 'premium',
+  description: 'Etiqueta premium com degradê dourado luxuoso',
+  tags: ['ouro', 'gold', 'premium', 'luxo', 'gradiente', 'elegante'],
+  premium: false,
+  getObjects: (wm, hm) => {
+    const { cx, cy, w, h } = center(wm, hm);
+    return [
+      { type: 'rect', left: 0, top: 0, width: w, height: h, fill: '#0A0A0A', selectable: false },
+      {
+        type: 'rect', left: w * 0.05, top: h * 0.05, width: w * 0.9, height: h * 0.9,
+        fill: 'transparent', stroke: '#C9A84C', strokeWidth: 2, rx: 4, ry: 4,
+      },
+      {
+        type: 'rect', left: w * 0.1, top: h * 0.15, width: w * 0.8, height: h * 0.14,
+        fill: {
+          type: 'linear', gradientUnits: 'pixels',
+          coords: { x1: 0, y1: 0, x2: w * 0.8, y2: 0 },
+          colorStops: [
+            { offset: 0, color: '#B8860B' },
+            { offset: 0.3, color: '#FFD700' },
+            { offset: 0.6, color: '#DAA520' },
+            { offset: 1, color: '#B8860B' },
+          ],
+        },
+        rx: 2, ry: 2,
+      },
+      { type: 'i-text', text: 'PREMIUM', left: cx, top: h * 0.22, originX: 'center', originY: 'center', fontSize: h * 0.08, fontFamily: 'Montserrat', fontWeight: 'bold', fill: '#0A0A0A', charSpacing: 400 },
+      { type: 'line', x1: w * 0.15, y1: h * 0.4, x2: w * 0.85, y2: h * 0.4, stroke: '#C9A84C', strokeWidth: 1 },
+      { type: 'i-text', text: 'Seu Produto', left: cx, top: h * 0.52, originX: 'center', originY: 'center', fontSize: h * 0.1, fontFamily: 'Playfair Display', fill: '#FFD700' },
+      { type: 'i-text', text: 'Qualidade incomparável', left: cx, top: h * 0.68, originX: 'center', originY: 'center', fontSize: h * 0.045, fontFamily: 'Lato', fontStyle: 'italic', fill: '#C9A84C' },
+      { type: 'line', x1: w * 0.15, y1: h * 0.78, x2: w * 0.85, y2: h * 0.78, stroke: '#C9A84C', strokeWidth: 1 },
+      { type: 'i-text', text: 'EST. 2024', left: cx, top: h * 0.88, originX: 'center', originY: 'center', fontSize: h * 0.04, fontFamily: 'Montserrat', fill: '#DAA520', charSpacing: 300 },
+    ];
+  },
+};
+
+// ============================================================
+// MODERNO — SUNSET GRADIENTE
+// ============================================================
+const templateSunsetGradiente: LabelTemplate = {
+  id: 'moderno-sunset-gradient-01',
+  name: 'Sunset Wave',
+  category: 'moderno',
+  description: 'Design moderno com degradê sunset vibrante',
+  tags: ['sunset', 'gradiente', 'moderno', 'quente', 'laranja', 'rosa'],
+  premium: false,
+  getObjects: (wm, hm) => {
+    const { cx, cy, w, h } = center(wm, hm);
+    return [
+      {
+        type: 'rect', left: 0, top: 0, width: w, height: h, selectable: false,
+        fill: {
+          type: 'linear', gradientUnits: 'pixels',
+          coords: { x1: 0, y1: 0, x2: 0, y2: h },
+          colorStops: [
+            { offset: 0, color: '#FF6B6B' },
+            { offset: 0.5, color: '#FF8E53' },
+            { offset: 1, color: '#FFC837' },
+          ],
+        },
+      },
+      { type: 'rect', left: 0, top: h * 0.6, width: w, height: h * 0.4, fill: '#00000030', selectable: false },
+      { type: 'i-text', text: 'SUNSET', left: cx, top: h * 0.3, originX: 'center', originY: 'center', fontSize: h * 0.15, fontFamily: 'Montserrat', fontWeight: 'bold', fill: '#FFFFFF', charSpacing: 200 },
+      { type: 'i-text', text: 'COLLECTION', left: cx, top: h * 0.44, originX: 'center', originY: 'center', fontSize: h * 0.055, fontFamily: 'Montserrat', fill: '#FFFFFF', charSpacing: 500 },
+      { type: 'line', x1: w * 0.2, y1: h * 0.55, x2: w * 0.8, y2: h * 0.55, stroke: '#FFFFFF', strokeWidth: 1.5 },
+      { type: 'i-text', text: 'Seu Produto', left: cx, top: h * 0.72, originX: 'center', originY: 'center', fontSize: h * 0.08, fontFamily: 'Playfair Display', fontStyle: 'italic', fill: '#FFFFFF' },
+      { type: 'i-text', text: '100% Natural', left: cx, top: h * 0.88, originX: 'center', originY: 'center', fontSize: h * 0.04, fontFamily: 'Roboto', fill: '#FFFFFFCC', charSpacing: 200 },
+    ];
+  },
+};
+
+// ============================================================
+// ELEGANTE — OCEANO GRADIENTE
+// ============================================================
+const templateOceanoGradiente: LabelTemplate = {
+  id: 'elegante-oceano-gradient-01',
+  name: 'Oceano Profundo',
+  category: 'elegante',
+  description: 'Etiqueta elegante com degradê oceano profundo',
+  tags: ['oceano', 'azul', 'gradiente', 'elegante', 'agua', 'mar'],
+  premium: false,
+  getObjects: (wm, hm) => {
+    const { cx, cy, w, h } = center(wm, hm);
+    return [
+      {
+        type: 'rect', left: 0, top: 0, width: w, height: h, selectable: false,
+        fill: {
+          type: 'linear', gradientUnits: 'pixels',
+          coords: { x1: 0, y1: 0, x2: 0, y2: h },
+          colorStops: [
+            { offset: 0, color: '#001A6E' },
+            { offset: 0.5, color: '#0057B7' },
+            { offset: 1, color: '#00D2FF' },
+          ],
+        },
+      },
+      {
+        type: 'circle', left: cx, top: h * 0.22, radius: h * 0.12,
+        originX: 'center', originY: 'center',
+        fill: {
+          type: 'radial', gradientUnits: 'pixels',
+          coords: { x1: h * 0.12, y1: h * 0.12, r1: 0, x2: h * 0.12, y2: h * 0.12, r2: h * 0.12 },
+          colorStops: [
+            { offset: 0, color: '#FFFFFF40' },
+            { offset: 1, color: '#FFFFFF00' },
+          ],
+        },
+      },
+      { type: 'i-text', text: '🌊', left: cx, top: h * 0.22, originX: 'center', originY: 'center', fontSize: h * 0.1 },
+      { type: 'i-text', text: 'OCEANO', left: cx, top: h * 0.42, originX: 'center', originY: 'center', fontSize: h * 0.12, fontFamily: 'Montserrat', fontWeight: 'bold', fill: '#FFFFFF', charSpacing: 300 },
+      { type: 'line', x1: w * 0.25, y1: h * 0.54, x2: w * 0.75, y2: h * 0.54, stroke: '#FFFFFF80', strokeWidth: 1 },
+      { type: 'i-text', text: 'Sua Marca Aqui', left: cx, top: h * 0.65, originX: 'center', originY: 'center', fontSize: h * 0.06, fontFamily: 'Playfair Display', fontStyle: 'italic', fill: '#B3E5FC' },
+      { type: 'i-text', text: 'ARTESANAL • NATURAL', left: cx, top: h * 0.82, originX: 'center', originY: 'center', fontSize: h * 0.035, fontFamily: 'Roboto', fill: '#80DEEA', charSpacing: 200 },
+    ];
+  },
+};
+
 // Append all new templates to the main array
 LABEL_TEMPLATES.push(
   templateProdutoMinimalista,
@@ -866,6 +1045,10 @@ LABEL_TEMPLATES.push(
   templateEscolarNome,
   templateCasamentoElegante,
   templateSaboneteNatural,
+  templateNeonGradiente,
+  templateOuroGradiente,
+  templateSunsetGradiente,
+  templateOceanoGradiente,
 );
 
 export function getTemplatesByCategory(category: string): LabelTemplate[] {
