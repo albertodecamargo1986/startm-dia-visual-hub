@@ -3,7 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Palette, Shapes, Layers, X, Frame, Eye, EyeOff, Lock, Unlock, ArrowUp, ArrowDown, GripVertical } from 'lucide-react';
+import { Palette, Shapes, Layers, X, Frame, Eye, EyeOff, Lock, Unlock, ArrowUp, ArrowDown, GripVertical, Sparkles } from 'lucide-react';
 import {
   DECORATIVE_CATEGORIES, getDecorativeByCategory,
   type LabelTemplate, type DecorativeElement
@@ -77,8 +77,9 @@ const LabelLeftPanel = ({
         <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onClose}><X className="h-3.5 w-3.5" /></Button>
       </div>
       <Tabs defaultValue="design" className="flex flex-col flex-1 min-h-0">
-        <TabsList className="w-full grid grid-cols-3 mx-2 mt-2 shrink-0">
+        <TabsList className="w-full grid grid-cols-4 mx-2 mt-2 shrink-0">
           <TabsTrigger value="design" className="text-xs"><Palette className="h-3 w-3 mr-1" />Design</TabsTrigger>
+          <TabsTrigger value="gradients" className="text-xs"><Sparkles className="h-3 w-3 mr-1" />Degradês</TabsTrigger>
           <TabsTrigger value="elements" className="text-xs"><Shapes className="h-3 w-3 mr-1" />Elementos</TabsTrigger>
           <TabsTrigger value="layers" className="text-xs"><Layers className="h-3 w-3 mr-1" />Camadas</TabsTrigger>
         </TabsList>
@@ -160,6 +161,18 @@ const LabelLeftPanel = ({
                   })}
                 </div>
               </div>
+            </div>
+          </ScrollArea>
+        </TabsContent>
+
+        {/* Gradients Tab */}
+        <TabsContent value="gradients" className="flex-1 min-h-0 mt-0">
+          <ScrollArea className="h-full">
+            <div className="p-3">
+              <GradientPanel
+                canvas={canvas}
+                captureHistory={onHistoryCapture}
+              />
             </div>
           </ScrollArea>
         </TabsContent>
